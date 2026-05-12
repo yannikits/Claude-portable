@@ -1,0 +1,9 @@
+{
+  "id": "6",
+  "subject": "Task 6: W5 Produkt-Ersteller Pfad A (PS-Skript) JSON",
+  "description": "n8n-Workflow-JSON für W5: Telegram Trigger → IF (skip) → Code (Produkt laden) → IF (Typ PS/Notion) → Claude API → Code (Parse PS1) → HTTP Request (GitHub Release) → Code → HTTP Request (GitHub Asset Upload) → Code → HTTP Request (Gumroad) → Code → HTTP Request (Etsy) → Telegram → HTTP Request (W2 trigger). In n8n-workflows/w5_product_creator.json",
+  "activeForm": "Erstelle W5 PS-Skript-Pfad JSON",
+  "status": "completed",
+  "blocks": [],
+  "blockedBy": []
+}

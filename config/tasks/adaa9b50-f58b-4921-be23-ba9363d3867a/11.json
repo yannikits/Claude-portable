@@ -1,0 +1,9 @@
+{
+  "id": "11",
+  "subject": "Task 11: W3 Update-Mail Workflow JSON",
+  "description": "n8n-Workflow-JSON für W3: Schedule (1./Monat) → Gumroad API (Käuferliste) → Code → Claude API → Code (Mail+Emails zusammenführen) → Split in Batches → Send Email. In n8n-workflows/w3_update_mail.json",
+  "activeForm": "Erstelle W3 Update-Mail JSON",
+  "status": "completed",
+  "blocks": [],
+  "blockedBy": []
+}

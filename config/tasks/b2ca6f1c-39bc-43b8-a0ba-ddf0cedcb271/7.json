@@ -1,0 +1,9 @@
+{
+  "id": "7",
+  "subject": "Task 7: Update tasks.html template",
+  "description": "Add Swarm Mode dropdown to modal form, Swarm badge to all 4 Kanban columns, collapsible Swarm result block to Todo and In Progress cards",
+  "activeForm": "Updating tasks.html template",
+  "status": "completed",
+  "blocks": [],
+  "blockedBy": []
+}

@@ -1,0 +1,9 @@
+{
+  "id": "5",
+  "subject": "Task 5: W4 Produkt-Ideen-Finder Workflow JSON",
+  "description": "Valides n8n-Workflow-JSON für W4 erstellen: Schedule Trigger (Fr 17:00) → Reddit RSS (3x) → Merge → Code → Claude API → Code (Buttons) → Code (jsonbin.io speichern) → HTTP Request (Telegram). In n8n-workflows/w4_product_ideas.json speichern.",
+  "activeForm": "Erstelle W4 Workflow JSON",
+  "status": "completed",
+  "blocks": [],
+  "blockedBy": []
+}

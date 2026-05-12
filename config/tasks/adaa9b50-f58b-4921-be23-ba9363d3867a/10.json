@@ -1,0 +1,9 @@
+{
+  "id": "10",
+  "subject": "Task 10: W2 Content-Generator Workflow JSON",
+  "description": "n8n-Workflow-JSON für W2: Schedule (Mo 08:00) + Webhook → Merge → RSS Feed → Code (Kontext) → Claude API → Code (Parse) → HTTP Request (Telegram Freigabe). In n8n-workflows/w2_content_generator.json",
+  "activeForm": "Erstelle W2 Content-Generator JSON",
+  "status": "completed",
+  "blocks": [],
+  "blockedBy": []
+}

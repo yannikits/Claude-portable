@@ -1,0 +1,9 @@
+{
+  "id": "2",
+  "subject": "Task 2: Telegram Bot + Chat-ID (manuell)",
+  "description": "User-Aktion: BotFather → /newbot → Token + Chat-ID notieren. Kein Code-Output.",
+  "activeForm": "Warte auf Telegram-Setup",
+  "status": "in_progress",
+  "blocks": [],
+  "blockedBy": []
+}

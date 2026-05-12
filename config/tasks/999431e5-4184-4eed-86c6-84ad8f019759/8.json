@@ -1,0 +1,9 @@
+{
+  "id": "8",
+  "subject": "Task 8: USB-Sync-Scripts",
+  "description": "sync-to-usb.bat und sync-from-usb.bat schreiben",
+  "activeForm": "Schreibe USB-Sync-Scripts",
+  "status": "pending",
+  "blocks": [],
+  "blockedBy": []
+}

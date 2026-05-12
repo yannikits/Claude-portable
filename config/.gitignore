@@ -1,0 +1,52 @@
+# === Secrets & Credentials (NIEMALS committen) ===
+.credentials.json
+settings.local.json
+.env
+**/.env
+
+# === Plugin-Binaries (1.1GB, werden via npx auto-geladen) ===
+plugins/cache/
+plugins/data/
+plugins/marketplaces/
+
+# === Auto-generierte Agent/Skill-Definitionen (werden von Plugins befüllt) ===
+agents/
+skills/
+!skills/scaffold-winapp/
+!skills/three-brain/
+
+# === Generierte Reports & Analyse-Daten ===
+usage-data/
+
+# === Session- & Runtime-Daten (ephemer, maschinenspezifisch) ===
+sessions/
+session-data/
+session-env/
+shell-snapshots/
+context-mode/
+homunculus/
+ide/
+debug/
+metrics/
+cache/
+backups/
+downloads/
+file-history/
+
+# === Log- & History-Dateien ===
+*.log
+history.jsonl
+mcp-needs-auth-cache.json
+
+# === Session-Transcripts in projects/ ===
+projects/**/*.jsonl
+projects/**/tool-results/
+projects/C--Users-*/
+
+# === Plugin-Installationsartefakte (maschinenspezifisch) ===
+plugins/install-counts-cache.json
+
+# === OS-Dateien ===
+.DS_Store
+Thumbs.db
+desktop.ini

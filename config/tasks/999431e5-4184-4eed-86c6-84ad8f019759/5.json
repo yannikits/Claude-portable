@@ -1,0 +1,9 @@
+{
+  "id": "5",
+  "subject": "Task 5: Setup-Script (setup.bat)",
+  "description": "setup.bat schreiben: Node.js download, npm globals, Claude-Binary kopieren, API-Key verschlüsseln, Vault-Git init",
+  "activeForm": "Schreibe setup.bat",
+  "status": "pending",
+  "blocks": [],
+  "blockedBy": []
+}

@@ -1,0 +1,9 @@
+{
+  "id": "8",
+  "subject": "Task 8: W4↔W5 E2E Test (manuell)",
+  "description": "User-Aktion: Testdaten in jsonbin.io, W4 manuell ausführen, Telegram-Button klicken, W5 Ergebnis prüfen (GitHub Release + Gumroad).",
+  "activeForm": "Warte auf E2E-Test",
+  "status": "in_progress",
+  "blocks": [],
+  "blockedBy": []
+}

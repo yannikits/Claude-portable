@@ -1,0 +1,9 @@
+{
+  "id": "1",
+  "subject": "Task 1: Git-Repo + Projektstruktur anlegen",
+  "description": "kmu-automation/ Repo unter C:\\Users\\reapertakashi\\Documents\\GitHub\\ anlegen mit Verzeichnisstruktur, .gitignore, docs/setup-guide.md. Initial commit.",
+  "activeForm": "Erstelle Projektstruktur",
+  "status": "completed",
+  "blocks": [],
+  "blockedBy": []
+}

@@ -1,0 +1,9 @@
+{
+  "id": "3",
+  "subject": "Task 3: n8n Credentials + jsonbin.io (manuell)",
+  "description": "User-Aktion: n8n Credentials (Claude API, Telegram, Gumroad, Notion, GitHub) anlegen. jsonbin.io Account + Bin-ID erstellen.",
+  "activeForm": "Warte auf Credentials-Setup",
+  "status": "in_progress",
+  "blocks": [],
+  "blockedBy": []
+}

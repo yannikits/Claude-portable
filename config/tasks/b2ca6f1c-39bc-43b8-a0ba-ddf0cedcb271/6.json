@@ -1,0 +1,9 @@
+{
+  "id": "6",
+  "subject": "Task 6: Update config.example.json",
+  "description": "Add ruflo_mcp_url, swarm_threshold, swarm_agents keys to config/config.example.json",
+  "activeForm": "Updating config.example.json",
+  "status": "in_progress",
+  "blocks": [],
+  "blockedBy": []
+}

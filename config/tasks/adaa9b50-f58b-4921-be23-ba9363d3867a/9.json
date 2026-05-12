@@ -1,0 +1,9 @@
+{
+  "id": "9",
+  "subject": "Task 9: W1 Support-Bot Workflow JSON",
+  "description": "n8n-Workflow-JSON für W1: Webhook (Gumroad Sale) → Code (Käuferdaten) → HTTP Request (Claude API) → Code (Parse) → Send Email. In n8n-workflows/w1_support_bot.json",
+  "activeForm": "Erstelle W1 Support-Bot JSON",
+  "status": "completed",
+  "blocks": [],
+  "blockedBy": []
+}

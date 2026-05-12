@@ -1,0 +1,9 @@
+{
+  "id": "1",
+  "subject": "Task 1: Task Model — swarm columns + Pydantic schemas",
+  "description": "Add swarm_mode, swarm_result, swarm_session_id to SQLAlchemy Task model. Update TaskCreate, TaskResponse Pydantic schemas. Add ALTER TABLE migration to init_db.py. TDD: tests/test_swarm_model.py",
+  "activeForm": "Implementing Task model swarm columns",
+  "status": "completed",
+  "blocks": [],
+  "blockedBy": []
+}

@@ -1,0 +1,9 @@
+{
+  "id": "6",
+  "subject": "Task 6: Vault .gitignore",
+  "description": "vault/.gitignore für Obsidian schreiben (cache, workspace.json, plugins/, .trash/)",
+  "activeForm": "Schreibe vault/.gitignore",
+  "status": "pending",
+  "blocks": [],
+  "blockedBy": []
+}

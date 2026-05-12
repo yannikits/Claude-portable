@@ -1,0 +1,9 @@
+{
+  "id": "4",
+  "subject": "Task 4: System-Prompts schreiben (5 Dateien)",
+  "description": "5 Prompt-Dateien in kmu-automation/scripts/prompts/ schreiben: support_bot.md, ps_generator.md, notion_generator.md, content_generator.md, product_ideas.md. Git-Commit.",
+  "activeForm": "Schreibe System-Prompts",
+  "status": "completed",
+  "blocks": [],
+  "blockedBy": []
+}

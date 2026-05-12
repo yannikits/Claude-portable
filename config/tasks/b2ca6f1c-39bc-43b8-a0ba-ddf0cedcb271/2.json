@@ -1,0 +1,9 @@
+{
+  "id": "2",
+  "subject": "Task 2: Complexity Classifier — src/swarm/classifier.py",
+  "description": "Create src/swarm/__init__.py and src/swarm/classifier.py with heuristic assess() function. TDD: tests/test_classifier.py",
+  "activeForm": "Implementing complexity classifier",
+  "status": "completed",
+  "blocks": [],
+  "blockedBy": []
+}

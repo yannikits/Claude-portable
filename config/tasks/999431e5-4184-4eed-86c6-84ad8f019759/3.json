@@ -1,0 +1,9 @@
+{
+  "id": "3",
+  "subject": "Task 3: Config-Verzeichnis befüllen",
+  "description": "~/.claude/ nach config/ kopieren (ohne Logs/Cache/settings.json), knowledge-miner Scripts kopieren, .credentials.json entfernen",
+  "activeForm": "Kopiere Config-Verzeichnis",
+  "status": "in_progress",
+  "blocks": [],
+  "blockedBy": []
+}

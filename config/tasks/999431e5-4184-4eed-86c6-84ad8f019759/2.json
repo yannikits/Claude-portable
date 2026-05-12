@@ -1,0 +1,9 @@
+{
+  "id": "2",
+  "subject": "Task 2: Portable config/settings.json",
+  "description": "Portable settings.json schreiben — alle pixel-agents-Hooks entfernt, Pfade auf %USERPROFILE%\\.claude\\helpers\\ umgestellt",
+  "activeForm": "Schreibe portable settings.json",
+  "status": "completed",
+  "blocks": [],
+  "blockedBy": []
+}

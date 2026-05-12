@@ -1,0 +1,6 @@
+{
+  "env": {
+    "ANTHROPIC_API_KEY": "sk-ant-HIER-EINTRAGEN",
+    "GITHUB_TOKEN": "ghp_HIER-EINTRAGEN"
+  }
+}

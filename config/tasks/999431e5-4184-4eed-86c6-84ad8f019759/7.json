@@ -1,0 +1,9 @@
+{
+  "id": "7",
+  "subject": "Task 7: Vault-Sync-Scripts",
+  "description": "sync-vault-push.bat und sync-vault-pull.bat schreiben",
+  "activeForm": "Schreibe Vault-Sync-Scripts",
+  "status": "pending",
+  "blocks": [],
+  "blockedBy": []
+}

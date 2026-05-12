@@ -1,0 +1,74 @@
+{
+  "claude-plugins-official": {
+    "source": {
+      "source": "github",
+      "repo": "anthropics/claude-plugins-official"
+    },
+    "installLocation": "C:\\Users\\reapertakashi\\.claude\\plugins\\marketplaces\\claude-plugins-official",
+    "lastUpdated": "2026-05-12T10:26:46.137Z"
+  },
+  "everything-claude-code": {
+    "source": {
+      "source": "git",
+      "url": "https://github.com/affaan-m/everything-claude-code.git"
+    },
+    "installLocation": "C:\\Users\\reapertakashi\\.claude\\plugins\\marketplaces\\everything-claude-code",
+    "lastUpdated": "2026-04-29T15:00:46.209Z"
+  },
+  "thedotmack": {
+    "source": {
+      "source": "github",
+      "repo": "thedotmack/claude-mem"
+    },
+    "installLocation": "C:\\Users\\reapertakashi\\.claude\\plugins\\marketplaces\\thedotmack",
+    "lastUpdated": "2026-04-29T15:01:36.586Z"
+  },
+  "context-mode": {
+    "source": {
+      "source": "github",
+      "repo": "mksglu/context-mode"
+    },
+    "installLocation": "C:\\Users\\reapertakashi\\.claude\\plugins\\marketplaces\\context-mode",
+    "lastUpdated": "2026-04-29T15:01:57.175Z"
+  },
+  "openai-codex": {
+    "source": {
+      "source": "github",
+      "repo": "openai/codex-plugin-cc"
+    },
+    "installLocation": "C:\\Users\\reapertakashi\\.claude\\plugins\\marketplaces\\openai-codex",
+    "lastUpdated": "2026-05-02T23:21:43.207Z"
+  },
+  "cc-gemini-plugin": {
+    "source": {
+      "source": "github",
+      "repo": "thepushkarp/cc-gemini-plugin"
+    },
+    "installLocation": "C:\\Users\\reapertakashi\\.claude\\plugins\\marketplaces\\cc-gemini-plugin",
+    "lastUpdated": "2026-05-02T23:24:32.256Z"
+  },
+  "ruflo": {
+    "source": {
+      "source": "github",
+      "repo": "ruvnet/ruflo"
+    },
+    "installLocation": "C:\\Users\\reapertakashi\\.claude\\plugins\\marketplaces\\ruflo",
+    "lastUpdated": "2026-05-05T18:25:30.330Z"
+  },
+  "superpowers-marketplace": {
+    "source": {
+      "source": "github",
+      "repo": "obra/superpowers-marketplace"
+    },
+    "installLocation": "C:\\Users\\reapertakashi\\.claude\\plugins\\marketplaces\\superpowers-marketplace",
+    "lastUpdated": "2026-05-06T21:14:27.696Z"
+  },
+  "ui-ux-pro-max-skill": {
+    "source": {
+      "source": "github",
+      "repo": "nextlevelbuilder/ui-ux-pro-max-skill"
+    },
+    "installLocation": "C:\\Users\\reapertakashi\\.claude\\plugins\\marketplaces\\ui-ux-pro-max-skill",
+    "lastUpdated": "2026-05-06T21:16:52.690Z"
+  }
+}

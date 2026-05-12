@@ -1,0 +1,9 @@
+{
+  "id": "4",
+  "subject": "Task 4: Swarm Orchestrator — src/swarm/orchestrator.py",
+  "description": "Create src/swarm/orchestrator.py with SwarmResult dataclass and run_swarm() function. TDD: tests/test_orchestrator.py",
+  "activeForm": "Implementing swarm orchestrator",
+  "status": "completed",
+  "blocks": [],
+  "blockedBy": []
+}

@@ -1,0 +1,134 @@
+{
+  "version": 2,
+  "plugins": {
+    "everything-claude-code@everything-claude-code": [
+      {
+        "scope": "project",
+        "projectPath": "C:\\Users\\reapertakashi",
+        "installPath": "C:\\Users\\reapertakashi\\.claude\\plugins\\cache\\everything-claude-code\\everything-claude-code\\2.0.0-rc.1",
+        "version": "2.0.0-rc.1",
+        "installedAt": "2026-04-29T15:01:11.147Z",
+        "lastUpdated": "2026-04-29T15:01:11.147Z",
+        "gitCommitSha": "c7c7d37f2946d7497577408d19adaee6a8341ddc"
+      }
+    ],
+    "claude-mem@thedotmack": [
+      {
+        "scope": "project",
+        "projectPath": "C:\\Users\\reapertakashi",
+        "installPath": "C:\\Users\\reapertakashi\\.claude\\plugins\\cache\\thedotmack\\claude-mem\\12.4.8",
+        "version": "12.4.8",
+        "installedAt": "2026-05-05T20:54:44.409Z",
+        "lastUpdated": "2026-05-05T20:54:44.409Z",
+        "gitCommitSha": "7e2da10a8eaebe6e08ee1cda689c6d575639540c"
+      }
+    ],
+    "context-mode@context-mode": [
+      {
+        "scope": "project",
+        "projectPath": "C:\\Users\\reapertakashi",
+        "installPath": "C:\\Users\\reapertakashi\\.claude\\plugins\\cache\\context-mode\\context-mode\\1.0.103",
+        "version": "1.0.103",
+        "installedAt": "2026-04-29T15:02:06.939Z",
+        "lastUpdated": "2026-04-29T17:11:48.682Z",
+        "gitCommitSha": "f00a1abc83aeeb137ae137f3068fff74884d97c6"
+      }
+    ],
+    "codex@openai-codex": [
+      {
+        "scope": "project",
+        "projectPath": "C:\\Users\\reapertakashi",
+        "installPath": "C:\\Users\\reapertakashi\\.claude\\plugins\\cache\\openai-codex\\codex\\1.0.4",
+        "version": "1.0.4",
+        "installedAt": "2026-05-02T23:23:41.328Z",
+        "lastUpdated": "2026-05-02T23:23:41.328Z",
+        "gitCommitSha": "807e03ac9d5aa23bc395fdec8c3767500a86b3cf"
+      }
+    ],
+    "cc-gemini-plugin@cc-gemini-plugin": [
+      {
+        "scope": "project",
+        "projectPath": "C:\\Users\\reapertakashi",
+        "installPath": "C:\\Users\\reapertakashi\\.claude\\plugins\\cache\\cc-gemini-plugin\\cc-gemini-plugin\\1.3.5",
+        "version": "1.3.5",
+        "installedAt": "2026-05-02T23:24:43.672Z",
+        "lastUpdated": "2026-05-02T23:24:43.672Z",
+        "gitCommitSha": "96042d3c1985f1252180d8d7b7dab68b5753607f"
+      }
+    ],
+    "ruflo-core@ruflo": [
+      {
+        "scope": "project",
+        "projectPath": "C:\\Users\\reapertakashi",
+        "installPath": "C:\\Users\\reapertakashi\\.claude\\plugins\\cache\\ruflo\\ruflo-core\\0.2.0",
+        "version": "0.2.0",
+        "installedAt": "2026-05-05T18:23:59.976Z",
+        "lastUpdated": "2026-05-05T18:23:59.976Z",
+        "gitCommitSha": "4e1e2618ebad43c8a3855c842e4109cb45d9765a"
+      }
+    ],
+    "ruflo-swarm@ruflo": [
+      {
+        "scope": "user",
+        "installPath": "C:\\Users\\reapertakashi\\.claude\\plugins\\cache\\ruflo\\ruflo-swarm\\0.2.0",
+        "version": "0.2.0",
+        "installedAt": "2026-05-05T18:24:26.215Z",
+        "lastUpdated": "2026-05-05T18:24:26.215Z",
+        "gitCommitSha": "4e1e2618ebad43c8a3855c842e4109cb45d9765a"
+      }
+    ],
+    "ruflo-autopilot@ruflo": [
+      {
+        "scope": "user",
+        "installPath": "C:\\Users\\reapertakashi\\.claude\\plugins\\cache\\ruflo\\ruflo-autopilot\\0.2.0",
+        "version": "0.2.0",
+        "installedAt": "2026-05-05T18:24:35.918Z",
+        "lastUpdated": "2026-05-05T18:24:35.918Z",
+        "gitCommitSha": "4e1e2618ebad43c8a3855c842e4109cb45d9765a"
+      }
+    ],
+    "ruflo-federation@ruflo": [
+      {
+        "scope": "user",
+        "installPath": "C:\\Users\\reapertakashi\\.claude\\plugins\\cache\\ruflo\\ruflo-federation\\0.2.0",
+        "version": "0.2.0",
+        "installedAt": "2026-05-05T18:24:47.326Z",
+        "lastUpdated": "2026-05-05T18:24:47.326Z",
+        "gitCommitSha": "4e1e2618ebad43c8a3855c842e4109cb45d9765a"
+      }
+    ],
+    "ruflo-workflows@ruflo": [
+      {
+        "scope": "project",
+        "projectPath": "C:\\Users\\reapertakashi",
+        "installPath": "C:\\Users\\reapertakashi\\.claude\\plugins\\cache\\ruflo\\ruflo-workflows\\0.2.0",
+        "version": "0.2.0",
+        "installedAt": "2026-05-05T18:26:59.176Z",
+        "lastUpdated": "2026-05-05T18:26:59.176Z",
+        "gitCommitSha": "4e1e2618ebad43c8a3855c842e4109cb45d9765a"
+      }
+    ],
+    "superpowers@superpowers-marketplace": [
+      {
+        "scope": "project",
+        "projectPath": "C:\\Users\\reapertakashi",
+        "installPath": "C:\\Users\\reapertakashi\\.claude\\plugins\\cache\\superpowers-marketplace\\superpowers\\5.1.0",
+        "version": "5.1.0",
+        "installedAt": "2026-05-06T21:14:54.297Z",
+        "lastUpdated": "2026-05-06T21:14:54.297Z",
+        "gitCommitSha": "f2cbfbefebbfef77321e4c9abc9e949826bea9d7"
+      }
+    ],
+    "ui-ux-pro-max@ui-ux-pro-max-skill": [
+      {
+        "scope": "project",
+        "installPath": "C:\\Users\\reapertakashi\\.claude\\plugins\\cache\\ui-ux-pro-max-skill\\ui-ux-pro-max\\2.5.0",
+        "version": "2.5.0",
+        "installedAt": "2026-05-06T21:17:16.450Z",
+        "lastUpdated": "2026-05-06T21:17:16.450Z",
+        "gitCommitSha": "b7e3af80f6e331f6fb456667b82b12cade7c9d35",
+        "projectPath": "C:\\Users\\reapertakashi"
+      }
+    ]
+  }
+}

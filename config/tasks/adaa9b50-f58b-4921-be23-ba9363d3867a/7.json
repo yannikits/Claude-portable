@@ -1,0 +1,9 @@
+{
+  "id": "7",
+  "subject": "Task 7: W5 Notion-Template-Pfad erweitern",
+  "description": "w5_product_creator.json um den Notion-Pfad (False-Branch des Typ-IF) erweitern: Claude API → Code (Parse) → HTTP Request (Notion API create) → Code → Gumroad → Etsy → Telegram.",
+  "activeForm": "Erweitere W5 Notion-Pfad",
+  "status": "completed",
+  "blocks": [],
+  "blockedBy": []
+}

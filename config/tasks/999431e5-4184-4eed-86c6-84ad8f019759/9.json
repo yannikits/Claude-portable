@@ -1,0 +1,9 @@
+{
+  "id": "9",
+  "subject": "Task 9: README + Ersteinrichtung",
+  "description": "README.md schreiben, setup.bat ausführen, Tests durchführen",
+  "activeForm": "Führe Ersteinrichtung durch",
+  "status": "pending",
+  "blocks": [],
+  "blockedBy": []
+}

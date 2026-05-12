@@ -1,0 +1,9 @@
+{
+  "id": "4",
+  "subject": "Task 4: Launcher (start.bat + start.ps1)",
+  "description": "start.bat (thin wrapper) und start.ps1 (Junction, API-Key decrypt, PATH, Claude starten, Cleanup) schreiben",
+  "activeForm": "Schreibe Launcher-Scripts",
+  "status": "pending",
+  "blocks": [],
+  "blockedBy": []
+}

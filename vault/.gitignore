@@ -1,0 +1,8 @@
+.obsidian/cache
+.obsidian/workspace.json
+.obsidian/workspace-mobile.json
+.obsidian/plugins/
+.trash/
+*.log
+*.tmp
+~$*.md

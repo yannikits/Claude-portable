@@ -1,0 +1,9 @@
+{
+  "id": "3",
+  "subject": "Task 3: MCP Bridge — src/swarm/mcp_bridge.py",
+  "description": "Create src/swarm/mcp_bridge.py with httpx-based async call() function for RuFlo MCP tools. TDD: tests/test_mcp_bridge.py",
+  "activeForm": "Implementing MCP bridge",
+  "status": "completed",
+  "blocks": [],
+  "blockedBy": []
+}

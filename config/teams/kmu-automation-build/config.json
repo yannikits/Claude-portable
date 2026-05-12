@@ -1,0 +1,19 @@
+{
+  "name": "kmu-automation-build",
+  "description": "KMU Admin Suite n8n workflow implementation — 5 workflows, GitHub repo, PS1 scripts, all supporting files",
+  "createdAt": 1778345281325,
+  "leadAgentId": "team-lead@kmu-automation-build",
+  "leadSessionId": "d8d67682-e81f-4caa-b799-04e058d9a60b",
+  "members": [
+    {
+      "agentId": "team-lead@kmu-automation-build",
+      "name": "team-lead",
+      "agentType": "orchestrator",
+      "model": "claude-sonnet-4-6",
+      "joinedAt": 1778345281325,
+      "tmuxPaneId": "",
+      "cwd": "C:\\Users\\reapertakashi\\.claude-mem\\observer-sessions",
+      "subscriptions": []
+    }
+  ]
+}

@@ -1,0 +1,19 @@
+# Generiert von setup.bat
+bin/node/
+
+# Secrets
+.key
+
+# Vault-Inhalt (eigenes Git-Repo)
+vault/*
+!vault/.gitignore
+
+# Claude-Config: Cache und lokale Daten
+config/cache/
+config/downloads/
+config/file-history/
+config/metrics/
+config/mcp-health-cache.json
+config/mcp-needs-auth-cache.json
+config/settings.local.json
+config/plugins/cache/

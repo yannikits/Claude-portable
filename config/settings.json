@@ -1,0 +1,314 @@
+{
+  "env": {
+    "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1",
+    "CLAUDE_FLOW_V3_ENABLED": "true",
+    "CLAUDE_FLOW_HOOKS_ENABLED": "true"
+  },
+  "attribution": {
+    "commit": "Co-Authored-By: claude-flow <ruv@ruv.net>",
+    "pr": "Generated with claude-flow"
+  },
+  "permissions": {
+    "allow": [
+      "Bash(npx @claude-flow*)",
+      "Bash(npx claude-flow*)",
+      "Bash(node .claude/*)",
+      "mcp__claude-flow__:*"
+    ],
+    "deny": [
+      "Read(./.env)",
+      "Read(./.env.*)"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cmd /c node \"%USERPROFILE%\\.claude\\helpers\\hook-handler.cjs\" pre-bash",
+            "timeout": 5000
+          }
+        ]
+      },
+      {
+        "matcher": "Write|Edit|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cmd /c node \"%USERPROFILE%\\.claude\\helpers\\hook-handler.cjs\" pre-edit",
+            "timeout": 5000
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cmd /c node \"%USERPROFILE%\\.claude\\helpers\\hook-handler.cjs\" post-edit",
+            "timeout": 10000
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cmd /c node \"%USERPROFILE%\\.claude\\helpers\\hook-handler.cjs\" post-bash",
+            "timeout": 5000
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cmd /c node \"%USERPROFILE%\\.claude\\helpers\\hook-handler.cjs\" route",
+            "timeout": 10000
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cmd /c node \"%USERPROFILE%\\.claude\\helpers\\hook-handler.cjs\" session-restore",
+            "timeout": 15000
+          },
+          {
+            "type": "command",
+            "command": "cmd /c node \"%USERPROFILE%\\.claude\\helpers\\auto-memory-hook.mjs\" import",
+            "timeout": 8000
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cmd /c node \"%USERPROFILE%\\.claude\\hooks\\context-mode-cache-heal.mjs\""
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cmd /c py \"%USERPROFILE%\\.claude\\scripts\\knowledge-miner\\miner.py\" mine",
+            "timeout": 30000
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cmd /c py \"%USERPROFILE%\\.claude\\scripts\\knowledge-miner\\src\\hook_context.py\"",
+            "timeout": 5000
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cmd /c node \"%USERPROFILE%\\.claude\\helpers\\hook-handler.cjs\" session-end",
+            "timeout": 10000
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "git status --short && echo Reminder: git push to sync to other PC"
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cmd /c py \"%USERPROFILE%\\.claude\\scripts\\knowledge-miner\\miner.py\" mine",
+            "timeout": 30000
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cmd /c node \"%USERPROFILE%\\.claude\\helpers\\auto-memory-hook.mjs\" sync",
+            "timeout": 10000
+          }
+        ]
+      }
+    ],
+    "PreCompact": [
+      {
+        "matcher": "manual",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cmd /c node \"%USERPROFILE%\\.claude\\helpers\\hook-handler.cjs\" compact-manual"
+          },
+          {
+            "type": "command",
+            "command": "cmd /c node \"%USERPROFILE%\\.claude\\helpers\\hook-handler.cjs\" session-end",
+            "timeout": 5000
+          }
+        ]
+      },
+      {
+        "matcher": "auto",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cmd /c node \"%USERPROFILE%\\.claude\\helpers\\hook-handler.cjs\" compact-auto"
+          },
+          {
+            "type": "command",
+            "command": "cmd /c node \"%USERPROFILE%\\.claude\\helpers\\hook-handler.cjs\" session-end",
+            "timeout": 6000
+          }
+        ]
+      }
+    ],
+    "SubagentStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cmd /c node \"%USERPROFILE%\\.claude\\helpers\\hook-handler.cjs\" status",
+            "timeout": 3000
+          }
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cmd /c node \"%USERPROFILE%\\.claude\\helpers\\hook-handler.cjs\" post-task",
+            "timeout": 5000
+          }
+        ]
+      }
+    ],
+    "Notification": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cmd /c node \"%USERPROFILE%\\.claude\\helpers\\hook-handler.cjs\" notify",
+            "timeout": 3000
+          }
+        ]
+      }
+    ]
+  },
+  "statusLine": {
+    "type": "command",
+    "command": "cmd /c node \"%USERPROFILE%\\.claude\\helpers\\statusline.cjs\""
+  },
+  "enabledPlugins": {
+    "everything-claude-code@everything-claude-code": true,
+    "claude-mem@thedotmack": true,
+    "context-mode@context-mode": true,
+    "codex@openai-codex": true,
+    "cc-gemini-plugin@cc-gemini-plugin": true,
+    "ruflo-core@ruflo": true,
+    "ruflo-swarm@ruflo": true,
+    "ruflo-autopilot@ruflo": true,
+    "ruflo-federation@ruflo": true,
+    "ruflo-workflows@ruflo": true,
+    "superpowers@superpowers-marketplace": true,
+    "ui-ux-pro-max@ui-ux-pro-max-skill": true
+  },
+  "extraKnownMarketplaces": {
+    "everything-claude-code": {
+      "source": { "source": "git", "url": "https://github.com/affaan-m/everything-claude-code.git" }
+    },
+    "thedotmack": { "source": { "source": "github", "repo": "thedotmack/claude-mem" } },
+    "context-mode": { "source": { "source": "github", "repo": "mksglu/context-mode" } },
+    "openai-codex": { "source": { "source": "github", "repo": "openai/codex-plugin-cc" } },
+    "cc-gemini-plugin": { "source": { "source": "github", "repo": "thepushkarp/cc-gemini-plugin" } },
+    "ruflo": { "source": { "source": "github", "repo": "ruvnet/ruflo" } },
+    "superpowers-marketplace": { "source": { "source": "github", "repo": "obra/superpowers-marketplace" } },
+    "ui-ux-pro-max-skill": { "source": { "source": "github", "repo": "nextlevelbuilder/ui-ux-pro-max-skill" } }
+  },
+  "autoUpdatesChannel": "latest",
+  "theme": "dark",
+  "mcpServers": {
+    "github": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-github"],
+      "env": { "GITHUB_PERSONAL_ACCESS_TOKEN": "${GITHUB_PERSONAL_ACCESS_TOKEN}" }
+    }
+  },
+  "claudeFlow": {
+    "version": "3.0.0",
+    "enabled": true,
+    "platform": { "os": "windows", "arch": "x64", "shell": "powershell" },
+    "modelPreferences": {
+      "default": "claude-sonnet-4-6",
+      "routing": "claude-haiku-4-5-20251001"
+    },
+    "agentTeams": {
+      "enabled": true,
+      "teammateMode": "auto",
+      "taskListEnabled": true,
+      "mailboxEnabled": true,
+      "coordination": {
+        "autoAssignOnIdle": true,
+        "trainPatternsOnComplete": true,
+        "notifyLeadOnComplete": true,
+        "sharedMemoryNamespace": "agent-teams"
+      },
+      "hooks": {
+        "teammateIdle": { "enabled": true, "autoAssign": true, "checkTaskList": true },
+        "taskCompleted": { "enabled": true, "trainPatterns": true, "notifyLead": true }
+      }
+    },
+    "swarm": { "topology": "hierarchical-mesh", "maxAgents": 8 },
+    "memory": {
+      "backend": "hybrid",
+      "enableHNSW": true,
+      "learningBridge": { "enabled": true },
+      "memoryGraph": { "enabled": true },
+      "agentScopes": { "enabled": true }
+    },
+    "neural": { "enabled": true },
+    "daemon": {
+      "autoStart": false,
+      "workers": ["map", "audit", "optimize"],
+      "schedules": {
+        "audit": { "interval": "4h", "priority": "critical" },
+        "optimize": { "interval": "2h", "priority": "high" }
+      }
+    },
+    "learning": {
+      "enabled": true,
+      "autoTrain": true,
+      "patterns": ["coordination", "optimization", "prediction"],
+      "retention": { "shortTerm": "24h", "longTerm": "30d" }
+    },
+    "adr": { "autoGenerate": true, "directory": "/docs/adr", "template": "madr" },
+    "ddd": { "trackDomains": true, "validateBoundedContexts": true, "directory": "/docs/ddd" },
+    "security": { "autoScan": true, "scanOnEdit": true, "cveCheck": true, "threatModel": true }
+  }
+}

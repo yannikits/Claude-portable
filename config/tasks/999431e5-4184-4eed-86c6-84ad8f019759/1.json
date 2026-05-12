@@ -1,0 +1,9 @@
+{
+  "id": "1",
+  "subject": "Task 1: Verzeichnisstruktur + Krypto-Scripts",
+  "description": "Ordner claude-portable/ erstellen, bin/encrypt.js und bin/decrypt.js schreiben (AES-256-GCM)",
+  "activeForm": "Erstelle Krypto-Scripts",
+  "status": "completed",
+  "blocks": [],
+  "blockedBy": []
+}

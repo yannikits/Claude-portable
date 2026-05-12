@@ -1,0 +1,9 @@
+{
+  "id": "5",
+  "subject": "Task 5: Extend Tasks API — src/api/tasks.py",
+  "description": "Add _should_swarm() and swarm execution to create_task(). TDD: tests/test_swarm_api.py",
+  "activeForm": "Extending tasks API with swarm",
+  "status": "completed",
+  "blocks": [],
+  "blockedBy": []
+}

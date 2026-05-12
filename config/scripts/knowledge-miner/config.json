@@ -1,0 +1,11 @@
+{
+  "transcripts_path": "~/.claude/projects/{projects_dir}",
+  "obsidian_vault_path": "~/OneDrive - Privatperson/Obsidian/Claude-Knowledge",
+  "claude_memory_path": "~/.claude/projects/{projects_dir}/memory",
+  "data_dir": "~/.claude/scripts/knowledge-miner/data",
+  "similarity_threshold": 0.6,
+  "theme_cluster_threshold": 0.7,
+  "max_context_results": 3,
+  "max_context_chars": 500,
+  "language": "de+en"
+}

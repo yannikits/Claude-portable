@@ -1,0 +1,9 @@
+{
+  "id": "12",
+  "subject": "Task 12: Error-Handler Workflow JSON + Checkliste",
+  "description": "n8n Error-Handler Workflow JSON erstellen. README mit Aktivierungs-Checkliste für alle 5 Workflows aktualisieren. Final-Commit.",
+  "activeForm": "Erstelle Error-Handler + Checkliste",
+  "status": "completed",
+  "blocks": [],
+  "blockedBy": []
+}
