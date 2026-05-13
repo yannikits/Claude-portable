@@ -16,20 +16,29 @@ Write-Host "=== Claude Code Setup ===" -ForegroundColor Cyan
 Write-Host ""
 
 # --- Voraussetzungen pruefen ---
+# Pro Werkzeug eine Liste moeglicher Kommando-Namen (Windows kennt Python oft nur als "py").
 $prereqs = [ordered]@{
-    "git"    = "Git        https://git-scm.com/download/win"
-    "node"   = "Node.js    https://nodejs.org/ (LTS)"
-    "python" = "Python     https://www.python.org/downloads/"
+    "Git"    = @{ Cmds = @("git");                       Hint = "Git        https://git-scm.com/download/win" }
+    "Node"   = @{ Cmds = @("node");                      Hint = "Node.js    https://nodejs.org/ (LTS)" }
+    "Python" = @{ Cmds = @("py", "python", "python3");   Hint = "Python     https://www.python.org/downloads/" }
 }
 
 $allOk = $true
 Write-Host "Voraussetzungen:"
-foreach ($cmd in $prereqs.Keys) {
-    if (Get-Command $cmd -ErrorAction SilentlyContinue) {
-        $ver = (& $cmd --version 2>&1 | Select-Object -First 1)
-        Write-Host "  [OK] $cmd  ($ver)" -ForegroundColor Green
+foreach ($name in $prereqs.Keys) {
+    $entry = $prereqs[$name]
+    $found = $null
+    foreach ($cmd in $entry.Cmds) {
+        if (Get-Command $cmd -ErrorAction SilentlyContinue) {
+            $found = $cmd
+            break
+        }
+    }
+    if ($found) {
+        $ver = (& $found --version 2>&1 | Select-Object -First 1)
+        Write-Host "  [OK] $name ($found)  ($ver)" -ForegroundColor Green
     } else {
-        Write-Host "  [FEHLT] $($prereqs[$cmd])" -ForegroundColor Red
+        Write-Host "  [FEHLT] $($entry.Hint)" -ForegroundColor Red
         $allOk = $false
     }
 }
