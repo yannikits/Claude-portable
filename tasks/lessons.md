@@ -90,3 +90,13 @@ Format pro Eintrag:
 **Lektion:** Wenn eine Library-Wahl ein bestimmtes Output-Format (hier: JSON Schema Draft 2020-12) erfordern könnte, dann VOR der Implementation prüfen welche Libs das nativ liefern. Standard-Lib-Wahlen nach "was nutzen alle?" ohne diese Pflicht-Output-Frage sind eine bekannte Trap.
 
 **Anwendung:** Bei jeder Library-Auswahl fragen: "Was ist das benötigte Output-Format dieser Daten in 6 Monaten?" — wenn die Antwort ein standardisiertes Schema ist (JSON Schema, Protobuf, GraphQL SDL, OpenAPI), nur Libs in die engere Wahl nehmen, die das nativ produzieren.
+
+---
+
+## 2026-05-16 — Vitest statt Jest in ESM/TypeScript-Projekten
+
+**Situation:** Phase 1a hatte Jest in package.json (memory-zementierter Default aus dem 142h-Plan). Beim Aufsetzen von Phase 1b zeigte sich: Jest+ESM+TypeScript braucht `ts-jest/presets/default-esm`, `extensionsToTreatAsEsm`, `--experimental-vm-modules` Node-Flag plus plattformspezifische Cross-Env-Variablen für npm-Scripts. Drei Konfig-Dateien, mehrere Caveats. Vitest hat zero-config ESM+TS-Support, gleiche `describe/it/expect`-API (Drop-in für Jest-Tests), nutzt Vite-Toolchain die wir für Tauri-Frontend ohnehin brauchen werden.
+
+**Lektion:** Für greenfield ESM+TypeScript-Projekte in 2026 ist Vitest die Default-Wahl, nicht Jest. Jest+ESM ist seit Jahren als "experimental" markiert und das Setup-Overhead ist real. Vitest-Migration ist trivial (gleiche API), Vitest-First-Setup ist trivial (10 Zeilen `vitest.config.ts`).
+
+**Anwendung:** Wenn ein Plan eine Library-Default-Wahl trifft die später als suboptimal erkannt wird (hier: Jest), während des Implementings KORREKT entscheiden statt der Plan-Zementierung zu folgen. Plan-Updates dokumentieren (lessons.md + Commit-Begründung), nicht stillschweigend ändern.

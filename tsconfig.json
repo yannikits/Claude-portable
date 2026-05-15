@@ -4,6 +4,7 @@
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
     "lib": ["ES2022"],
+    "types": ["node"],
 
     "strict": true,
     "noUnusedLocals": true,
@@ -25,12 +26,11 @@
 
     "outDir": "./dist",
     "rootDir": "./src",
-    "baseUrl": ".",
     "paths": {
-      "@core/*": ["src/core/*"],
-      "@domains/*": ["src/domains/*"],
-      "@shared/*": ["src/shared/*"],
-      "@cli/*": ["src/cli/*"]
+      "@core/*": ["./src/core/*"],
+      "@domains/*": ["./src/domains/*"],
+      "@shared/*": ["./src/shared/*"],
+      "@cli/*": ["./src/cli/*"]
     }
   },
   "include": ["src/**/*"],
