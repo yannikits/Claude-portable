@@ -17,3 +17,28 @@ config/mcp-health-cache.json
 config/mcp-needs-auth-cache.json
 config/settings.local.json
 config/plugins/cache/
+
+# Node.js / TypeScript build artifacts (Phase 1a+)
+node_modules/
+dist/
+coverage/
+*.tsbuildinfo
+
+# Pino-roll log output (local, per ADR-0013)
+logs/
+*.log
+
+# Husky temporary cache (Phase 1a)
+.husky/_/
+
+# Jest cache
+.jest-cache/
+
+# ruflo / ruvector local DB artifacts
+ruvector.db
+ruvector.db-*
+
+# OS / Editor
+.DS_Store
+Thumbs.db
+*.swp
