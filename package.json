@@ -18,7 +18,7 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "check": "biome check .",
-    "check:fix": "biome check --apply .",
+    "check:fix": "biome check --write .",
     "format": "biome format --write .",
     "ci": "biome ci . && tsc --noEmit && vitest run --coverage",
     "prepare": "husky || true"
@@ -46,7 +46,7 @@
   },
   "lint-staged": {
     "*.{ts,tsx,js,jsx,json}": [
-      "biome check --apply --no-errors-on-unmatched"
+      "biome check --write --no-errors-on-unmatched"
     ]
   }
 }
