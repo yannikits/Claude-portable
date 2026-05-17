@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url';
 const here = dirname(fileURLToPath(import.meta.url));
 const isWin = process.platform === 'win32';
 
-const cmd = isWin ? 'powershell' : 'bash';
+const cmd = isWin ? 'pwsh' : 'bash';
 const args = isWin
   ? ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', join(here, 'build-sidecar.ps1')]
   : [join(here, 'build-sidecar.sh')];
