@@ -217,6 +217,60 @@ Vollständige Roadmap mit Begründung: [docs/future.md](../docs/future.md).
 
 ---
 
+## Post-v1.0.0 — v1.x Roadmap (priorisiert)
+
+v1.0.0 ist GA. Diese Liste sammelt die natürlichen nächsten Schritte für künftige Sessions. Reihenfolge ist nach **Mehrwert × Aufwand** sortiert, nicht nach abhängigkeiten.
+
+### v1.1 — UX-Polish (höchste Priorität, kleinster Aufwand)
+
+- [ ] **Read-Only-Mode-Toast bei `sidecar://failed`** — Banner existiert (`SidecarFailedBanner`), aber das UI deaktiviert keine Schreib-Aktionen. Drag-Drop / Catalog enable-disable / Vault snapshot sollten greyed-out sein wenn `failure !== null`. Pattern: globaler `disabled`-Context aus failure-state ableiten, alle Buttons / Drop-Targets konsumieren. Datei: `gui/src/App.tsx` + per-View.
+- [ ] **Sidecar-Stderr → Renderer-Console** als Tauri-Event statt `eprintln!`. Aktuell forwardet `gui/src-tauri/src/supervisor.rs` Stderr-Lines per `eprintln!` an die Devtools-Konsole — sollte zusätzlich als Tauri-Event emittiert werden damit Renderer eine "Sidecar Logs"-View anzeigen kann. Pattern: `app.emit("sidecar://stderr", { line, level })`. Frontend: optional kleines Drawer-Panel.
+- [ ] **Renderer Smoke-Tests** mit React Testing Library + `happy-dom`. Separater `gui/vitest.config.ts` mit `environment: 'happy-dom'`, mockt `@tauri-apps/api/core invoke` über `vi.mock`. Initial-Coverage: Dashboard ohne Sidecar (LoadingScreen visible), Dashboard mit Sidecar (4 Cards rendern), DragDrop-Event-Handler triggert `inbox.import` einmal. Phase 6h hatte das als deferral markiert.
+- [ ] **`gui/README.md` macOS DMG-Hinweis** verlinkt direkt zu `docs/macos-gatekeeper.md` (aktuell nur erwähnt im todo)
+- [ ] **CI Node-20-Deprecation-Warnings** beheben: `actions/checkout@v4` + `actions/setup-node@v4` laufen noch auf Node 20. Vor 2026-09-16 auf Node-24-Actions upgraden (ggf. `actions/checkout@v5` wenn released; aktuell `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true` als env in jeder job-section).
+
+### v1.2 — echte Impl statt Stubs (mittleres Aufwand)
+
+- [ ] **Chat-View** mit PTY-Streaming. Aktuell stub mit Hint. Architekturentscheidung: claude.exe-Spawn via existierender `domains/claude-bridge` + Pipe nach `xterm.js` im Renderer. Tauri-Side neuer RPC: `chat.spawn(args) -> sessionId`, `chat.write(sessionId, input)`, Tauri-Event `chat.output` mit chunk-data. Achtung: `child.stdin`/`stdout` von tauri-plugin-shell ist line-buffered, für TTY-Streaming brauchts wahrscheinlich `node-pty` als Dependency.
+- [ ] **Secrets.list RPC** + UI. Sidecar exportiert via existierende `SecretsStore`-Façade nur Keys (niemals Values). UI: einfache Liste + "Delete"-Button. Set/Update bleibt CLI-only (vermeidet Value-in-Renderer-RAM).
+- [ ] **Settings-View** wired. `settings.local.json` + `$ANTHROPIC_CONFIG_DIR` als read-only Anzeige im UI. Mutation bleibt CLI-only erst (siehe stub-Hint).
+- [ ] **pino-roll per-day rotation** für Sidecar-Logs unter `%APPDATA%/claude-os/logs/sidecar-YYYY-MM-DD.log`. Phase 6d-tail-Deferral. Aktuell schreibt sidecar nur via `process.stderr`. Setup: pino-roll als Transport, env-var `CLAUDE_OS_LOGS_DIR` mit machinePaths-Fallback.
+
+### v1.3 — Cross-Platform-Härtung
+
+- [ ] **macOS code-signing + notarization** sobald Apple-Dev-Account verfügbar. Workflow `.github/workflows/tauri-bundle.yml` ist forward-prepared für die ENVs (`APPLE_CERTIFICATE`, `APPLE_CERTIFICATE_PASSWORD`, `APPLE_SIGNING_IDENTITY`, `APPLE_ID`, `APPLE_PASSWORD`, `APPLE_TEAM_ID`) — `tauri-apps/tauri-action@v0` picked sie automatisch auf. Nach Aktivierung: `docs/macos-gatekeeper.md` als "deprecated" markieren, Gatekeeper-Hinweis entfernen.
+- [ ] **Windows code-signing** via Authenticode-Cert (Sectigo / DigiCert ~$200/y). SmartScreen-Warnung wird damit minimal — kein "unknown publisher" mehr. Cert in `WINDOWS_CERTIFICATE` (PFX-base64) + `WINDOWS_CERTIFICATE_PASSWORD` Secrets, tauri picked sie via `bundle.windows.certificateThumbprint`.
+- [ ] **Linux AppImage update-mechanism** über `AppImageUpdate` oder zsync. Aktuell muss user manuell re-downloaden. Setup: zsync-File neben dem AppImage im Release, AppImageUpdate-Tool im AppImage gebundled.
+- [ ] **Real cross-platform Phase-3e long-running E2E** auf jedem OS in CI. Aktuell `RUN_SLOW_TESTS=1`-gated, läuft nur lokal/auf demand. Nächtlicher cron-job in `.github/workflows/nightly.yml` mit Matrix × `RUN_SLOW_TESTS=1`.
+
+### v1.4 — MCP-Bundle pro Domain (ADR-0007)
+
+- [ ] **claude-os als MCP-Server**. Aktuell exposed das Sidecar JSON-RPC nur an die Tauri-Shell. ADR-0007 plant zusätzlich MCP-Server-Mode damit externe Tools (z.B. anderes claude-Instanz, custom-agents) die domain-Functions nutzen können. Pattern: zweiter Entry-Point `src/mcp/index.ts` der `RpcDispatcher` wiederverwendet (transport-agnostisch design dank Phase 6c), MCP-spezifischer Transport-Wrapper.
+- [ ] **Tool-Manifest** für jede Domain — `catalog.list / vault.status / agent.list / inbox.import / secrets.list` als MCP-Tools deklariert mit JSON-Schema-Input-Validierung.
+
+### v1.5+ — Plugin-Echo + Bestands-User-Sync
+
+- [ ] **Plugin-binding-Resolution** in `lockCatalog`. Aktuell `bindings: []` als v1-Simplification (Phase 5o Deferral). Capability-Resolver-Integration bringt echte `requires`/`provides`-Graphen-Auflösung pro Lock. Braucht Plugin-Manifest-Reader entweder via Tarball-Peek oder Post-Sync re-scan.
+- [ ] **`--auto-deps`-Flag für catalog install**. Transitive marketplace-resolution. v1 erfordert manuelle Pre-Install der Provider.
+- [ ] **Skill-Pack-Import** als bundled marketplace. Aktuell `github:`-Source als Workaround.
+- [ ] **claude-portable v0.x Auto-Migrate** als CLI-Subcommand statt nur Doc. `claude-os migrate --from-portable E:\claude-portable` läuft die 7 Schritte aus `docs/migration-from-portable.md` automatisch ab. Inkl. robocopy + doctor --migrate-git-metadata + secrets-prompt-Loop.
+
+### Wartung (laufend)
+
+- [ ] **Dependency-Bumps** monatlich via `npm-check-updates` + cargo update — CI matrix catches breakage. Major-Bumps (Vite, React, Tauri, Rust-MSRV) per separate PR mit migration-notes.
+- [ ] **lessons.md cross-session learnings** weiter pflegen — alle non-obvious patterns dokumentieren (siehe bestehende 11 Einträge als Vorbild).
+- [ ] **ADR-Anbindung**: jede v1.x-Section die Architektur-Entscheidungen trifft, einen ADR in `docs/architecture/adr/0015+` als Folgeschritt.
+
+### Nicht aus v1-Out-of-Scope übernehmen (bleiben v2+):
+
+- Multi-User-Betrieb (mehrere Accounts/Installation)
+- Tiefe OS-Integration (Autostart, Systray, Treiber)
+- Konfliktlösungs-UI für Vault-Merge (v1 + v1.x bleiben Hard-Fail mit Doctor-Hint)
+- iCloud Drive als Cloud-Provider
+- Eigene LLM-Hosting-Infrastruktur (permanent)
+
+---
+
 ## Top-Risiken
 
 | Prio | Risiko | Mitigation |
