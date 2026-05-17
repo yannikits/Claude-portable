@@ -77,11 +77,18 @@ jobs:
         if: matrix.label != 'macos-universal'
         run: npm run sidecar:build
 
-      - name: build sidecar binaries (macOS universal — x86_64 + aarch64)
+      - name: build sidecar binaries (macOS universal — x86_64 + aarch64 + lipo)
         if: matrix.label == 'macos-universal'
         run: |
           SIDECAR_TRIPLE=x86_64-apple-darwin npm run sidecar:build
           SIDECAR_TRIPLE=aarch64-apple-darwin npm run sidecar:build
+          # Tauri --target universal-apple-darwin expects a single pre-lipo'd
+          # binary at binaries/claude-os-sidecar-universal-apple-darwin
+          lipo -create \
+            -output gui/src-tauri/binaries/claude-os-sidecar-universal-apple-darwin \
+            gui/src-tauri/binaries/claude-os-sidecar-x86_64-apple-darwin \
+            gui/src-tauri/binaries/claude-os-sidecar-aarch64-apple-darwin
+          file gui/src-tauri/binaries/claude-os-sidecar-universal-apple-darwin
 
       - name: tauri build
         uses: tauri-apps/tauri-action@v0
