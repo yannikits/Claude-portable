@@ -31,7 +31,7 @@ cargo check
 | 6e | Vite + React + TS Frontend | shipped |
 | 6f | 7 Views (4 wired, 3 stubs) | shipped |
 | 6g | Drag-Drop + inbox/outbox Watcher | shipped |
-| 6h | Bundling (MSI/DMG/AppImage) | pending |
+| 6h | Bundling (MSI/DMG/AppImage) + E2E | shipped |
 
 ## Sidecar bauen (Phase 6b)
 
@@ -52,8 +52,30 @@ Output landet unter `gui/src-tauri/binaries/` mit Triple-Suffix, der Tauris `bun
 
 `@napi-rs/keyring` (Phase 3d Secrets-Store) hat `.node`-Bindings, die `pkg` nicht in den V8-Snapshot embedded. Mitigation: Sidecar setzt `CLAUDE_OS_SECRETS_BACKEND=file` (Force `EncryptedFileStore`-Fallback) — keyring-API umgangen. Wird in Phase 6d beim Sidecar-Spawn als Env-Var injiziert. Alternative (später): `--public-packages "@napi-rs/keyring"` + `.node`-Files neben dem Binary ausliefern. Für v1 ist der File-Fallback sauber & ausreichend.
 
-## Deferrals
+## Bundle bauen (Phase 6h)
 
-- Icons (`icons/*.png`, `*.ico`) shippt Phase 6h zusammen mit dem Bundling-Pass. `cargo check` braucht keine Icons; `cargo build --release` auf Windows braucht eine `.ico` für die `winres`-Embedding — wird in 6h nachgezogen.
-- Frontend-Dist (`gui/src/index.html`) shippt Phase 6e. `tauri dev` braucht den Vite-Server (läuft nicht in 6a). `tauri build` braucht `frontendDist`; ist erst ab 6h relevant.
-- `tauri.conf.json bundle.externalBin` wired Phase 6d wenn der Sidecar tatsächlich spawned.
+```powershell
+# 1. Sidecar binary (im Repo-Root)
+npm run sidecar:build
+
+# 2. Tauri bundle (Win MSI / macOS DMG / Linux AppImage)
+cd gui
+npm install
+npm run tauri:build
+```
+
+`tauri:build` führt `npm run build` (Vite → `gui/dist/`) und `cargo build --release` aus, dann packt die Plattform-spezifische Installer. Output unter `gui/src-tauri/target/release/bundle/`.
+
+### Icons regenerieren
+
+```powershell
+npx tauri icon src-tauri/icons/source.png
+```
+
+`source.png` (512×512, brand-color background mit "C") wird zu allen Platform-Variants expanded (32x32.png, 128x128.png, 128x128@2x.png, icon.icns, icon.ico, Square*Logo.png) und in `src-tauri/icons/` geschrieben.
+
+### Verifikation
+
+- `cargo check` (rustup vorausgesetzt)
+- `cargo test` (5 supervisor-tests + 2 DropDedup-tests)
+- Vom Repo-Root: `RUN_SLOW_TESTS=1 npx vitest run tests/sidecar/restart.e2e.test.ts` (real `node dist/sidecar/index.js`, ping → stop → respawn → ping, asserts ≤5s)
