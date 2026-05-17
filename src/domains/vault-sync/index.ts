@@ -17,3 +17,10 @@ export {
   type SchedulerOpts,
   type SchedulerStatus,
 } from './scheduler.js';
+export {
+  applyConflictResolution,
+  isPushConflictError,
+  type ConflictMode,
+  type ConflictResolutionResult,
+  type ConflictResolutionState,
+} from './conflict-policy.js';
