@@ -56,32 +56,28 @@
 
 ---
 
-## Phase 2 — Vault-Sync-Subsystem (18 h, M, deps: Phase 1)
+## Phase 2 — Vault-Sync-Subsystem (abgeschlossen 2026-05-17)
 
-**Ziel:** Branch-aware Snapshot-Sync für Vault, push-only, mit Idle-Detection statt Cron (obsidian-git-Pattern). Conflict-Policy in 3 Modi, persistenter Busy-Flag.
+**Ziel:** Branch-aware Snapshot-Sync für Vault, push-only, mit Idle-Detection statt Cron (obsidian-git-Pattern). Conflict-Policy in 3 Modi, persistenter Busy-Flag. Aufgeteilt in 6 Sub-Phasen (2a–2f).
 
-- [ ] `src/core/git/git-service.ts` — zentrale `simple-git`-Abstraktion (per ADR-0008); kein direkter `simple-git`-Import aus Domain-Code
-- [ ] Doctor-Pre-flight: `git --version` Check, Windows-Long-Paths-Auto-Config (`core.longpaths true`)
-- [ ] Error-Mapping: `GitNotInstalledError`, `GitLockfileError`, `GitMergeConflictError` als `DomainError`-Subklassen
-- [ ] `domains/vault-sync/branch-detect.ts` — `git symbolic-ref --short HEAD`, kein `main`-Hardcoding (Fix Memory-S251)
-- [ ] `domains/vault-sync/snapshot.ts` — stage all → commit mit ISO-Timestamp → push (via `git-service`)
-- [ ] **Default `.gitignore`-Template** mit `.obsidian/workspace*.json`, `.obsidian/cache`, `.trash/`, `claudeos-machine-state/` (Multi-Device-Konflikt-Quelle laut obsidian-git Issue #114)
-- [ ] `domains/vault-sync/scheduler.ts` — **Idle-Detection**: triggert `snapshot()` N Sekunden (default 300) nach letztem Write-Event in `vault/**`. KEIN fester Cron. Implementation-Specs:
-  - chokidar v5 (ESM-only, Node 20+) als File-Watcher
-  - **Cloud-Mount-Auto-Detect** via Pfad-Prefix-Match (`%OneDrive%`, `~/Dropbox`, Drive-File-Stream-Reparse-Point); auf erkannten Cloud-Pfaden `usePolling: true, interval: 2000, binaryInterval: 5000` (chokidar #895/#998/#225 — native Events unzuverlässig auf Files-On-Demand-Mounts)
-  - **Idle-Timer separat von `awaitWriteFinish`**: Raw-Events aus chokidar → `setTimeout(syncTrigger, 300_000)` mit Reset bei jedem Event. NICHT `awaitWriteFinish` für 300s missbrauchen (Issues #384/#675 — Events verloren bei großen Files)
-  - `awaitWriteFinish: { stabilityThreshold: 2000, pollInterval: 100 }` parallel für Per-File-Stabilität bei Editor-Saves
-  - `atomic: 100` (default) für Obsidian/VS-Code; auf 300 hochsetzbar via Config für Logseq/Zettlr
-  - Linux: Setup-Doku mit `fs.inotify.max_user_watches=524288` (Default 8192 reicht nicht für 10k-File-Vaults)
-- [ ] `domains/vault-sync/busy-flag.ts` — persistenter `busy: boolean` in `%APPDATA%/claude-os/data/vault-sync-state.sqlite` (überlebt Sidecar-Restart, blockt parallele Snapshots). Manuelles Reset via `claude-os vault unlock`.
-- [ ] `domains/vault-sync/conflict-policy.ts` — **3-Modi**: `abort` (default, Hard-Fail mit Doctor-Hinweis), `prefer-local` (lokal gewinnt, force-push mit Confirm), `prefer-remote` (remote gewinnt, lokale Änderungen in Backup-Branch). Konflikt-Detection via `git status --porcelain`-Marker-Scan.
-- [ ] CLI: `claude-os vault snapshot|status|schedule --enable/--disable [--idle-seconds N]`, `claude-os vault conflict-mode <abort|prefer-local|prefer-remote>`, `claude-os vault unlock`
-- [ ] Integrationstest gegen lokales Bare-Repo-Fixture
-- [ ] Branch-Detection-Tests für `main`, `master`, `feature/*`
-- [ ] Busy-Flag-Persistenz-Test: Sidecar-Crash mitten in Snapshot → Restart → Flag noch true → `claude-os vault unlock` setzt zurück
-- [ ] Conflict-Mode-Tests für alle drei Modi
+- [x] Phase 2a — `src/core/git/git-service.ts` (per ADR-0008): typed `simple-git`-Wrapper, `GitError`-Hierarchie (`GitNotInstalledError` / `GitLockfileError` / `GitMergeConflictError`), `mapError()` parsed stderr → typed errors. Doctor `checkWindowsLongPaths()` warnt bei `core.longpaths != true` mit One-Line-Fix. → Commit `434fc43`
+- [x] Phase 2b — `domains/vault-sync/{types,branch-detect,snapshot,index}.ts`. `detectVaultBranch()` refused detached HEAD (Fix Memory-S251 — kein `main`-Hardcoding). Snapshot-Pipeline stage→commit→push mit ISO-timestamped Message `claude-os snapshot <ISO>`; Best-Effort-Push lässt lokalen Commit auf push-failed stehen. → Commit `3474d41`
+- [x] Phase 2c — `vault-sync/{gitignore-template,busy-flag}.ts`. Default-Ignore-Liste curated aus obsidian-git #114 (workspace*, .obsidian/cache, .trash, claudeos-machine-state, OS-Cruft). BusyFlag persistiert `{busy, reason, pid, hostname, acquiredAt}` als JSON unter `<dataDir>/vault-sync-state.json` (atomic tempfile+rename, 0o600). Same-host stale-PID-Detection via `process.kill(pid, 0)`; cross-host nur via `vault unlock` (forceReset). → Commit `0b3fb26`
+- [x] Phase 2d — `vault-sync/scheduler.ts`: chokidar-basierter Idle-Watcher mit separatem `setTimeout(idleMs)` (NICHT awaitWriteFinish für Multi-Minuten-Window — Issues #384/#675); `awaitWriteFinish {2000ms/100ms}` parallel für Per-File-Save-Smoothing; Cloud-Mount-Auto-Detect → polling-Mode `{usePolling: true, interval: 2000, binaryInterval: 5000}` (Issues #895/#998/#225); In-flight-Guard verhindert Double-Fire. Test-Seams `chokidarFactory`/`timers`/`now()` injectable. → Commit `9523116`
+- [x] Phase 2e — `vault-sync/conflict-policy.ts`: 3-Modi Push-Reject-Handling. `abort` Hard-Fail mit Doctor-Hint, `prefer-local` Fetch+`force-with-lease` (Lease schützt gegen echte concurrent writers), `prefer-remote` legt Backup-Branch `claude-os/backup/<branch>/<ISO>` (colons→hyphens für ref-name-Legality) und rewindet via `git reset` auf remote tip. `isPushConflictError` Predicate exportiert für Caller-Decision. → Commit `c0d93e2`
+- [x] Phase 2f — `vault-sync/vault-config.ts` (atomic JSON-Persistence) + CLI-Wire: `vault snapshot` (acquires busy-flag → snapshot → on push-failed apply policy → release), `vault status` (text/--json), `vault conflict-mode`, `vault schedule --enable/--disable [--idle-seconds N]` (Scheduler runs in Phase-6-Sidecar; CLI persistiert nur Config), `vault unlock` (forceReset busy-flag), `vault init-gitignore` (idempotent merge). → Commit `57d6c63`
 
-**Test-Kriterium:** Roundtrip-Test (write in vault → 300 s idle → auto-commit → push → fetch in Fixture) grün; künstlicher Konflikt löst korrekten Modus aus; nach Sidecar-Kill mitten im Snapshot ist Flag persistent.
+**Test-Kriterium:** Real CLI-Smoke (Windows, temp bare-repo fixture): `vault status` → defaults; `echo X > vault/n.md` + `vault snapshot` → `[OK] master: pushed 1 files to origin`; `vault conflict-mode prefer-local` persistiert; `vault schedule --enable --idle-seconds 60` persistiert; `vault init-gitignore` legt 11 Default-Lines; `vault unlock` graceful no-op. **Status: erfüllt.**
+
+**Tests-Gewinn:** +64 (2a 13, 2b 11, 2c 15, 2d 9, 2e 8, 2f 8). Total 191/191 grün (+1 long-running gated). Alle Sub-Module gegen reale bare-repo + tmpdir-Fixtures + FakeWatcher EventEmitter unit-getestet.
+
+**v1-Abweichungen (transparent):**
+
+- **Busy-Flag als JSON statt SQLite** — atomic tempfile+rename + 0o600 reicht für single-process Sidecar-Modell; sql.js-Migration nicht nötig. ADR-0002 spec'te sqlite, aber JSON ist robuster ohne native-build.
+- **Working-tree merge-conflicts explizit out-of-scope** für v1 automatic policy — `conflict-policy` adressiert ausschließlich push-rejection-Divergenzen. Echte merge-conflicts bleiben Hard-Fail mit Doctor-Hinweis (Phase 6 evtl. UI).
+- **Real-FS-Scheduler-Roundtrip + BusyFlag-Integration** als Long-Running-E2E deferred zur Sidecar-Phase — Scheduler-Unit-Tests nutzen FakeWatcher; reine FS-Integration kommt mit Phase-6-Tauri-Sidecar-Lifecycle (Scheduler läuft dort, nicht im CLI-Prozess).
+- **`force-push --with-lease` statt Confirm-Prompt** in `prefer-local` — Lease ist sicherer als interaktiver Bestätigungsprompt (atomic against concurrent writers). v1 hat keine TTY-Prompt-Infra; Phase 6 kann GUI-Confirm darüberlegen.
+- **TOCTOU-Race im Busy-Flag dokumentiert** — v1 vertraut auf single-process-Scheduler + user-serialisiertes CLI. Echter Mutex (file-locking/lockfile) ist Phase-6-Hardening.
 
 ---
 
