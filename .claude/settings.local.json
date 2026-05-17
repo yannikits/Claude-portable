@@ -13,7 +13,12 @@
       "Bash(chmod +x claude-os)",
       "Bash(./claude-os.cmd --version)",
       "Bash(./claude-os --version)",
-      "Bash(./claude-os.cmd doctor *)"
+      "Bash(./claude-os.cmd doctor *)",
+      "Bash(npm install *)",
+      "Bash(echo \"exit=$?\")",
+      "Bash(echo \"exit-of-no-flag=$?\")",
+      "Bash(git tag -a v0.1.0-alpha.2 -m ' *)",
+      "Bash(git tag -a v0.1.0-alpha.3 -m ' *)"
     ]
   },
   "enableAllProjectMcpServers": true,
