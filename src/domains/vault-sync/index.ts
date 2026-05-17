@@ -24,3 +24,9 @@ export {
   type ConflictResolutionResult,
   type ConflictResolutionState,
 } from './conflict-policy.js';
+export {
+  loadVaultConfig,
+  updateVaultConfig,
+  DEFAULT_VAULT_CONFIG,
+  type VaultConfig,
+} from './vault-config.js';
