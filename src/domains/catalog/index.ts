@@ -38,3 +38,27 @@ export {
   cleanTarballCache,
   type CleanResult,
 } from './cache-cleaner.js';
+export {
+  CapabilityParseError,
+  capabilityToString,
+  compareVersions,
+  parseCapability,
+  satisfies,
+  type Capability,
+  type CapabilityKind,
+  type ComparisonOp,
+  type VersionConstraint,
+} from './capability.js';
+export {
+  AmbiguousProviderError,
+  CyclicDependencyError,
+  MissingProviderError,
+  ResolverError,
+  VersionConflictError,
+  resolveCapabilities,
+  type Catalog,
+  type PluginManifest,
+  type ResolutionBinding,
+  type ResolutionError,
+  type ResolutionResult,
+} from './capability-resolver.js';
