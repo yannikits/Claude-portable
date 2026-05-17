@@ -154,7 +154,7 @@
 - **Capability-Resolver Version-Constraints** beschränkt auf `>=` / `>` / `<=` / `<` / `=` (keine `^` / `~`-Ranges in v1).
 - **Lazy-Activation + Uninstall-Hooks** deferred zur Phase-6-Sidecar-Integration.
 - **`--auto-deps` flag** + transitive marketplace resolution deferred — v1 erfordert manuelle Pre-Installation der Provider.
-- **catalog.json / catalog.lock.json Schema + Validator deferred** zur Phase-6-Sidecar-Integration. `catalog list/uninstall/enable/disable/update/lock/sync` zeigen Phase-6-Pointer.
+- ~~**catalog.json / catalog.lock.json Schema + Validator deferred** zur Phase-6-Sidecar-Integration. `catalog list/uninstall/enable/disable/update/lock/sync` zeigen Phase-6-Pointer.~~ → **erledigt 2026-05-17 Phase 5i** (Commit `cff079c`). `src/domains/catalog/{schema,catalog-store}.ts` + 33 Tests; `catalog list` jetzt real verdrahtet (text + `--json`), liest `<root>/config/catalog.json` + `catalog.lock.json` mit `assertValid`-Integration. Mutation-Subcommands (`uninstall/enable/disable/update/lock/sync`) bleiben Phase-6-Sidecar-Hint bis Resolver-zu-Disk-Pipeline kommt (Phase 5j oder Phase 6).
 - **Skill-Pack-Import** als bundled marketplace deferred — User kann via direkter `github:`-Source nutzen.
 
 ---
