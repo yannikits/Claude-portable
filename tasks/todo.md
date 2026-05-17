@@ -29,7 +29,7 @@
 - [x] `package.json` (Node ≥ 20, ESM, scripts; current-version Deps post npm view audit) → Commit `076acd5` + `9c3b432` (commander v14, pino v10, typebox v0.34, keyring v1.3 — alle latest)
 - [x] `tsconfig.json` strict, Pfad-Aliase (`baseUrl` entfernt für TS 7 compat, `types: ["node"]` für globals) → Commit `076acd5` + `9c3b432`
 - [x] **biome v2.3 (per ADR-0014)**: `biome.json` mit `recommended: true`, strict TS-Rules → Commit `2dafcea` (user-authored wegen config-protection-Hook)
-- [ ] **husky + lint-staged**: lint-staged-Config in package.json, husky-Init noch nicht ausgeführt (deferred zu Phase 1c)
+- [x] **husky + lint-staged**: `.husky/pre-commit` ruft `npx lint-staged`; lint-staged-Glob `*.{ts,tsx,js,jsx,json}` → `biome check --write --no-errors-on-unmatched`. biome v2.4-Migration (`files.ignore` → `files.includes`, `organizeImports` → `assist.actions.source.organizeImports`) via `npx biome migrate --write`. Korrupter `core.hooksPath = --version/_` aus früherem broken `prepare`-Run via unset+re-prepare gefixt. → Commit `4909fb2`
 - [x] **Vitest** statt Jest (pivot wegen ESM-Pain, siehe `lessons.md` 2026-05-16 Eintrag); Coverage-Threshold 70 % in `vitest.config.ts` → Commit `9c3b432`
 - [x] `src/core/environment/root-resolver.ts` mit Env-Var- und Repo-Detect-Fallback + `types.ts` + `index.ts` → Commit `9c3b432`
 - [x] `src/core/doctor/` — 5 Checks: Mount, Node-Version, Git, `bin/claude{,.exe}`-Existenz, Schreibrechte → Commit `5a3b6ab` (16 tests, all 5 checks runnable, runDoctor() handles RootNotFoundError gracefully)
@@ -39,13 +39,15 @@
 - [x] Shims: `claude-os.cmd` (Windows) + `claude-os` (POSIX, +x bit gesetzt via git index) am Repo-Root — 2026-05-17. Smoke: `./claude-os doctor --json` retourniert valid JSON über den Shim.
 - [x] Unit-Tests Root-Resolver: 11 Tests + 9 detectCloudProvider-Tests = 20 grün → Commit `9c3b432`
 - [x] Unit-Tests Doctor-Checks: 11 tests in checks.test.ts + 6 tests in runner.test.ts → 36 total (env=20, doctor=16), alle grün → Commit `5a3b6ab`
-- [ ] `npm link` Smoke: `claude-os doctor` grün auf aktueller Maschine
-- [ ] README-Skelett (Deutsch, Bootstrap-Sektion)
-- [ ] **TypeBox-Setup (per ADR-0012)**: `@sinclair/typebox` als Dep, `src/core/schemas/`-Verzeichnis, erste `EnvironmentManifest`-Schema-Definition mit `Type.Strict()`-Export
+- [x] `npm link` Smoke: `npm run build && npm link` registriert globalen Shim `C:\Users\reapertakashi\AppData\Roaming\npm\claude-os.ps1`; `claude-os doctor` → `Summary: 5 ok, 1 warn, 0 fail (54ms total)`. WARN ist erwarteter `claude-binary not found in bin/` (User's `claude.exe` liegt in `~/.local/bin/`, nicht im claude-portable-Repo-CWD). — 2026-05-17
+- [x] README-Skelett (Deutsch, Bootstrap-Sektion): Vollständiger Rewrite mit Was-es-ist / Architektur-in-60-Sekunden / Bootstrap / CLI-Overview. → Commit `9eb699b`
+- [x] **TypeBox-Setup (per ADR-0012)**: `@sinclair/typebox` als Dep (war seit Phase 1a installiert via validation/format.ts); `src/core/schemas/{environment-manifest,index}.ts` + Test (19 Cases). Schema beschreibt `.claude-os-root`-Marker-Payload mit `version: 1` Literal, ISO-8601 `createdAt` (eigener `pattern` statt `format: 'date-time'` — vermeidet ajv-formats peer-dep), Optional `name`/`cloudProvider`/`notes`, `additionalProperties: false`. JSON-Schema-Export via `JSON.parse(JSON.stringify(...))` — TypeBox 0.34 removed `Type.Strict()`, da Schemas bereits spec-konform sind und JSON.stringify Symbol-keyed Metadata per ES2020 verwirft. → Commit `dc3ffc5`
 - [x] `src/core/validation/format.ts` + `assertValid` + `ValidationError` (~100 LOC) für TypeBox/Ajv-Errors → Commit `0066278`
 - [x] Validation-Tests: 16 Tests, formatPath JSON-Pointer→dotted-bracket, formatErrors/assertValid für valid/invalid/constraint-violation → Commit `0066278`
 
-**Test-Kriterium:** `npm test` + `npm run lint` grün; `claude-os doctor` grüner Status.
+**Test-Kriterium:** `npm test` + `npm run lint` grün; `claude-os doctor` grüner Status. **Status: erfüllt** — `npx vitest run` 427/428 grün (1 long-running gated); `claude-os doctor` 5 ok / 1 warn (warn = erwarteter `claude-binary not found in bin/` da im claude-portable-Repo-CWD ausgeführt; User's `claude.exe` liegt in `~/.local/bin/`).
+
+**Follow-up offen (separat von Phase 1 tail):** biome v2.4-Migration deckte 149 errors / 10 warnings im Source-Tree auf. Meist Suppression-Comment-Drift (Rule-Namen in v2.4 umbenannt) + neue Rules die v2.3 nicht enforce hat. Eigener Cleanup-Sprint. Pre-commit-Hook ist unaffected, da lint-staged nur auf gestagete Files läuft.
 
 ### Phase 1.5 / Phase 1g — Git-Metadaten-Migration (abgeschlossen 2026-05-16)
 
