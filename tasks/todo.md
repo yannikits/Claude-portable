@@ -163,26 +163,16 @@
 
 ## Phase 6 — Tauri-GUI (26 h, H, deps: Phase 3+5)
 
-**Ziel:** Desktop-App-Shell mit Claude-Desktop-Look-and-Feel (ADR-0001, ADR-0006).
+**Ziel:** Desktop-App-Shell mit Claude-Desktop-Look-and-Feel (ADR-0001, ADR-0006). Aufgeteilt in 8 Sub-Phasen (6a–6h).
 
-- [ ] `gui/src-tauri/` — Rust-Shell mit Tauri-Config
-- [ ] **Long-lived Node-Sidecar-Lifecycle (per ADR-0006)**: `Command::sidecar().spawn()` beim App-Start, JSON-RPC via stdin/stdout (`kkrpc` als Lib), `ping`-Health-Check alle 30 s, 3-Strikes-Exponential-Backoff (1 s / 4 s / 16 s) bei Crash. Nach 3 Fails: Read-Only-Modus + Error-Toast.
-- [ ] **`$TARGET_TRIPLE`-Suffix-Konvention** für Sidecar-Binaries (Hoppscotch-Pattern): `claude-os-sidecar-aarch64-apple-darwin`, `claude-os-sidecar-x86_64-pc-windows-msvc`, etc. Build-Script in `scripts/build-sidecar.{ps1,sh}`.
-- [ ] Rust-Seite: minimale JSON-RPC-Layer auf `tokio::io::AsyncBufReadExt::lines` (~100 LOC, kein `kkrpc-rs`)
-- [ ] Node-Seite: `kkrpc`-Registry mit `<domain>.<operation>`-Methodennamen, Domain-Code bleibt transport-agnostisch
-- [ ] Graceful-Shutdown: `app.on_window_event(Close)` → `shutdown`-RPC → 2 s wait → SIGTERM → 2 s wait → SIGKILL
-- [ ] `gui/src/` — Vite + React + TypeScript
-- [ ] Tauri-Sidecar-Konfiguration für Node-Sidecar (long-lived) und für `bin/claude.exe` (per Command spawn, kurzlebig)
-- [ ] Views: Dashboard, Chat-Wrapper, Settings, Catalog, Vault-Status, Agent-Run-Browser, Secrets
-- [ ] **Drag-and-Drop via `webview.onDragDropEvent()`** — Multi-File nativ; **Dedup pro `event.id`** gegen [Tauri Bug #14134](https://github.com/tauri-apps/tauri/issues/14134). Auto-scoped Pfade — keine fs-Allowlist nötig.
-- [ ] File-Watcher `inbox/` + `outbox/` via `chokidar` im Node-Sidecar
-- [ ] Drag-and-Drop in Renderer schreibt nach `inbox/`
-- [ ] Sidecar-Logs nach `%APPDATA%/claude-os/logs/sidecar-YYYY-MM-DD.log` (per ADR-0002 Pfad-Schema), Stderr zusätzlich in Renderer-Konsole
-- [ ] Loading-Spinner während Sidecar-Init (~500 ms nach App-Start nicht verfügbar)
-- [ ] `tauri.conf.json` Targets: Win MSI, macOS DMG (unsigniert v1), Linux AppImage
-- [ ] Renderer-Smoke-Tests (React Testing Library)
-- [ ] Sidecar-Restart-E2E-Test: kill via Task-Manager → Restart-within-5 s, RPC weiterhin funktional
-- [ ] Drag-Drop-Dedup-Test: simulierter doppelter Event mit gleicher `event.id` → nur ein Inbox-Schreibvorgang
+- [x] **Phase 6a — Tauri-Rust-Shell-Scaffold** (2026-05-17). `gui/src-tauri/` mit Cargo.toml (Tauri 2.x, opt-level=s release-profile), `build.rs` (`tauri_build::build()`), `src/main.rs` thin entry, `src/lib.rs` mit `tauri::Builder::default()` + leerem `.setup()` (sidecar-spawn folgt in 6d), `tauri.conf.json` v2 (identifier `net.iteenschmiede.claude-os`, window 1280×800, bundle-targets msi/dmg/appimage), `capabilities/default.json` (Tauri v2 enforced permission system, `core:default`-Baseline). `gui/package.json` mit `@tauri-apps/cli` + `@tauri-apps/api`. `gui/.gitignore` für `src-tauri/target/`, `node_modules/`, `dist/`, `binaries/`. `gui/README.md` mit Voraussetzungen + `cargo check`-Verifikationsschritt. **Deferrals**: Icons (6h), `gui/src/index.html` Vite-Frontend (6e). → Commit pending.
+- [ ] **Phase 6b — Sidecar-Binary-Build-Script** mit `$TARGET_TRIPLE`-Suffix-Konvention (Hoppscotch-Pattern): `claude-os-sidecar-aarch64-apple-darwin`, `claude-os-sidecar-x86_64-pc-windows-msvc.exe`, etc. `scripts/build-sidecar.{ps1,sh}` bundlet `src/cli/index.ts`-Output zu Single-File-Node-Binary via `@yao-pkg/pkg` oder Node SEA.
+- [ ] **Phase 6c — JSON-RPC-Bridge** (Rust + Node). Rust: minimale JSON-RPC-Layer auf `tokio::io::AsyncBufReadExt::lines` (~100 LOC, kein `kkrpc-rs`) in `src-tauri/src/rpc.rs`. Node: `kkrpc`-Registry mit `<domain>.<operation>`-Methodennamen in `src/sidecar/rpc.ts`, Domain-Code bleibt transport-agnostisch.
+- [ ] **Phase 6d — Sidecar-Lifecycle + Health-Check** (per ADR-0006). `Command::sidecar().spawn()` beim App-Start in `lib.rs::run().setup()`, `ping`-Health-Check alle 30 s, 3-Strikes-Exponential-Backoff (1 s / 4 s / 16 s) bei Crash. Nach 3 Fails: Read-Only-Modus + Error-Toast. Graceful-Shutdown: `app.on_window_event(Close)` → `shutdown`-RPC → 2 s wait → SIGTERM → 2 s wait → SIGKILL. Sidecar-Logs nach `%APPDATA%/claude-os/logs/sidecar-YYYY-MM-DD.log` (per ADR-0002), Stderr zusätzlich in Renderer-Konsole. `tauri.conf.json` Sidecar-Konfig wired.
+- [ ] **Phase 6e — Vite + React + TS Frontend-Skeleton**. `gui/src/` mit Vite + React 18 + TypeScript. Router (react-router), Tauri JS API Client-Wrapper, Layout-Shell mit Sidebar-Nav. Loading-Spinner während Sidecar-Init (~500 ms Grace).
+- [ ] **Phase 6f — 7 Views** (Dashboard, Chat-Wrapper, Settings, Catalog, Vault-Status, Agent-Run-Browser, Secrets). Jeder Screen wired auf RPC-Calls zum Sidecar (`catalog.list`, `vault.status`, `agent.list`, etc.). Claude-Desktop-Look-and-Feel per ADR-0001/0006.
+- [ ] **Phase 6g — Drag-Drop + inbox/outbox Watcher**. `webview.onDragDropEvent()` mit **Dedup pro `event.id`** gegen [Tauri Bug #14134](https://github.com/tauri-apps/tauri/issues/14134). Auto-scoped Pfade — keine fs-Allowlist nötig. File-Watcher `inbox/` + `outbox/` via `chokidar` im Node-Sidecar. Drag-and-Drop in Renderer schreibt nach `inbox/`.
+- [ ] **Phase 6h — Bundling + E2E** (Win MSI, macOS DMG unsigniert, Linux AppImage). Icons (`icons/icon.{png,ico,icns}`) shippen + `tauri.conf.json bundle.icon[]` voll. Renderer-Smoke-Tests (React Testing Library). Sidecar-Restart-E2E-Test: kill via Task-Manager → Restart-within-5 s, RPC weiterhin funktional. Drag-Drop-Dedup-Test: simulierter doppelter Event mit gleicher `event.id` → nur ein Inbox-Schreibvorgang.
 
 **Test-Kriterium:** GUI startet; Drag-and-Drop landet in `inbox/`; Skill-Liste rendert ≥ 1 Eintrag; Sidecar-Kill löst Auto-Recovery in <5 s aus; doppelte Drag-Events werden dedupt.
 

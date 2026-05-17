@@ -1,0 +1,19 @@
+{
+  "name": "claude-os-gui",
+  "version": "0.1.0-alpha.5",
+  "private": true,
+  "type": "module",
+  "description": "Tauri desktop shell for claude-os (Phase 6).",
+  "scripts": {
+    "dev": "echo Phase 6e wires Vite dev server; for now run `npm run tauri:dev` after Rust toolchain install.",
+    "tauri": "tauri",
+    "tauri:dev": "tauri dev",
+    "tauri:build": "tauri build"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2.4.0"
+  },
+  "dependencies": {
+    "@tauri-apps/api": "^2.4.0"
+  }
+}
