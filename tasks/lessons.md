@@ -113,6 +113,46 @@ Format pro Eintrag:
 
 ---
 
+## 2026-05-17 — `npm view <pkg> versions` BEVOR Versionen in package.json gepinnt werden
+
+**Situation:** Phase 6h `npm install` failed: `No matching version found for @tauri-apps/plugin-shell@^2.4.0`. Ich hatte ^2.4 auf der Annahme gepinnt dass die JS-Companion-Pakete die gleiche Major-Version wie der Rust-Plugin (`tauri-plugin-shell = "2"`) tracken. Tatsächlich ist `@tauri-apps/plugin-shell` bei 2.3.5 (zwei Minor-Bumps hinterher), während `@tauri-apps/cli` bei 2.11 ist (sieben Minor-Bumps voraus). Cross-package-Versionsharmonie ist im Tauri-Ökosystem nicht garantiert.
+
+**Lektion:** Beim Adden neuer Deps NIE Versionen aus Lese-Erinnerung pinnen. Immer `npm view <pkg> version` (oder `--json versions` für die Liste) als Lookup gegen das echte Registry, dann pinnen. Schnell und billig, verhindert "npm install failed" Iterationen die User-Zeit kosten.
+
+**Anwendung:** Vor jedem `package.json`-Edit mit Version-Adds einen Batch-Lookup für alle neuen Deps ausführen. Auf einmal: `npm view a version; npm view b version; ...` in einem PowerShell-Call. Dann pinnen.
+
+---
+
+## 2026-05-17 — Tauri-Plugin-Shell `CommandChild::kill()` consumed self → `Mutex<Option<CommandChild>>`
+
+**Situation:** Phase 6d Supervisor brauchte Zugriff auf den spawned Sidecar von zwei Stellen: `call(method, params)` schreibt mut auf stdin, `kill()` terminiert. Erster Versuch: `Mutex<CommandChild>` für shared mut access. Compile-Fehler — `CommandChild::kill(self) -> Result<()>` moved self, kann nicht aus einem `MutexGuard` extrahiert werden.
+
+**Lektion:** Tauri-plugin-shell's `CommandChild::kill()` consumed self (by-value-move). Für Arc-shared lifecycle-Management ist `Mutex<Option<CommandChild>>` das Pattern: `guard.take()` extrahiert den Child für kill(), lässt None zurück, write() prüft `as_mut()` → None = closed.
+
+**Anwendung:** Wenn ein Rust-Owner-Type by-value-Methoden hat die den Wert verbrauchen (kill, shutdown, close-consuming), und Arc-shared sein muss, `Mutex<Option<T>>` als Holder verwenden. `guard.as_mut()` für borrow-Operations, `guard.take()` für consume-Operations.
+
+---
+
+## 2026-05-17 — Tauri DragDrop hat keinen expliziten `event.id` → paths-hash + time-bucket Dedup
+
+**Situation:** Phase 6g spec verwies auf "Dedup pro `event.id`" gegen Tauri #14134 (Drop-Events feuern doppelt auf Windows). Beim Implementieren: `DragDropEvent::Drop { paths, position }` exposed keinen expliziten event id field.
+
+**Lektion:** Pragmatisches Workaround: hash der paths (DefaultHasher) + millisecond-timestamp aus SystemTime. Wenn `(hash, ts)` innerhalb eines 200ms-Buckets identisch zum vorherigen Drop ist, swallow. Funktional äquivalent zu event.id-Dedup für den 95%-Use-Case (User dropt nicht zweimal exakt gleiche Files innerhalb 200ms intentional), false-positive-Rate trivial.
+
+**Anwendung:** Wenn ein erwartetes Event-Id-Feld fehlt aber Dedup nötig ist, `(hash-of-payload + time-bucket)` als Surrogate. Bucket-Größe = "wie schnell kann der User die Operation legitim wiederholen". Für File-Drops: 200ms; für Click-Events: 50ms.
+
+---
+
+## 2026-05-17 — `npx tauri icon` generiert ios/+android/ Mobile-Variants by-default
+
+**Situation:** Phase 6h `npx tauri icon src-tauri/icons/source.png` schrieb 18 PNG/ICO/ICNS-Files für Desktop + 32 weitere PNGs unter `ios/` und `android/` Sub-Dirs für Mobile. v1 shippt nur Desktop. `git status` zeigte 50+ neue Files.
+
+**Lektion:** tauri-cli's icon-Command ist platform-agnostic — generiert immer ALLE Tauri-Targets (desktop + iOS + Android). Es gibt keinen `--desktop-only` Flag. Wenn das Projekt mobile nicht shippt, sind die Mobile-Icons orphan: weder von `tauri.conf.json bundle.icon[]` referenziert noch von `cargo build` gelesen. Sie regenerieren sich bei jedem `npx tauri icon`-Run.
+
+**Anwendung:** Bei Desktop-only Tauri-Projekten `src-tauri/icons/ios/` und `src-tauri/icons/android/` in `.gitignore`. Vermeidet PR-Noise + suggeriert nicht fälschlich dass mobile supported ist.
+
+---
+
 ## 2026-05-16 — Plattform-bewusste Module brauchen `path.posix`/`path.win32`, nicht runtime `path`
 
 **Situation:** `src/core/paths/machine-paths.ts` akzeptiert `platform: NodeJS.Platform` als Argument und sollte plattform-spezifisch resolven. Initial mit `import { join, resolve } from 'node:path'` geschrieben. Tests die `platform: 'linux'` mit POSIX-Pfad `/home/test/.config/claude-os` injizierten scheiterten auf Windows-Runner mit Output `C:\home\test\.config\claude-os` — `path.resolve` ist zur Runtime an die Host-Platform gebunden, nicht an das Funktions-Argument.

@@ -2,7 +2,7 @@
 
 OS-unabhängige Entwicklungs-Umgebung rund um Anthropic Claude. Tauri-GUI + Node-CLI + cloud-mount Vault-Sync.
 
-> **Status:** v1 in Entwicklung. Phase 0–5 abgeschlossen (Bootstrap, Doctor, Vault-Sync, claude-bridge + Secrets, Update-Orchestrator-Foundation, Agent-Runs + Auth + komplette Catalog-Pipeline inkl. ETag-URL-Loader, `^`/`~`-Ranges, catalog.json/lock.json Schema + 9/9 Subcommands). 514/515 Tests grün, `npm run ci` exit 0 (90/78/93/92 % Coverage). Offen: Phase 6 Tauri-GUI, Phase 7 Cross-Platform + CI. Tracker: [`tasks/todo.md`](tasks/todo.md).
+> **Status:** v1 in Entwicklung. Phase 0–6 abgeschlossen. Phase 6 (Tauri-GUI) shipped 6a–6h: Rust-Shell-Scaffold, `$TARGET_TRIPLE`-Sidecar-Build-Script, JSON-RPC-2.0-Bridge (Node + Rust), 3-Strikes-Supervisor mit graceful shutdown, Vite + React 19 + TS Frontend mit 7 Views (4 wired: Dashboard/Catalog/Vault/AgentRuns; 3 stubs: Chat/Settings/Secrets), Drag-Drop + inbox/outbox chokidar-Watcher mit Tauri-Event-Notifications, Icons + Bundle-Config + Sidecar-Restart-E2E. **529/532 Tests grün** (3 long-running gated hinter `RUN_SLOW_TESTS=1`). Offen: Phase 7 Cross-Platform-Validation + CI-Matrix + Docs-Rewrite + Tag v1.0.0. Tracker: [`tasks/todo.md`](tasks/todo.md).
 >
 > Vorgänger: `claude-portable` (USB-only Variante). Die alten Launch-Scripts liegen in `legacy/` und sind nicht mehr aktiv.
 
