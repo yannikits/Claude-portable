@@ -12,3 +12,8 @@ export {
   type ApplyGitignoreResult,
 } from './gitignore-template.js';
 export { BusyFlag, BusyFlagError, type BusyState } from './busy-flag.js';
+export {
+  VaultScheduler,
+  type SchedulerOpts,
+  type SchedulerStatus,
+} from './scheduler.js';
