@@ -21,3 +21,65 @@ export async function onSidecarFailed(
 export async function ping(): Promise<{ pong: boolean; ts: number }> {
   return rpcCall('ping');
 }
+
+export interface CatalogEntry {
+  id: string;
+  kind: 'skill' | 'plugin' | 'mcp';
+  source: string;
+  enabled: boolean;
+  scope: 'user' | 'project';
+}
+
+export interface CatalogListResult {
+  catalogPath: string;
+  lockPath: string;
+  lockResolvedAt: string | null;
+  entries: CatalogEntry[];
+}
+
+export async function listCatalog(): Promise<CatalogListResult> {
+  return rpcCall<CatalogListResult>('catalog.list');
+}
+
+export interface VaultBusyState {
+  busy: boolean;
+  reason: string;
+  pid: number;
+  hostname: string;
+  acquiredAt: string;
+}
+
+export interface VaultConfig {
+  conflictMode: 'abort' | 'prefer-local' | 'prefer-remote';
+  scheduleEnabled: boolean;
+  idleSeconds: number;
+}
+
+export interface VaultStatusResult {
+  vaultPath: string;
+  busy: VaultBusyState | null;
+  config: VaultConfig;
+}
+
+export async function getVaultStatus(): Promise<VaultStatusResult> {
+  return rpcCall<VaultStatusResult>('vault.status');
+}
+
+export interface AgentRunRecord {
+  runId: string;
+  project: string;
+  machineId: string;
+  timestamp: string;
+  prompt: string;
+}
+
+export interface AgentListResult {
+  count: number;
+  items: AgentRunRecord[];
+}
+
+export async function listAgentRuns(
+  opts: { project?: string; limit?: number } = {},
+): Promise<AgentListResult> {
+  return rpcCall<AgentListResult>('agent.list', opts);
+}

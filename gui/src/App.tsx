@@ -1,6 +1,15 @@
 import { useEffect, useState } from 'react';
 import { Link, NavLink, Outlet, Route, BrowserRouter as Router, Routes } from 'react-router-dom';
 import { onSidecarFailed, type SidecarFailedPayload } from './lib/rpc';
+import {
+  AgentRunsPage,
+  CatalogPage,
+  ChatPage,
+  Dashboard,
+  SecretsPage,
+  SettingsPage,
+  VaultPage,
+} from './pages';
 
 const NAV = [
   { to: '/', label: 'Dashboard' },
@@ -11,17 +20,6 @@ const NAV = [
   { to: '/secrets', label: 'Secrets' },
   { to: '/settings', label: 'Settings' },
 ] as const;
-
-function PagePlaceholder({ title }: { title: string }) {
-  return (
-    <section className="page">
-      <h1>{title}</h1>
-      <p className="muted">
-        Stub. Phase 6f wires this view to the sidecar via <code>rpcCall</code>.
-      </p>
-    </section>
-  );
-}
 
 function Layout() {
   return (
@@ -96,13 +94,13 @@ export function App() {
       {failure && <SidecarFailedBanner payload={failure} />}
       <Routes>
         <Route path="/" element={<Layout />}>
-          <Route index element={<PagePlaceholder title="Dashboard" />} />
-          <Route path="chat" element={<PagePlaceholder title="Chat" />} />
-          <Route path="catalog" element={<PagePlaceholder title="Catalog" />} />
-          <Route path="vault" element={<PagePlaceholder title="Vault" />} />
-          <Route path="agent-runs" element={<PagePlaceholder title="Agent Runs" />} />
-          <Route path="secrets" element={<PagePlaceholder title="Secrets" />} />
-          <Route path="settings" element={<PagePlaceholder title="Settings" />} />
+          <Route index element={<Dashboard />} />
+          <Route path="chat" element={<ChatPage />} />
+          <Route path="catalog" element={<CatalogPage />} />
+          <Route path="vault" element={<VaultPage />} />
+          <Route path="agent-runs" element={<AgentRunsPage />} />
+          <Route path="secrets" element={<SecretsPage />} />
+          <Route path="settings" element={<SettingsPage />} />
         </Route>
       </Routes>
     </Router>

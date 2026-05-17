@@ -29,7 +29,7 @@ cargo check
 | 6c | JSON-RPC-Bridge (Rust + Node) | shipped |
 | 6d | Sidecar-Lifecycle + Health-Check | shipped |
 | 6e | Vite + React + TS Frontend | shipped |
-| 6f | 7 Views | pending |
+| 6f | 7 Views (4 wired, 3 stubs) | shipped |
 | 6g | Drag-Drop + inbox/outbox Watcher | pending |
 | 6h | Bundling (MSI/DMG/AppImage) | pending |
 
