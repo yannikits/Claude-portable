@@ -173,6 +173,56 @@ Format pro Eintrag:
 
 ---
 
+## 2026-05-17 — Vite 8 droppt inline esbuild — als peer-dep deklarieren
+
+**Situation:** Erste Tauri-Bundle-Iteration failte auf allen 3 OS mit `Cannot find package 'esbuild' imported from gui/node_modules/vite/dist/node/chunks/node.js`. Vite 8 hat `transformWithEsbuild` deprecated und liefert esbuild nicht mehr inline mit. Bei expliziter `build.minify: 'esbuild'` Config wird die dep zwingend erforderlich.
+
+**Lektion:** Bei Vite-Major-Upgrades (7→8 in 2026) immer den Changelog auf gedroppte peer-deps prüfen. esbuild ist seit Vite 8 ein explicit peer; `npm install` warnt dabei nicht (keine peer-dependency-Deklaration in vite's manifest), erst der Bundle-Build crasht.
+
+**Anwendung:** Bei jedem `npm view vite version` Bump in einer `package.json` parallel `npm view vite peerDependencies` checken. Was vorher in vite's bundle steckte und jetzt peer-aware ist, gehört in die eigene devDeps.
+
+---
+
+## 2026-05-17 — Windows-CI braucht `pwsh`, nicht `powershell` für PS7-Scripts
+
+**Situation:** `scripts/build-sidecar.ps1` startet mit `#Requires -Version 7`. Mein cross-platform `build-sidecar.mjs` Dispatcher rief `powershell` auf Windows auf. Lokal funktionierte das, auf `windows-latest` GitHub-Runner schlug es mit `ScriptRequiresUnmatchedPSVersion` fehl.
+
+**Lektion:** Auf Windows sind `powershell.exe` (PowerShell 5.1, ships mit Windows) und `pwsh.exe` (PowerShell Core 7+, separater Install) unterschiedliche Binaries. GitHub-Hosted-Runner haben beide, aber `powershell` mappt immer auf 5.1. Lokal mappt mein `powershell` auf 7+ weil mein PATH-Setup das so will — daher die false-pass-positive lokal.
+
+**Anwendung:** Dispatcher und CI-Scripts die PS7-Features brauchen MÜSSEN `pwsh` explizit aufrufen. Nie `powershell` für moderne PS-Scripts. Cross-OS-CI lokal aufsetzen ist illusorisch — first push war der echte Validator.
+
+---
+
+## 2026-05-17 — Tauri MSI verlangt numerische pre-release identifier
+
+**Situation:** `tauri.conf.json version` war `0.1.0-alpha.5`. MSI-Bundle-Step crashte mit `optional pre-release identifier in app version must be numeric-only and cannot be greater than 65535 for msi target`. Windows-MSI-Versionierung folgt `MAJOR.MINOR.BUILD.REVISION` mit numerischen Segmenten ≤ 65535. SemVer-Alphas wie `-alpha.5` sind syntaktisch valide aber im MSI-Subset verboten.
+
+**Lektion:** Bei Tauri-Apps die MSI als Bundle-Target haben, der Tauri-`version`-String niemals SemVer-Pre-Releases mit Buchstaben enthalten. Entweder numerische Pre-Releases (`0.1.0-5`) oder gleich auf MAJOR.MINOR.BUILD bleiben. Repo-Tags (`v0.1.0-rc.1`, `v0.1.0-alpha.5`) sind davon getrennt — die markieren Commits, nicht Bundle-Versionen.
+
+**Anwendung:** Spätestens vor dem ersten Tauri-Bundle-Build: tauri.conf.json `version` auf ein MSI-konformes Format setzen. Repo-Release-Tags und Tauri-Version sind zwei verschiedene Identifikatoren mit unterschiedlichen Constraint-Räumen.
+
+---
+
+## 2026-05-17 — Tauri `--target universal-apple-darwin` braucht pre-lipo'd externalBin
+
+**Situation:** macOS-universal Bundle-Step erwartet `binaries/claude-os-sidecar-universal-apple-darwin` als Single-File, nicht die separaten x86_64/aarch64-Sidecars. Mein workflow baute beide arch-Sidecars (über `SIDECAR_TRIPLE` env-override), aber Tauri's externalBin-Resolution wollte das pre-kombinierte File und failte mit `resource path ... doesn't exist`.
+
+**Lektion:** Tauri's `--target universal-apple-darwin` ist Bundle-CLI-Magic, kein cargo-Target — es baut intern zwei cargo-Binaries (x86_64 + aarch64) und lipos sie zusammen. Aber für externalBin macht Tauri das NICHT automatisch: der Sidecar-Universal-Binary muss vorab durch `lipo -create` selbst kombiniert sein.
+
+**Anwendung:** In CI für `--target universal-apple-darwin` nach den arch-spezifischen sidecar:build-Aufrufen ein expliziter `lipo`-Step: `lipo -create -output binaries/claude-os-sidecar-universal-apple-darwin binaries/claude-os-sidecar-x86_64-apple-darwin binaries/claude-os-sidecar-aarch64-apple-darwin`. pkg-built Node-Binaries sind MachO-konform, `lipo` akzeptiert sie unverändert.
+
+---
+
+## 2026-05-17 — GitHub workflow_dispatch erfordert Workflow-File auf default branch
+
+**Situation:** Tauri-bundle.yml wurde im Phase 7b Commit auf `feature/claude-os-v1` hinzugefügt. `gh workflow run tauri-bundle.yml --ref feature/claude-os-v1` failte mit `HTTP 404: workflow tauri-bundle.yml not found on the default branch`. GitHub Actions' workflow_dispatch-Endpoint lookt die Workflow-Definition auf der default branch (main) auf, auch wenn `--ref` einen anderen branch angibt.
+
+**Lektion:** workflow_dispatch ist nicht ref-isoliert: die Workflow-Datei MUSS auf der default branch existieren, sonst ist sie nicht dispatchable. `push: tags`-Trigger haben die gleiche Einschränkung. Konsequenz: neue CI-Workflows kommen erst nach Merge auf main online.
+
+**Anwendung:** Wenn ein neuer Workflow auf einer Feature-Branch entwickelt wird und manuell dispatched werden soll, separater PR der NUR die Workflow-Files nach main bringt. Oder direkt feature → main mergen wenn die Branch ready ist. Bei tag-getriggertem Bundling: erst mergen, dann taggen.
+
+---
+
 ## 2026-05-16 — Plattform-bewusste Module brauchen `path.posix`/`path.win32`, nicht runtime `path`
 
 **Situation:** `src/core/paths/machine-paths.ts` akzeptiert `platform: NodeJS.Platform` als Argument und sollte plattform-spezifisch resolven. Initial mit `import { join, resolve } from 'node:path'` geschrieben. Tests die `platform: 'linux'` mit POSIX-Pfad `/home/test/.config/claude-os` injizierten scheiterten auf Windows-Runner mit Output `C:\home\test\.config\claude-os` — `path.resolve` ist zur Runtime an die Host-Platform gebunden, nicht an das Funktions-Argument.
