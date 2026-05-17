@@ -188,13 +188,41 @@ export class GitService {
     }
   }
 
-  async pull(remote = 'origin', branch?: string): Promise<void> {
+  async pull(
+    remote = 'origin',
+    branch?: string,
+    opts: { ffOnly?: boolean } = {},
+  ): Promise<void> {
     const target = branch ?? (await this.getCurrentBranch());
     try {
-      await this.git.pull(remote, target);
+      if (opts.ffOnly === true) {
+        await this.git.raw(['pull', '--ff-only', remote, target]);
+      } else {
+        await this.git.pull(remote, target);
+      }
     } catch (err) {
       throw mapError(err);
     }
+  }
+
+  /**
+   * Clones `source` into `destination` and returns a GitService bound
+   * to the freshly created working tree. Use when bootstrapping a
+   * repo that does not yet exist (e.g. skills-repo first-time install).
+   */
+  static async clone(
+    source: string,
+    destination: string,
+    opts: { branch?: string } = {},
+  ): Promise<GitService> {
+    const git = simpleGit();
+    const args = opts.branch === undefined ? [] : ['--branch', opts.branch];
+    try {
+      await git.clone(source, destination, args);
+    } catch (err) {
+      throw mapError(err);
+    }
+    return new GitService(destination);
   }
 
   async setConfig(key: string, value: string, scope: GitConfigScope = 'local'): Promise<void> {

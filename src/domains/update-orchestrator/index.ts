@@ -1,0 +1,8 @@
+/**
+ * Update-orchestrator domain — Phase 4 (ADR-0005).
+ *
+ * @module @domains/update-orchestrator
+ */
+export type { UpdateResult, UpdateScope, UpdateState } from './types.js';
+export { updateEnvRepo } from './env-repo.js';
+export { updateSkillsRepo } from './skills-repo.js';
