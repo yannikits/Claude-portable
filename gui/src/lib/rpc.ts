@@ -83,3 +83,43 @@ export async function listAgentRuns(
 ): Promise<AgentListResult> {
   return rpcCall<AgentListResult>('agent.list', opts);
 }
+
+export const FILES_DROPPED_EVENT = 'files://dropped';
+export const INBOX_CHANGED_EVENT = 'inbox://changed';
+export const OUTBOX_CHANGED_EVENT = 'outbox://changed';
+
+export interface FilesDroppedPayload {
+  paths: string[];
+}
+
+export interface WatcherChangeEvent {
+  event: 'add' | 'change' | 'unlink';
+  path: string;
+}
+
+export interface InboxImportResult {
+  count: number;
+  paths: string[];
+}
+
+export async function importToInbox(paths: string[]): Promise<InboxImportResult> {
+  return rpcCall<InboxImportResult>('inbox.import', { paths });
+}
+
+export async function onFilesDropped(
+  handler: (p: FilesDroppedPayload) => void,
+): Promise<UnlistenFn> {
+  return listen<FilesDroppedPayload>(FILES_DROPPED_EVENT, (e) => handler(e.payload));
+}
+
+export async function onInboxChanged(
+  handler: (e: WatcherChangeEvent) => void,
+): Promise<UnlistenFn> {
+  return listen<WatcherChangeEvent>(INBOX_CHANGED_EVENT, (e) => handler(e.payload));
+}
+
+export async function onOutboxChanged(
+  handler: (e: WatcherChangeEvent) => void,
+): Promise<UnlistenFn> {
+  return listen<WatcherChangeEvent>(OUTBOX_CHANGED_EVENT, (e) => handler(e.payload));
+}

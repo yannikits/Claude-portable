@@ -30,7 +30,7 @@ cargo check
 | 6d | Sidecar-Lifecycle + Health-Check | shipped |
 | 6e | Vite + React + TS Frontend | shipped |
 | 6f | 7 Views (4 wired, 3 stubs) | shipped |
-| 6g | Drag-Drop + inbox/outbox Watcher | pending |
+| 6g | Drag-Drop + inbox/outbox Watcher | shipped |
 | 6h | Bundling (MSI/DMG/AppImage) | pending |
 
 ## Sidecar bauen (Phase 6b)

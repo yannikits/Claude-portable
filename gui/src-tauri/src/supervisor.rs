@@ -156,6 +156,7 @@ async fn spawn_and_run(app: &AppHandle, state: &Arc<SupervisorState>) -> RpcErro
 
     let dead_for_router = dead.clone();
     let rpc_for_router = rpc.clone();
+    let app_for_router = app.clone();
     let router = tokio::spawn(async move {
         let mut buf = String::new();
         while let Some(event) = rx.recv().await {
@@ -168,12 +169,18 @@ async fn spawn_and_run(app: &AppHandle, state: &Arc<SupervisorState>) -> RpcErro
                         if trimmed.is_empty() {
                             continue;
                         }
-                        if let Ok(env) = serde_json::from_str::<RpcEnvelope>(trimmed) {
-                            if let Some(id) = env.id {
+                        let Ok(raw) = serde_json::from_str::<Value>(trimmed) else {
+                            continue;
+                        };
+                        if let Some(id) = raw.get("id").and_then(Value::as_u64) {
+                            if let Ok(env) = serde_json::from_str::<RpcEnvelope>(trimmed) {
                                 if let Some(tx) = rpc_for_router.pending.lock().await.remove(&id) {
                                     let _ = tx.send(env);
                                 }
                             }
+                        } else if let Some(method) = raw.get("method").and_then(Value::as_str) {
+                            let params = raw.get("params").cloned().unwrap_or(Value::Null);
+                            let _ = app_for_router.emit(method, params);
                         }
                     }
                 }

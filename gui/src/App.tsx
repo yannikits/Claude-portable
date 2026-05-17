@@ -1,6 +1,14 @@
 import { useEffect, useState } from 'react';
 import { Link, NavLink, Outlet, Route, BrowserRouter as Router, Routes } from 'react-router-dom';
-import { onSidecarFailed, type SidecarFailedPayload } from './lib/rpc';
+import {
+  importToInbox,
+  onFilesDropped,
+  onInboxChanged,
+  onOutboxChanged,
+  onSidecarFailed,
+  type SidecarFailedPayload,
+  type WatcherChangeEvent,
+} from './lib/rpc';
 import {
   AgentRunsPage,
   CatalogPage,
@@ -71,6 +79,9 @@ function SidecarFailedBanner({ payload }: { payload: SidecarFailedPayload }) {
 export function App() {
   const [showLoading, setShowLoading] = useState(true);
   const [failure, setFailure] = useState<SidecarFailedPayload | null>(null);
+  const [lastInbox, setLastInbox] = useState<WatcherChangeEvent | null>(null);
+  const [lastOutbox, setLastOutbox] = useState<WatcherChangeEvent | null>(null);
+  const [lastDrop, setLastDrop] = useState<{ count: number; ts: number } | null>(null);
 
   useEffect(() => {
     const t = setTimeout(() => setShowLoading(false), 500);
@@ -78,12 +89,21 @@ export function App() {
   }, []);
 
   useEffect(() => {
-    let unlisten: (() => void) | undefined;
-    onSidecarFailed((payload) => setFailure(payload)).then((u) => {
-      unlisten = u;
-    });
+    const unsubs: Array<() => void> = [];
+    onSidecarFailed(setFailure).then((u) => unsubs.push(u));
+    onInboxChanged(setLastInbox).then((u) => unsubs.push(u));
+    onOutboxChanged(setLastOutbox).then((u) => unsubs.push(u));
+    onFilesDropped(async ({ paths }) => {
+      try {
+        const r = await importToInbox(paths);
+        setLastDrop({ count: r.count, ts: Date.now() });
+      } catch (e) {
+        // surfaced via banner-error if sidecar dies; transient errors are non-fatal
+        console.error('inbox.import failed:', e);
+      }
+    }).then((u) => unsubs.push(u));
     return () => {
-      unlisten?.();
+      for (const u of unsubs) u();
     };
   }, []);
 
@@ -92,6 +112,26 @@ export function App() {
   return (
     <Router>
       {failure && <SidecarFailedBanner payload={failure} />}
+      {lastDrop && (
+        <div className="banner" role="status" key={lastDrop.ts}>
+          {lastDrop.count} Datei(en) in den Inbox kopiert.
+        </div>
+      )}
+      {(lastInbox || lastOutbox) && (
+        <div className="banner muted" role="status">
+          {lastInbox && (
+            <span>
+              inbox: {lastInbox.event} {lastInbox.path}
+            </span>
+          )}
+          {lastOutbox && (
+            <span>
+              {' '}
+              · outbox: {lastOutbox.event} {lastOutbox.path}
+            </span>
+          )}
+        </div>
+      )}
       <Routes>
         <Route path="/" element={<Layout />}>
           <Route index element={<Dashboard />} />

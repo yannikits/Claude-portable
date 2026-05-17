@@ -1,4 +1,5 @@
-import { join } from 'node:path';
+import { copyFileSync, mkdirSync } from 'node:fs';
+import { basename, join } from 'node:path';
 import { resolveRoot } from '../core/environment/index.js';
 import { resolveMachinePaths } from '../core/paths/index.js';
 import { AgentRunsRepository, agentRunsIndexPathFor } from '../domains/agent-runs/index.js';
@@ -32,6 +33,23 @@ export function registerMethods(dispatcher: RpcDispatcher): void {
     const busy = new BusyFlag({ filePath: busyFlagPath }).read();
     const config = loadVaultConfig(configPath);
     return { vaultPath, busy, config };
+  });
+
+  dispatcher.register('inbox.import', (rawParams: unknown) => {
+    const params = (rawParams ?? {}) as { paths?: readonly string[] };
+    if (!Array.isArray(params.paths)) {
+      throw new Error('inbox.import: params.paths must be a string[]');
+    }
+    const inboxDir = join(rootPath(), 'inbox');
+    mkdirSync(inboxDir, { recursive: true });
+    const stamp = new Date().toISOString().replaceAll(':', '-');
+    const written: string[] = [];
+    for (const src of params.paths) {
+      const dest = join(inboxDir, `${stamp}-${basename(src)}`);
+      copyFileSync(src, dest);
+      written.push(dest);
+    }
+    return { count: written.length, paths: written };
   });
 
   dispatcher.register('agent.list', (rawParams: unknown) => {
