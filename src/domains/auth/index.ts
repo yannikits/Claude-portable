@@ -3,6 +3,17 @@
  *
  * @module @domains/auth
  */
+
+export {
+  checkCredentialsSchema,
+  hasCiEnvCredentials,
+  isAuthError,
+  isExpiringSoon,
+  readCredentialsFile,
+  resolveCredentialsPath,
+} from './credentials.js';
+export { ProfileManager } from './profile-manager.js';
+export { checkAuthState } from './state-check.js';
 export type {
   AuthProfile,
   AuthSource,
@@ -15,13 +26,3 @@ export {
   AuthProfileExistsError,
   AuthProfileMissingError,
 } from './types.js';
-export {
-  checkCredentialsSchema,
-  hasCiEnvCredentials,
-  isAuthError,
-  isExpiringSoon,
-  readCredentialsFile,
-  resolveCredentialsPath,
-} from './credentials.js';
-export { ProfileManager } from './profile-manager.js';
-export { checkAuthState } from './state-check.js';

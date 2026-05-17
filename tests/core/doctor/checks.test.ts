@@ -1,14 +1,14 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { mkdtempSync, rmSync, mkdirSync, writeFileSync, existsSync } from 'node:fs';
-import { join } from 'node:path';
+import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import {
-  checkNodeVersion,
-  checkGitAvailable,
   checkClaudeBinary,
+  checkGitAvailable,
   checkMountReachable,
-  checkWritePermission,
+  checkNodeVersion,
   checkWindowsLongPaths,
+  checkWritePermission,
 } from '../../../src/core/doctor/index.js';
 import type { ResolvedRoot } from '../../../src/core/environment/index.js';
 

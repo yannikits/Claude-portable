@@ -11,7 +11,7 @@
  *
  * @module @domains/catalog/scope-merger
  */
-import { existsSync, readdirSync, statSync, type Dirent } from 'node:fs';
+import { type Dirent, existsSync, readdirSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
 
 export type Scope = 'user' | 'project';

@@ -3,6 +3,8 @@
  *
  * @module @core/git
  */
+
+export { GitService } from './git-service.js';
 export type {
   CommitResult,
   GitConfigScope,
@@ -15,4 +17,3 @@ export {
   GitMergeConflictError,
   GitNotInstalledError,
 } from './types.js';
-export { GitService } from './git-service.js';

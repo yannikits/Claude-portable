@@ -10,17 +10,10 @@
  */
 import { spawn } from 'node:child_process';
 import type { Command } from 'commander';
+import { RootNotFoundError, resolveRoot } from '../../core/environment/index.js';
 import { resolveMachinePaths } from '../../core/paths/index.js';
-import {
-  ProfileManager,
-  checkAuthState,
-  isAuthError,
-} from '../../domains/auth/index.js';
-import {
-  BinaryNotFoundError,
-  resolveClaudeBinary,
-} from '../../domains/claude-bridge/index.js';
-import { resolveRoot, RootNotFoundError } from '../../core/environment/index.js';
+import { checkAuthState, isAuthError, ProfileManager } from '../../domains/auth/index.js';
+import { BinaryNotFoundError, resolveClaudeBinary } from '../../domains/claude-bridge/index.js';
 
 interface GlobalOpts {
   readonly root?: string;
@@ -38,7 +31,6 @@ function printLine(line: string): void {
 }
 
 function printErr(line: string): void {
-  // biome-ignore lint/suspicious/noConsole: stderr reporter
   console.error(line);
 }
 

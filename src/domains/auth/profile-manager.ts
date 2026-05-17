@@ -20,8 +20,8 @@
 import {
   existsSync,
   mkdirSync,
-  readFileSync,
   readdirSync,
+  readFileSync,
   renameSync,
   rmSync,
   statSync,
@@ -30,9 +30,9 @@ import {
 import { dirname, join } from 'node:path';
 import {
   AuthError,
+  type AuthProfile,
   AuthProfileExistsError,
   AuthProfileMissingError,
-  type AuthProfile,
 } from './types.js';
 
 interface ProfileManagerOpts {
@@ -73,9 +73,7 @@ export class ProfileManager {
   /** Absolute path of `<dataRoot>/auth-profiles/<name>/`. */
   configDirFor(name: string): string {
     if (!isValidName(name)) {
-      throw new AuthError(
-        `Invalid profile name "${name}". Allowed: [A-Za-z0-9._-], max 64 chars.`,
-      );
+      throw new AuthError(`Invalid profile name "${name}". Allowed: [A-Za-z0-9._-], max 64 chars.`);
     }
     return join(this.profilesDir(), name);
   }

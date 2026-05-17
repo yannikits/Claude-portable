@@ -1,11 +1,8 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { mkdtempSync, rmSync, existsSync } from 'node:fs';
-import { join } from 'node:path';
+import { existsSync, mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import {
-  createSecretStore,
-  SecretsError,
-} from '../../../src/domains/secrets/index.js';
+import { join } from 'node:path';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { createSecretStore, SecretsError } from '../../../src/domains/secrets/index.js';
 
 describe('createSecretStore', () => {
   let tmpBase: string;

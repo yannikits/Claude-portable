@@ -1,13 +1,13 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { mkdtempSync, readFileSync, rmSync, existsSync } from 'node:fs';
-import { join } from 'node:path';
+import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import {
   AGENT_RUN_SCHEMA_VERSION,
+  type AgentRunRecord,
   AgentRunsError,
   JsonlWriter,
   sanitiseSegment,
-  type AgentRunRecord,
 } from '../../../src/domains/agent-runs/index.js';
 
 describe('sanitiseSegment', () => {
@@ -76,9 +76,7 @@ describe('JsonlWriter', () => {
     });
 
     expect(record.version).toBe(AGENT_RUN_SCHEMA_VERSION);
-    expect(record.runId).toMatch(
-      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i,
-    );
+    expect(record.runId).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i);
     expect(record.timestamp).toBe('2026-05-17T08:00:00.123Z');
     expect(record.machineId).toBe('machine-A');
     expect(record.project).toBe('claude-portable');

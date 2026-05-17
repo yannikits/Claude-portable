@@ -25,8 +25,8 @@
 import {
   existsSync,
   mkdirSync,
-  readFileSync,
   readdirSync,
+  readFileSync,
   renameSync,
   unlinkSync,
   writeFileSync,
@@ -101,10 +101,7 @@ function parseHeader(raw: string): {
     const key = match[1]?.toLowerCase() ?? '';
     const value = match[2]?.trim() ?? '';
     if (key === 'timestamp') header.timestamp = value;
-    else if (
-      key === 'scope' &&
-      (value === 'env' || value === 'skills' || value === 'plugins')
-    ) {
+    else if (key === 'scope' && (value === 'env' || value === 'skills' || value === 'plugins')) {
       header.scope = value;
     } else if (key === 'status' && (value === 'in-progress' || value === 'complete')) {
       header.status = value;

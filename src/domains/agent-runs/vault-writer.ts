@@ -30,7 +30,7 @@ function escapeYaml(value: unknown): string {
   if (value === null) return 'null';
   if (typeof value === 'number' || typeof value === 'boolean') return String(value);
   const s = String(value);
-  if (/[:#{}\[\],&*!|>'"%@`\n\r]/.test(s) || s.length === 0) {
+  if (/[:#{}[\],&*!|>'"%@`\n\r]/.test(s) || s.length === 0) {
     return `"${s.replaceAll('\\', '\\\\').replaceAll('"', '\\"')}"`;
   }
   return s;

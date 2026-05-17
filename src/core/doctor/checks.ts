@@ -6,12 +6,13 @@
  *
  * @module @core/doctor/checks
  */
-import { existsSync, accessSync, constants as fsConstants } from 'node:fs';
-import { join } from 'node:path';
+
 import { exec } from 'node:child_process';
+import { accessSync, existsSync, constants as fsConstants } from 'node:fs';
+import { join } from 'node:path';
 import { promisify } from 'node:util';
-import type { CheckResult, CheckFn } from './types.js';
 import type { ResolvedRoot } from '../environment/index.js';
+import type { CheckFn, CheckResult } from './types.js';
 
 const execAsync = promisify(exec);
 

@@ -62,5 +62,4 @@ export async function updatePlugins(opts: UpdatePluginsOpts): Promise<UpdateResu
 }
 
 /** Re-exported for the CLI presenter. */
-export const PLUGINS_V1_HINT =
-  'Plugins are managed by Phase 5 catalog (ADR-0009). Skipping in v1.';
+export const PLUGINS_V1_HINT = 'Plugins are managed by Phase 5 catalog (ADR-0009). Skipping in v1.';

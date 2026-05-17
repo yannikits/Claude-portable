@@ -1,13 +1,7 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import {
-  mkdtempSync,
-  mkdirSync,
-  writeFileSync,
-  rmSync,
-  existsSync,
-} from 'node:fs';
-import { join } from 'node:path';
+import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { GitService } from '../../../src/core/git/index.js';
 import {
   applyConflictResolution,
@@ -16,9 +10,9 @@ import {
 
 describe('isPushConflictError', () => {
   it('matches non-fast-forward', () => {
-    expect(
-      isPushConflictError(new Error('error: failed to push some refs to bare.git')),
-    ).toBe(true);
+    expect(isPushConflictError(new Error('error: failed to push some refs to bare.git'))).toBe(
+      true,
+    );
   });
   it('matches "Updates were rejected"', () => {
     expect(isPushConflictError(new Error('Updates were rejected because the tip'))).toBe(true);
@@ -116,17 +110,13 @@ describe('applyConflictResolution', () => {
       now: () => fixed,
     });
     expect(result.state).toBe('reset-with-backup');
-    expect(result.backupBranch).toBe(
-      `claude-os/backup/${branch}/2026-05-17T08-00-00-123Z`,
-    );
+    expect(result.backupBranch).toBe(`claude-os/backup/${branch}/2026-05-17T08-00-00-123Z`);
 
     const newHead = (await gitB.raw(['rev-parse', 'HEAD'])).trim();
     const originTip = (await gitB.raw(['rev-parse', `origin/${branch}`])).trim();
     expect(newHead).toBe(originTip);
 
-    const backupTip = (
-      await gitB.raw(['rev-parse', result.backupBranch as string])
-    ).trim();
+    const backupTip = (await gitB.raw(['rev-parse', result.backupBranch as string])).trim();
     expect(backupTip).toBe(bHeadBefore);
   });
 

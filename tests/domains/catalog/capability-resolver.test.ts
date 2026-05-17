@@ -1,12 +1,12 @@
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import {
   AmbiguousProviderError,
+  type Catalog,
   CyclicDependencyError,
   MissingProviderError,
-  VersionConflictError,
-  resolveCapabilities,
-  type Catalog,
   type PluginManifest,
+  resolveCapabilities,
+  VersionConflictError,
 } from '../../../src/domains/catalog/index.js';
 
 function mfst(

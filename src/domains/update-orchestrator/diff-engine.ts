@@ -16,11 +16,11 @@ import { basename } from 'node:path';
 import { createPatch, diffLines } from 'diff';
 
 export type DiffStatus =
-  | 'unchanged'   // upstream and local are byte-identical
-  | 'modified'    // both present, content differs
-  | 'added'       // upstream exists, local missing
-  | 'removed'     // local exists, upstream missing
-  | 'binary';     // either side is binary — diff skipped
+  | 'unchanged' // upstream and local are byte-identical
+  | 'modified' // both present, content differs
+  | 'added' // upstream exists, local missing
+  | 'removed' // local exists, upstream missing
+  | 'binary'; // either side is binary — diff skipped
 
 export interface DiffSummary {
   readonly status: DiffStatus;

@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { startHeartbeat } from '../../../src/domains/claude-bridge/index.js';
 
 describe('startHeartbeat', () => {

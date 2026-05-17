@@ -3,28 +3,42 @@
  *
  * @module @domains/catalog
  */
+
 export {
-  SourceParseError,
-  githubTarballUrl,
-  parseSource,
-  type ParsedGithubSource,
-  type ParsedLocalSource,
-  type ParsedMarketplaceSource,
-  type ParsedSource,
-  type SourceKind,
-} from './source-resolver.js';
+  type CleanResult,
+  cleanTarballCache,
+  DEFAULT_TARBALL_RETENTION_MS,
+} from './cache-cleaner.js';
 export {
-  TarballInstallError,
-  installFromTarball,
-  tarballCacheDirFor,
-  type InstallResult,
-} from './tarball-installer.js';
+  type Capability,
+  type CapabilityKind,
+  CapabilityParseError,
+  type ComparisonOp,
+  capabilityToString,
+  compareVersions,
+  parseCapability,
+  satisfies,
+  type VersionConstraint,
+} from './capability.js';
 export {
-  MarketplaceRegistry,
-  MarketplaceRegistryError,
+  AmbiguousProviderError,
+  type Catalog,
+  CyclicDependencyError,
+  MissingProviderError,
+  type PluginManifest,
+  type ResolutionBinding,
+  type ResolutionError,
+  type ResolutionResult,
+  ResolverError,
+  resolveCapabilities,
+  VersionConflictError,
+} from './capability-resolver.js';
+export {
   fileLoader,
   type MarketplaceEntry,
   type MarketplacePlugin,
+  MarketplaceRegistry,
+  MarketplaceRegistryError,
   type MarketplaceRegistryFile,
 } from './marketplace-registry.js';
 export {
@@ -34,31 +48,18 @@ export {
   type ScopedFile,
 } from './scope-merger.js';
 export {
-  DEFAULT_TARBALL_RETENTION_MS,
-  cleanTarballCache,
-  type CleanResult,
-} from './cache-cleaner.js';
+  githubTarballUrl,
+  type ParsedGithubSource,
+  type ParsedLocalSource,
+  type ParsedMarketplaceSource,
+  type ParsedSource,
+  parseSource,
+  type SourceKind,
+  SourceParseError,
+} from './source-resolver.js';
 export {
-  CapabilityParseError,
-  capabilityToString,
-  compareVersions,
-  parseCapability,
-  satisfies,
-  type Capability,
-  type CapabilityKind,
-  type ComparisonOp,
-  type VersionConstraint,
-} from './capability.js';
-export {
-  AmbiguousProviderError,
-  CyclicDependencyError,
-  MissingProviderError,
-  ResolverError,
-  VersionConflictError,
-  resolveCapabilities,
-  type Catalog,
-  type PluginManifest,
-  type ResolutionBinding,
-  type ResolutionError,
-  type ResolutionResult,
-} from './capability-resolver.js';
+  type InstallResult,
+  installFromTarball,
+  TarballInstallError,
+  tarballCacheDirFor,
+} from './tarball-installer.js';

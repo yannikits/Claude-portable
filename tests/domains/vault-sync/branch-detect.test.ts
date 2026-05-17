@@ -1,12 +1,9 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { mkdtempSync, mkdirSync, writeFileSync, rmSync, existsSync } from 'node:fs';
-import { join } from 'node:path';
+import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { GitService } from '../../../src/core/git/index.js';
-import {
-  detectVaultBranch,
-  DetachedHeadError,
-} from '../../../src/domains/vault-sync/index.js';
+import { DetachedHeadError, detectVaultBranch } from '../../../src/domains/vault-sync/index.js';
 
 describe('detectVaultBranch', () => {
   let tmpBase: string;

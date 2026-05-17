@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { EventEmitter } from 'node:events';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { VaultScheduler } from '../../../src/domains/vault-sync/index.js';
 
 /**
@@ -23,12 +23,14 @@ class FakeWatcher extends EventEmitter {
   }
 }
 
-function makeScheduler(overrides: {
-  idleMs?: number;
-  onSnapshot?: (reason: string) => Promise<unknown>;
-  workTree?: string;
-  forceUsePolling?: boolean;
-} = {}): {
+function makeScheduler(
+  overrides: {
+    idleMs?: number;
+    onSnapshot?: (reason: string) => Promise<unknown>;
+    workTree?: string;
+    forceUsePolling?: boolean;
+  } = {},
+): {
   scheduler: VaultScheduler;
   capturedWatcher: () => FakeWatcher | null;
   watcherOptions: () => unknown;

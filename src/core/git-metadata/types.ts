@@ -9,11 +9,11 @@
  * the same set of states is reachable on repeated runs.
  */
 export type MigrationState =
-  | 'not-needed'        // working-tree does not exist
-  | 'no-git-dir'        // working-tree has no .git at all (nothing to migrate)
-  | 'already-migrated'  // .git is a gitfile already pointing to the external target
-  | 'migrated'          // this run moved .git contents into the external target
-  | 'error';            // a precondition failed; see `error` field
+  | 'not-needed' // working-tree does not exist
+  | 'no-git-dir' // working-tree has no .git at all (nothing to migrate)
+  | 'already-migrated' // .git is a gitfile already pointing to the external target
+  | 'migrated' // this run moved .git contents into the external target
+  | 'error'; // a precondition failed; see `error` field
 
 export interface MigrationResult {
   readonly state: MigrationState;

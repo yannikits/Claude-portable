@@ -7,13 +7,13 @@
 export type UpdateScope = 'env' | 'skills' | 'plugins';
 
 export type UpdateState =
-  | 'up-to-date'        // remote already at the local HEAD
-  | 'updated'           // pulled new commits successfully (ff)
-  | 'cloned'            // skills-repo first-time install
-  | 'aborted-dirty'     // working tree has uncommitted changes
-  | 'aborted-diverged'  // local + remote diverged; ff impossible
-  | 'no-remote'         // no remote configured
-  | 'error';            // unexpected failure (see `error` field)
+  | 'up-to-date' // remote already at the local HEAD
+  | 'updated' // pulled new commits successfully (ff)
+  | 'cloned' // skills-repo first-time install
+  | 'aborted-dirty' // working tree has uncommitted changes
+  | 'aborted-diverged' // local + remote diverged; ff impossible
+  | 'no-remote' // no remote configured
+  | 'error'; // unexpected failure (see `error` field)
 
 export interface UpdateResult {
   readonly scope: UpdateScope;

@@ -1,20 +1,20 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import {
-  mkdtempSync,
-  mkdirSync,
-  writeFileSync,
-  rmSync,
-  existsSync,
-  readFileSync,
   appendFileSync,
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
 } from 'node:fs';
-import { join } from 'node:path';
 import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import {
   AgentRunsError,
   AgentRunsIndex,
-  JsonlWriter,
   agentRunsIndexPathFor,
+  JsonlWriter,
 } from '../../../src/domains/agent-runs/index.js';
 
 describe('AgentRunsIndex', () => {
@@ -34,7 +34,12 @@ describe('AgentRunsIndex', () => {
     if (existsSync(tmpBase)) rmSync(tmpBase, { recursive: true, force: true });
   });
 
-  function seed(opts: { project: string; machineId: string; count: number; baseMs?: number }): void {
+  function seed(opts: {
+    project: string;
+    machineId: string;
+    count: number;
+    baseMs?: number;
+  }): void {
     const baseMs = opts.baseMs ?? Date.parse('2026-05-17T08:00:00.000Z');
     for (let i = 0; i < opts.count; i += 1) {
       const w = new JsonlWriter({

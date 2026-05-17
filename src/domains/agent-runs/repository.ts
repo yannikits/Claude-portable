@@ -87,7 +87,11 @@ export class AgentRunsRepository {
 
   /** Returns the record matching `runId`, or null. */
   show(runId: string): AgentRunRecord | null {
-    return this.index().query().find((r) => r.runId === runId) ?? null;
+    return (
+      this.index()
+        .query()
+        .find((r) => r.runId === runId) ?? null
+    );
   }
 
   /** Map of project → record count. */

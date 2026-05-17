@@ -13,15 +13,12 @@
  *
  * @module @domains/agent-runs/jsonl-writer
  */
-import { appendFileSync, mkdirSync } from 'node:fs';
+
 import { randomUUID } from 'node:crypto';
+import { appendFileSync, mkdirSync } from 'node:fs';
 import { hostname } from 'node:os';
 import { join } from 'node:path';
-import {
-  AGENT_RUN_SCHEMA_VERSION,
-  AgentRunsError,
-  type AgentRunRecord,
-} from './types.js';
+import { AGENT_RUN_SCHEMA_VERSION, type AgentRunRecord, AgentRunsError } from './types.js';
 
 interface JsonlWriterOpts {
   /** `<root>/vault/agent-runs/` parent path. */

@@ -1,17 +1,10 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import {
-  mkdtempSync,
-  mkdirSync,
-  readFileSync,
-  rmSync,
-  writeFileSync,
-  existsSync,
-} from 'node:fs';
-import { join } from 'node:path';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import {
-  DEFAULT_GITIGNORE_LINES,
   applyDefaultGitignore,
+  DEFAULT_GITIGNORE_LINES,
 } from '../../../src/domains/vault-sync/index.js';
 
 describe('applyDefaultGitignore', () => {
@@ -40,10 +33,7 @@ describe('applyDefaultGitignore', () => {
   });
 
   it('merges into an existing .gitignore without removing user lines', () => {
-    writeFileSync(
-      join(workTree, '.gitignore'),
-      'node_modules/\nmy-secret.txt\n',
-    );
+    writeFileSync(join(workTree, '.gitignore'), 'node_modules/\nmy-secret.txt\n');
     const result = applyDefaultGitignore(workTree);
     expect(result.created).toBe(false);
     expect(result.added.length).toBe(DEFAULT_GITIGNORE_LINES.length);

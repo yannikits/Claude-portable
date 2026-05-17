@@ -3,30 +3,31 @@
  *
  * @module @domains/vault-sync
  */
-export type { SnapshotResult, SnapshotState } from './types.js';
-export { detectVaultBranch, DetachedHeadError } from './branch-detect.js';
-export { snapshot } from './snapshot.js';
-export {
-  DEFAULT_GITIGNORE_LINES,
-  applyDefaultGitignore,
-  type ApplyGitignoreResult,
-} from './gitignore-template.js';
+
+export { DetachedHeadError, detectVaultBranch } from './branch-detect.js';
 export { BusyFlag, BusyFlagError, type BusyState } from './busy-flag.js';
 export {
-  VaultScheduler,
-  type SchedulerOpts,
-  type SchedulerStatus,
-} from './scheduler.js';
-export {
   applyConflictResolution,
-  isPushConflictError,
   type ConflictMode,
   type ConflictResolutionResult,
   type ConflictResolutionState,
+  isPushConflictError,
 } from './conflict-policy.js';
 export {
+  type ApplyGitignoreResult,
+  applyDefaultGitignore,
+  DEFAULT_GITIGNORE_LINES,
+} from './gitignore-template.js';
+export {
+  type SchedulerOpts,
+  type SchedulerStatus,
+  VaultScheduler,
+} from './scheduler.js';
+export { snapshot } from './snapshot.js';
+export type { SnapshotResult, SnapshotState } from './types.js';
+export {
+  DEFAULT_VAULT_CONFIG,
   loadVaultConfig,
   updateVaultConfig,
-  DEFAULT_VAULT_CONFIG,
   type VaultConfig,
 } from './vault-config.js';

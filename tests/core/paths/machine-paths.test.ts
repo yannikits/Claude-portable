@@ -1,9 +1,9 @@
-import { describe, it, expect } from 'vitest';
 import { join } from 'node:path';
+import { describe, expect, it } from 'vitest';
 import {
-  resolveMachinePaths,
   externalGitDirFor,
   PathsResolutionError,
+  resolveMachinePaths,
 } from '../../../src/core/paths/index.js';
 
 describe('resolveMachinePaths', () => {
@@ -81,15 +81,15 @@ describe('resolveMachinePaths', () => {
   });
 
   it('throws when no resolution strategy succeeds on linux', () => {
-    expect(() =>
-      resolveMachinePaths({ platform: 'linux', env: {}, home: '' }),
-    ).toThrow(PathsResolutionError);
+    expect(() => resolveMachinePaths({ platform: 'linux', env: {}, home: '' })).toThrow(
+      PathsResolutionError,
+    );
   });
 
   it('throws when $APPDATA unset and home empty on win32', () => {
-    expect(() =>
-      resolveMachinePaths({ platform: 'win32', env: {}, home: '' }),
-    ).toThrow(PathsResolutionError);
+    expect(() => resolveMachinePaths({ platform: 'win32', env: {}, home: '' })).toThrow(
+      PathsResolutionError,
+    );
   });
 });
 
@@ -119,11 +119,11 @@ describe('externalGitDirFor', () => {
   });
 
   it('rejects repo-name with path separators', () => {
-    expect(() =>
-      externalGitDirFor('foo/bar', { platform: 'linux', env: {}, home: '/h' }),
-    ).toThrow(PathsResolutionError);
-    expect(() =>
-      externalGitDirFor('foo\\bar', { platform: 'linux', env: {}, home: '/h' }),
-    ).toThrow(PathsResolutionError);
+    expect(() => externalGitDirFor('foo/bar', { platform: 'linux', env: {}, home: '/h' })).toThrow(
+      PathsResolutionError,
+    );
+    expect(() => externalGitDirFor('foo\\bar', { platform: 'linux', env: {}, home: '/h' })).toThrow(
+      PathsResolutionError,
+    );
   });
 });

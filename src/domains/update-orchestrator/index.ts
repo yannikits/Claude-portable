@@ -3,32 +3,33 @@
  *
  * @module @domains/update-orchestrator
  */
-export type { UpdateResult, UpdateScope, UpdateState } from './types.js';
-export { updateEnvRepo } from './env-repo.js';
-export { updateSkillsRepo } from './skills-repo.js';
+
 export {
-  BackupManager,
-  backupsDirFor,
-  backupPathFor,
   type BackupEntry,
+  BackupManager,
+  backupPathFor,
+  backupsDirFor,
 } from './backup-manager.js';
+export { type DiffStatus, type DiffSummary, diffFiles } from './diff-engine.js';
+export { updateEnvRepo } from './env-repo.js';
+export { PLUGINS_V1_HINT, pluginUpdateLogPath, updatePlugins } from './plugins.js';
 export {
-  ZoneClassifier,
-  type Classification,
-  type Zone,
-} from './zone-classifier.js';
-export { diffFiles, type DiffStatus, type DiffSummary } from './diff-engine.js';
+  type ChecklistSnapshot,
+  type ChecklistStatus,
+  ResumableChecklist,
+} from './resumable-checklist.js';
 export {
-  runReviewLoop,
   type FileToReview,
   type ReviewDecision,
   type ReviewLoopOpts,
   type ReviewLoopResult,
   type ReviewOutcome,
+  runReviewLoop,
 } from './review-loop.js';
+export { updateSkillsRepo } from './skills-repo.js';
+export type { UpdateResult, UpdateScope, UpdateState } from './types.js';
 export {
-  ResumableChecklist,
-  type ChecklistSnapshot,
-  type ChecklistStatus,
-} from './resumable-checklist.js';
-export { updatePlugins, pluginUpdateLogPath, PLUGINS_V1_HINT } from './plugins.js';
+  type Classification,
+  type Zone,
+  ZoneClassifier,
+} from './zone-classifier.js';

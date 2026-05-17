@@ -12,14 +12,14 @@
  *
  * @module @core/git/git-service
  */
-import { simpleGit, type SimpleGit, type SimpleGitOptions } from 'simple-git';
+import { type SimpleGit, type SimpleGitOptions, simpleGit } from 'simple-git';
 import {
+  type CommitResult,
+  type GitConfigScope,
   GitError,
   GitLockfileError,
   GitMergeConflictError,
   GitNotInstalledError,
-  type CommitResult,
-  type GitConfigScope,
   type GitStatusSummary,
   type PushResult,
 } from './types.js';
@@ -69,9 +69,7 @@ function mapError(err: unknown, hint?: string): GitError {
   return new GitError(raw);
 }
 
-const CONFLICTED_PORCELAIN = new Set([
-  'UU', 'AA', 'DD', 'UA', 'AU', 'DU', 'UD',
-]);
+const CONFLICTED_PORCELAIN = new Set(['UU', 'AA', 'DD', 'UA', 'AU', 'DU', 'UD']);
 
 function parsePorcelainLine(
   line: string,
@@ -188,11 +186,7 @@ export class GitService {
     }
   }
 
-  async pull(
-    remote = 'origin',
-    branch?: string,
-    opts: { ffOnly?: boolean } = {},
-  ): Promise<void> {
+  async pull(remote = 'origin', branch?: string, opts: { ffOnly?: boolean } = {}): Promise<void> {
     const target = branch ?? (await this.getCurrentBranch());
     try {
       if (opts.ffOnly === true) {

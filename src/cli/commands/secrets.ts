@@ -29,7 +29,6 @@ function printLine(line: string): void {
 }
 
 function printErr(line: string): void {
-  // biome-ignore lint/suspicious/noConsole: error reporter to stderr
   console.error(line);
 }
 

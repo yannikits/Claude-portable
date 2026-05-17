@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { spawnClaudeBridge } from '../../../src/domains/claude-bridge/index.js';
 
 /**
@@ -17,18 +17,14 @@ import { spawnClaudeBridge } from '../../../src/domains/claude-bridge/index.js';
 const RUN_SLOW = process.env.RUN_SLOW_TESTS === '1';
 
 describe.skipIf(!RUN_SLOW)('claude-bridge long-running 180s', () => {
-  it(
-    'survives a 180s child process without truncation or timeout',
-    async () => {
-      const result = await spawnClaudeBridge({
-        binaryPath: process.execPath,
-        args: ['-e', 'setTimeout(() => process.exit(0), 180_000)'],
-        heartbeatIntervalMs: 30_000,
-      });
-      expect(result.exitCode).toBe(0);
-      expect(result.signal).toBeNull();
-      expect(result.durationMs).toBeGreaterThanOrEqual(180_000);
-    },
-    200_000,
-  );
+  it('survives a 180s child process without truncation or timeout', async () => {
+    const result = await spawnClaudeBridge({
+      binaryPath: process.execPath,
+      args: ['-e', 'setTimeout(() => process.exit(0), 180_000)'],
+      heartbeatIntervalMs: 30_000,
+    });
+    expect(result.exitCode).toBe(0);
+    expect(result.signal).toBeNull();
+    expect(result.durationMs).toBeGreaterThanOrEqual(180_000);
+  }, 200_000);
 });

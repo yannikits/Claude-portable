@@ -15,16 +15,16 @@
  * @module @domains/agent-runs/index-builder
  */
 import {
+  type Dirent,
   existsSync,
   mkdirSync,
-  readFileSync,
   readdirSync,
+  readFileSync,
   renameSync,
   writeFileSync,
-  type Dirent,
 } from 'node:fs';
 import { dirname, join } from 'node:path';
-import { AgentRunsError, type AgentRunRecord } from './types.js';
+import { type AgentRunRecord, AgentRunsError } from './types.js';
 
 export interface IndexFileEnvelope {
   readonly version: 1;
@@ -165,9 +165,7 @@ export class AgentRunsIndex {
       allRecords.push(...records);
       malformedLines += m;
     }
-    allRecords.sort((a, b) =>
-      a.timestamp > b.timestamp ? -1 : a.timestamp < b.timestamp ? 1 : 0,
-    );
+    allRecords.sort((a, b) => (a.timestamp > b.timestamp ? -1 : a.timestamp < b.timestamp ? 1 : 0));
     const rebuiltAt = (opts.now ?? (() => new Date()))().toISOString();
     const envelope: IndexFileEnvelope = {
       version: INDEX_VERSION,

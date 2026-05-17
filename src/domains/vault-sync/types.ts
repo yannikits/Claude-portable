@@ -13,12 +13,12 @@
  *   5. `git push origin <branch>` — best-effort.
  */
 export type SnapshotState =
-  | 'clean'           // nothing to commit
-  | 'committed'       // committed locally, push not attempted
-  | 'pushed'          // committed + pushed successfully
-  | 'commit-failed'   // commit step failed
-  | 'push-failed'     // committed locally but push failed
-  | 'error';          // pre-flight (branch detection, status) failed
+  | 'clean' // nothing to commit
+  | 'committed' // committed locally, push not attempted
+  | 'pushed' // committed + pushed successfully
+  | 'commit-failed' // commit step failed
+  | 'push-failed' // committed locally but push failed
+  | 'error'; // pre-flight (branch detection, status) failed
 
 export interface SnapshotResult {
   readonly state: SnapshotState;

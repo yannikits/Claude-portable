@@ -1,10 +1,10 @@
-import { describe, it, expect } from 'vitest';
 import { isAbsolute } from 'node:path';
+import { describe, expect, it } from 'vitest';
 import {
-  SourceParseError,
   githubTarballUrl,
-  parseSource,
   type ParsedGithubSource,
+  parseSource,
+  SourceParseError,
 } from '../../../src/domains/catalog/index.js';
 
 describe('parseSource', () => {

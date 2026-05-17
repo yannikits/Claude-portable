@@ -1,13 +1,7 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import {
-  mkdtempSync,
-  readFileSync,
-  rmSync,
-  existsSync,
-  writeFileSync,
-} from 'node:fs';
-import { join } from 'node:path';
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { ResumableChecklist } from '../../../src/domains/update-orchestrator/index.js';
 
 describe('ResumableChecklist', () => {
@@ -102,9 +96,7 @@ describe('ResumableChecklist', () => {
     });
     old.complete();
     expect(ResumableChecklist.loadLatest(dir, 'skills')).toBeNull();
-    expect(
-      ResumableChecklist.loadLatest(dir, 'skills', { includeComplete: true }),
-    ).not.toBeNull();
+    expect(ResumableChecklist.loadLatest(dir, 'skills', { includeComplete: true })).not.toBeNull();
   });
 
   it('loadLatest picks the most recent in-progress checklist for scope', () => {

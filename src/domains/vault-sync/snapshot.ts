@@ -81,7 +81,7 @@ export async function snapshot(opts: SnapshotOpts): Promise<SnapshotResult> {
     );
   }
 
-  let preStatus;
+  let preStatus: Awaited<ReturnType<typeof git.status>>;
   try {
     preStatus = await git.status();
   } catch (err) {

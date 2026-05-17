@@ -23,10 +23,7 @@
 import chokidar, { type FSWatcher } from 'chokidar';
 import { detectCloudProvider } from '../../core/environment/index.js';
 
-type ChokidarFactory = (
-  paths: string,
-  options: Parameters<typeof chokidar.watch>[1],
-) => FSWatcher;
+type ChokidarFactory = (paths: string, options: Parameters<typeof chokidar.watch>[1]) => FSWatcher;
 
 export interface SchedulerOpts {
   /** Vault working-tree to watch. */

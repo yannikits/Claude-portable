@@ -1,18 +1,11 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import {
-  mkdtempSync,
-  mkdirSync,
-  writeFileSync,
-  rmSync,
-  existsSync,
-  readFileSync,
-} from 'node:fs';
-import { join } from 'node:path';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import {
   BackupManager,
-  backupsDirFor,
   backupPathFor,
+  backupsDirFor,
 } from '../../../src/domains/update-orchestrator/index.js';
 
 describe('BackupManager', () => {
@@ -53,9 +46,10 @@ describe('BackupManager', () => {
     expect(entry.totalBytes).toBeGreaterThan(0);
     expect(existsSync(join(entry.path, 'skills', 'thinking-partner', 'SKILL.md'))).toBe(true);
     expect(existsSync(join(entry.path, 'skills', 'daily-review', 'SKILL.md'))).toBe(true);
-    const manifest = JSON.parse(
-      readFileSync(join(entry.path, 'manifest.json'), 'utf8'),
-    ) as Record<string, unknown>;
+    const manifest = JSON.parse(readFileSync(join(entry.path, 'manifest.json'), 'utf8')) as Record<
+      string,
+      unknown
+    >;
     expect(manifest.timestamp).toBe('2026-05-17T08-00-00-123Z');
     expect(manifest.scope).toBe('skills');
   });
@@ -85,7 +79,10 @@ describe('BackupManager', () => {
 
   it('restore "latest" copies the newest backup into destination', () => {
     makeManager(() => new Date('2026-05-17T01:00:00.000Z')).snapshot('skills', sourceDir);
-    const second = makeManager(() => new Date('2026-05-17T02:00:00.000Z')).snapshot('skills', sourceDir);
+    const second = makeManager(() => new Date('2026-05-17T02:00:00.000Z')).snapshot(
+      'skills',
+      sourceDir,
+    );
     const dest = join(tmpBase, 'restored');
     const entry = makeManager().restore('latest', dest);
     expect(entry?.timestamp).toBe(second.timestamp);
@@ -93,7 +90,10 @@ describe('BackupManager', () => {
   });
 
   it('restore by explicit timestamp', () => {
-    const first = makeManager(() => new Date('2026-05-17T01:00:00.000Z')).snapshot('skills', sourceDir);
+    const first = makeManager(() => new Date('2026-05-17T01:00:00.000Z')).snapshot(
+      'skills',
+      sourceDir,
+    );
     makeManager(() => new Date('2026-05-17T02:00:00.000Z')).snapshot('skills', sourceDir);
     const dest = join(tmpBase, 'restored');
     const entry = makeManager().restore(first.timestamp, dest);

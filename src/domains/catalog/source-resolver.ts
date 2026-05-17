@@ -71,9 +71,7 @@ function parseMarketplace(remainder: string, raw: string): ParsedMarketplaceSour
     throw new SourceParseError(`marketplace source has empty name or plugin: "${raw}"`);
   }
   if (!NAME_PATTERN.test(marketplace) || !NAME_PATTERN.test(plugin)) {
-    throw new SourceParseError(
-      `marketplace name and plugin must match [A-Za-z0-9._-]+: "${raw}"`,
-    );
+    throw new SourceParseError(`marketplace name and plugin must match [A-Za-z0-9._-]+: "${raw}"`);
   }
   return { kind: 'marketplace', raw, marketplace, plugin };
 }

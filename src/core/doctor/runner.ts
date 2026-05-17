@@ -3,16 +3,17 @@
  *
  * @module @core/doctor/runner
  */
-import type { CheckResult, DoctorReport, CheckSeverity } from './types.js';
-import { resolveRoot, RootNotFoundError, type ResolvedRoot } from '../environment/index.js';
+
+import { type ResolvedRoot, RootNotFoundError, resolveRoot } from '../environment/index.js';
 import {
-  checkNodeVersion,
-  checkGitAvailable,
   checkClaudeBinary,
+  checkGitAvailable,
   checkMountReachable,
-  checkWritePermission,
+  checkNodeVersion,
   checkWindowsLongPaths,
+  checkWritePermission,
 } from './checks.js';
+import type { CheckResult, CheckSeverity, DoctorReport } from './types.js';
 
 function summarize(checks: readonly CheckResult[], totalDurationMs: number): DoctorReport {
   const ok = checks.filter((c) => c.severity === 'ok').length;
@@ -27,9 +28,7 @@ function summarize(checks: readonly CheckResult[], totalDurationMs: number): Doc
 }
 
 export async function runDoctor(
-  opts: {
-    readonly explicitRoot?: string;
-  } = {},
+  opts: { readonly explicitRoot?: string } = {},
 ): Promise<DoctorReport> {
   const startedAt = Date.now();
 

@@ -13,10 +13,7 @@ export interface Heartbeat {
   stop(): void;
 }
 
-export function startHeartbeat(
-  intervalMs: number,
-  tick: (elapsedMs: number) => void,
-): Heartbeat {
+export function startHeartbeat(intervalMs: number, tick: (elapsedMs: number) => void): Heartbeat {
   if (intervalMs <= 0) return { stop: () => {} };
   const startedAt = Date.now();
   const handle = setInterval(() => {

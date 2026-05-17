@@ -1,17 +1,10 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import {
-  mkdtempSync,
-  mkdirSync,
-  writeFileSync,
-  utimesSync,
-  rmSync,
-  existsSync,
-} from 'node:fs';
-import { join } from 'node:path';
+import { existsSync, mkdirSync, mkdtempSync, rmSync, utimesSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import {
-  DEFAULT_TARBALL_RETENTION_MS,
   cleanTarballCache,
+  DEFAULT_TARBALL_RETENTION_MS,
 } from '../../../src/domains/catalog/index.js';
 
 describe('cleanTarballCache', () => {

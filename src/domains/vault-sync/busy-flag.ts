@@ -33,8 +33,8 @@ import {
   unlinkSync,
   writeFileSync,
 } from 'node:fs';
-import { dirname } from 'node:path';
 import { hostname } from 'node:os';
+import { dirname } from 'node:path';
 
 /** Serialized busy-flag envelope. */
 export interface BusyState {
@@ -104,11 +104,7 @@ export class BusyFlag {
     if (raw.trim().length === 0) return null;
     try {
       const parsed = JSON.parse(raw) as unknown;
-      if (
-        parsed === null ||
-        typeof parsed !== 'object' ||
-        Array.isArray(parsed)
-      ) {
+      if (parsed === null || typeof parsed !== 'object' || Array.isArray(parsed)) {
         return null;
       }
       const obj = parsed as Record<string, unknown>;
@@ -134,7 +130,7 @@ export class BusyFlag {
    */
   acquire(reason: string): boolean {
     const current = this.read();
-    if (current !== null && current.busy) {
+    if (current?.busy) {
       const isSameHost = current.hostname === this.hostname;
       const stale = isSameHost && !this.isPidAlive(current.pid);
       if (!stale) return false;

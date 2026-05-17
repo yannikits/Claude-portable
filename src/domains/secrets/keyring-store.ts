@@ -86,9 +86,7 @@ export class KeyringStore implements SecretStore {
   list(): Promise<readonly SecretMetadata[]> {
     try {
       const creds = findCredentials(SERVICE_NAME);
-      return Promise.resolve(
-        creds.map((c) => ({ key: c.account, backend: 'keyring' as const })),
-      );
+      return Promise.resolve(creds.map((c) => ({ key: c.account, backend: 'keyring' as const })));
     } catch (err) {
       return Promise.reject(
         new SecretsError(

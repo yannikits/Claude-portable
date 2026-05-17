@@ -3,6 +3,7 @@
  *
  * @module @core/git-metadata
  */
+
+export { migrateGitMetadata } from './migrator.js';
 export type { MigrationResult, MigrationState } from './types.js';
 export { GitMetadataMigrationError } from './types.js';
-export { migrateGitMetadata } from './migrator.js';

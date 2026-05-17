@@ -13,11 +13,8 @@
  * @module @cli/commands/ai
  */
 import type { Command } from 'commander';
-import { resolveRoot, RootNotFoundError } from '../../core/environment/index.js';
-import {
-  BinaryNotFoundError,
-  spawnClaudeBridge,
-} from '../../domains/claude-bridge/index.js';
+import { RootNotFoundError, resolveRoot } from '../../core/environment/index.js';
+import { BinaryNotFoundError, spawnClaudeBridge } from '../../domains/claude-bridge/index.js';
 
 interface GlobalOpts {
   readonly root?: string;
@@ -34,9 +31,7 @@ function exitCodeFor(exitCode: number | null, signal: NodeJS.Signals | null): nu
 export function registerAiCommand(program: Command): void {
   program
     .command('ai')
-    .description(
-      'Forward args to the Anthropic claude binary; streams stdio without buffering.',
-    )
+    .description('Forward args to the Anthropic claude binary; streams stdio without buffering.')
     .allowUnknownOption(true)
     .helpOption(false)
     .argument('[claudeArgs...]', 'arguments to forward to the claude binary')
@@ -49,9 +44,7 @@ export function registerAiCommand(program: Command): void {
 
       let rootPath: string | undefined;
       try {
-        const root = resolveRoot(
-          globals.root === undefined ? {} : { explicit: globals.root },
-        );
+        const root = resolveRoot(globals.root === undefined ? {} : { explicit: globals.root });
         rootPath = root.path;
       } catch (err) {
         if (!(err instanceof RootNotFoundError)) throw err;
@@ -66,7 +59,6 @@ export function registerAiCommand(program: Command): void {
         process.exit(exitCodeFor(result.exitCode, result.signal));
       } catch (err) {
         if (err instanceof BinaryNotFoundError) {
-          // biome-ignore lint/suspicious/noConsole: user-facing error
           console.error(`claude-os ai: ${err.message}`);
           process.exit(127); // POSIX "command not found"
         }

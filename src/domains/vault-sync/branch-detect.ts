@@ -22,9 +22,7 @@ export class DetachedHeadError extends GitError {
 export async function detectVaultBranch(git: GitService): Promise<string> {
   const branch = await git.getCurrentBranch();
   if (branch === 'HEAD' || branch.length === 0) {
-    throw new DetachedHeadError(
-      'Vault is in detached-HEAD state. Snapshot needs a named branch.',
-    );
+    throw new DetachedHeadError('Vault is in detached-HEAD state. Snapshot needs a named branch.');
   }
   return branch;
 }

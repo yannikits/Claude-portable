@@ -23,6 +23,8 @@
  *
  * @module @domains/secrets/encrypted-file-store
  */
+
+import { createCipheriv, createDecipheriv, pbkdf2Sync, randomBytes } from 'node:crypto';
 import {
   existsSync,
   mkdirSync,
@@ -32,7 +34,6 @@ import {
   writeFileSync,
 } from 'node:fs';
 import { dirname } from 'node:path';
-import { createCipheriv, createDecipheriv, pbkdf2Sync, randomBytes } from 'node:crypto';
 import type { SecretMetadata, SecretStore } from './types.js';
 import { SecretsError, SecretsLockedError } from './types.js';
 

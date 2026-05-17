@@ -47,9 +47,7 @@ function splitOnFirstOp(body: string): { name: string; constraint?: VersionConst
       const name = body.slice(0, idx);
       const version = body.slice(idx + op.length);
       if (version.length === 0) {
-        throw new CapabilityParseError(
-          `capability "${body}" has operator "${op}" but no version`,
-        );
+        throw new CapabilityParseError(`capability "${body}" has operator "${op}" but no version`);
       }
       if (!VERSION_PATTERN.test(version)) {
         throw new CapabilityParseError(

@@ -1,18 +1,8 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import {
-  mkdtempSync,
-  rmSync,
-  writeFileSync,
-  mkdirSync,
-  existsSync,
-} from 'node:fs';
-import { join } from 'node:path';
+import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import {
-  GitService,
-  GitNotInstalledError,
-  GitError,
-} from '../../../src/core/git/index.js';
+import { join } from 'node:path';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { GitError, GitNotInstalledError, GitService } from '../../../src/core/git/index.js';
 
 describe('GitService', () => {
   let tmpBase: string;

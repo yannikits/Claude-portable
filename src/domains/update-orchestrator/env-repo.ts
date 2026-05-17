@@ -87,7 +87,7 @@ export async function updateEnvRepo(opts: UpdateEnvRepoOpts): Promise<UpdateResu
     // ignore — sha-tracking is best-effort
   }
 
-  let status;
+  let status: Awaited<ReturnType<typeof git.status>>;
   try {
     status = await git.status();
   } catch (err) {

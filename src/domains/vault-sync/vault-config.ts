@@ -16,13 +16,7 @@
  *
  * @module @domains/vault-sync/vault-config
  */
-import {
-  existsSync,
-  mkdirSync,
-  readFileSync,
-  renameSync,
-  writeFileSync,
-} from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
 import { dirname } from 'node:path';
 import type { ConflictMode } from './conflict-policy.js';
 
@@ -73,10 +67,7 @@ export function loadVaultConfig(filePath: string): VaultConfig {
  * Updates the config with a partial patch and persists atomically.
  * Returns the merged config.
  */
-export function updateVaultConfig(
-  filePath: string,
-  patch: Partial<VaultConfig>,
-): VaultConfig {
+export function updateVaultConfig(filePath: string, patch: Partial<VaultConfig>): VaultConfig {
   const current = loadVaultConfig(filePath);
   const next: VaultConfig = { ...current, ...patch };
   if (!isValidConfig(next)) {

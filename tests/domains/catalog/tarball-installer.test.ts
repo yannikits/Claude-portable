@@ -1,20 +1,10 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import {
-  mkdtempSync,
-  mkdirSync,
-  writeFileSync,
-  readFileSync,
-  rmSync,
-  existsSync,
-} from 'node:fs';
-import { join } from 'node:path';
-import { tmpdir } from 'node:os';
 import { createHash } from 'node:crypto';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { create as tarCreate } from 'tar';
-import {
-  TarballInstallError,
-  installFromTarball,
-} from '../../../src/domains/catalog/index.js';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { installFromTarball, TarballInstallError } from '../../../src/domains/catalog/index.js';
 
 /**
  * Builds a real .tar.gz fixture containing a tiny synthetic skill

@@ -4,13 +4,14 @@
  *
  * @module @domains/claude-bridge
  */
+
+export { type Heartbeat, startHeartbeat } from './heartbeat.js';
+export { resolveClaudeBinary } from './resolve-binary.js';
+export { spawnClaudeBridge } from './spawn.js';
 export type {
+  BinarySource,
   BridgeOpts,
   BridgeResult,
-  BinarySource,
   ResolvedBinary,
 } from './types.js';
 export { BinaryNotFoundError } from './types.js';
-export { resolveClaudeBinary } from './resolve-binary.js';
-export { startHeartbeat, type Heartbeat } from './heartbeat.js';
-export { spawnClaudeBridge } from './spawn.js';

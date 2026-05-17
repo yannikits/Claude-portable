@@ -15,22 +15,23 @@
  *
  * @module @cli/commands/vault
  */
-import type { Command } from 'commander';
+
 import { join } from 'node:path';
-import { resolveRoot, RootNotFoundError } from '../../core/environment/index.js';
+import type { Command } from 'commander';
+import { RootNotFoundError, resolveRoot } from '../../core/environment/index.js';
+import { GitService } from '../../core/git/index.js';
 import { resolveMachinePaths } from '../../core/paths/index.js';
 import {
-  BusyFlag,
   applyConflictResolution,
   applyDefaultGitignore,
+  BusyFlag,
+  type ConflictMode,
   isPushConflictError,
   loadVaultConfig,
   snapshot,
   updateVaultConfig,
-  type ConflictMode,
   type VaultConfig,
 } from '../../domains/vault-sync/index.js';
-import { GitService } from '../../core/git/index.js';
 
 interface GlobalOpts {
   readonly root?: string;
@@ -48,7 +49,6 @@ function printLine(line: string): void {
 }
 
 function printErr(line: string): void {
-  // biome-ignore lint/suspicious/noConsole: error reporter to stderr
   console.error(line);
 }
 
@@ -83,9 +83,8 @@ async function actSnapshot(globals: GlobalOpts, skipPush: boolean): Promise<void
   const flag = new BusyFlag({ filePath: paths.busyFlagPath });
   if (!flag.acquire('cli:snapshot')) {
     const held = flag.read();
-    const detail = held === null
-      ? 'unknown'
-      : `${held.hostname} pid=${held.pid} since ${held.acquiredAt}`;
+    const detail =
+      held === null ? 'unknown' : `${held.hostname} pid=${held.pid} since ${held.acquiredAt}`;
     if (globals.json === true) {
       printJson({ ok: false, action: 'snapshot', state: 'busy', heldBy: detail });
     } else {
@@ -123,11 +122,12 @@ async function actSnapshot(globals: GlobalOpts, skipPush: boolean): Promise<void
     if (globals.json === true) {
       printJson({ ok: result.state !== 'error', snapshot: result });
     } else {
-      const marker = result.state === 'error' || result.state === 'commit-failed'
-        ? '[FAIL]'
-        : result.state === 'push-failed'
-          ? '[WARN]'
-          : '[OK]  ';
+      const marker =
+        result.state === 'error' || result.state === 'commit-failed'
+          ? '[FAIL]'
+          : result.state === 'push-failed'
+            ? '[WARN]'
+            : '[OK]  ';
       printLine(`${marker} ${result.summary}`);
       if (result.error !== undefined) printLine(`        Error: ${result.error}`);
     }
@@ -175,7 +175,9 @@ function actStatus(globals: GlobalOpts): void {
 
 function actConflictMode(globals: GlobalOpts, mode: string): void {
   if (mode !== 'abort' && mode !== 'prefer-local' && mode !== 'prefer-remote') {
-    printErr(`vault conflict-mode: invalid mode "${mode}" (expected abort|prefer-local|prefer-remote)`);
+    printErr(
+      `vault conflict-mode: invalid mode "${mode}" (expected abort|prefer-local|prefer-remote)`,
+    );
     process.exit(1);
   }
   let paths: ResolvedVaultPaths;
@@ -220,7 +222,9 @@ function actSchedule(
   if (opts.idleSeconds !== undefined) {
     const parsed = Number.parseInt(opts.idleSeconds, 10);
     if (!Number.isFinite(parsed) || parsed <= 0) {
-      printErr(`vault schedule: --idle-seconds must be a positive integer, got "${opts.idleSeconds}"`);
+      printErr(
+        `vault schedule: --idle-seconds must be a positive integer, got "${opts.idleSeconds}"`,
+      );
       process.exit(1);
     }
     patch.idleSeconds = parsed;

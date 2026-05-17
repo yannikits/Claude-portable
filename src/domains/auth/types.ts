@@ -6,10 +6,10 @@
 
 /** How the auth state was determined. */
 export type AuthSource =
-  | 'cli'          // `claude auth status` subprocess parsed
-  | 'file'         // .credentials.json read directly
-  | 'env'          // CLAUDE_CODE_OAUTH_* env-vars present (CI mode)
-  | 'no-creds';    // nothing found
+  | 'cli' // `claude auth status` subprocess parsed
+  | 'file' // .credentials.json read directly
+  | 'env' // CLAUDE_CODE_OAUTH_* env-vars present (CI mode)
+  | 'no-creds'; // nothing found
 
 /** Aggregate auth state surfaced to callers + CLI/GUI. */
 export interface AuthState {

@@ -15,12 +15,12 @@
  * @module @domains/catalog/capability-resolver
  */
 import {
-  CapabilityParseError,
+  type Capability,
+  type CapabilityParseError,
   capabilityToString,
   compareVersions,
   parseCapability,
   satisfies,
-  type Capability,
   type VersionConstraint,
 } from './capability.js';
 
@@ -65,9 +65,7 @@ export class MissingProviderError extends ResolverError {
   readonly capability: string;
   readonly requiredBy: string;
   constructor(capability: string, requiredBy: string) {
-    super(
-      `no installed plugin provides capability "${capability}" (required by "${requiredBy}")`,
-    );
+    super(`no installed plugin provides capability "${capability}" (required by "${requiredBy}")`);
     this.name = 'MissingProviderError';
     this.capability = capability;
     this.requiredBy = requiredBy;
@@ -155,10 +153,7 @@ function findProviders(
   return matches;
 }
 
-function constraintSatisfied(
-  providerVersion: string,
-  constraint?: VersionConstraint,
-): boolean {
+function constraintSatisfied(providerVersion: string, constraint?: VersionConstraint): boolean {
   if (constraint === undefined) return true;
   return satisfies(providerVersion, constraint);
 }
@@ -216,13 +211,15 @@ function walk(
       const distinctIds = new Set(compatible.map((p) => p.manifest.id));
       if (distinctIds.size > 1) {
         state.stack.pop();
-        return new AmbiguousProviderError(
-          capabilityToString(wanted),
-          [...distinctIds].sort(),
-        );
+        return new AmbiguousProviderError(capabilityToString(wanted), [...distinctIds].sort());
       }
     }
-    const chosen = compatible[0]!.manifest;
+    const chosen = compatible[0]?.manifest;
+    if (chosen === undefined) {
+      // unreachable: line 202 returns early when compatible.length === 0
+      state.stack.pop();
+      return new VersionConflictError(capabilityToString(wanted), '?', manifest.id);
+    }
     appendIfMissing(
       state.bindings,
       { capability: capabilityToString(wanted), providedBy: chosen },

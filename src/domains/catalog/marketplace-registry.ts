@@ -24,11 +24,7 @@
  * @module @domains/catalog/marketplace-registry
  */
 import { existsSync, readFileSync } from 'node:fs';
-import {
-  SourceParseError,
-  parseSource,
-  type ParsedGithubSource,
-} from './source-resolver.js';
+import { type ParsedGithubSource, parseSource, SourceParseError } from './source-resolver.js';
 
 export interface MarketplaceRegistryFile {
   readonly version: 1;
@@ -70,11 +66,7 @@ function isMarketplaceEntry(value: unknown): value is MarketplaceEntry {
   const v = value as Record<string, unknown>;
   if (typeof v.source !== 'string') return false;
   if (v.ref !== undefined && typeof v.ref !== 'string') return false;
-  if (
-    v.plugins === null ||
-    typeof v.plugins !== 'object' ||
-    Array.isArray(v.plugins)
-  ) {
+  if (v.plugins === null || typeof v.plugins !== 'object' || Array.isArray(v.plugins)) {
     return false;
   }
   for (const plugin of Object.values(v.plugins as Record<string, unknown>)) {
@@ -167,7 +159,7 @@ export class MarketplaceRegistry {
         `unknown plugin "${plugin}" in marketplace "${marketplace}"`,
       );
     }
-    let parsed;
+    let parsed: ReturnType<typeof parseSource>;
     try {
       parsed = parseSource(entry.source);
     } catch (err) {

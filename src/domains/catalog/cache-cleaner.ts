@@ -9,13 +9,7 @@
  *
  * @module @domains/catalog/cache-cleaner
  */
-import {
-  existsSync,
-  readdirSync,
-  statSync,
-  unlinkSync,
-  type Dirent,
-} from 'node:fs';
+import { type Dirent, existsSync, readdirSync, statSync, unlinkSync } from 'node:fs';
 import { join } from 'node:path';
 
 export interface CleanResult {

@@ -14,7 +14,7 @@
  * @module @domains/auth/state-check
  */
 import { hasCiEnvCredentials, readCredentialsFile } from './credentials.js';
-import { type AuthSource, type AuthState } from './types.js';
+import type { AuthSource, AuthState } from './types.js';
 
 type Executor = (
   binaryPath: string,

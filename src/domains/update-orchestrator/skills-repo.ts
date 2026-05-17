@@ -112,7 +112,7 @@ export async function updateSkillsRepo(opts: UpdateSkillsRepoOpts): Promise<Upda
     /* best-effort */
   }
 
-  let status;
+  let status: Awaited<ReturnType<typeof git.status>>;
   try {
     status = await git.status();
   } catch (err) {
@@ -128,8 +128,7 @@ export async function updateSkillsRepo(opts: UpdateSkillsRepoOpts): Promise<Upda
     );
   }
   if (!status.clean) {
-    const dirtyCount =
-      status.modified.length + status.staged.length + status.untracked.length;
+    const dirtyCount = status.modified.length + status.staged.length + status.untracked.length;
     return buildResult(
       'aborted-dirty',
       {

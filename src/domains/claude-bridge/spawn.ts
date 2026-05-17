@@ -113,10 +113,7 @@ export async function spawnClaudeBridge(opts: BridgeOpts): Promise<BridgeResult>
     child.once('exit', (code, signal) => {
       cleanup();
       const durationMs = Date.now() - startedAt;
-      logger.info(
-        { pid: child.pid, exitCode: code, signal, durationMs },
-        'claude-bridge.exit',
-      );
+      logger.info({ pid: child.pid, exitCode: code, signal, durationMs }, 'claude-bridge.exit');
       resolve({ exitCode: code, signal, durationMs, binary });
     });
   });

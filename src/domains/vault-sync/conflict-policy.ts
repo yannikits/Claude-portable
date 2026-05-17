@@ -32,10 +32,10 @@ import type { GitService } from '../../core/git/index.js';
 export type ConflictMode = 'abort' | 'prefer-local' | 'prefer-remote';
 
 export type ConflictResolutionState =
-  | 'aborted'             // mode = abort, no-op + reason returned
-  | 'forced-push'         // mode = prefer-local, --force-with-lease succeeded
-  | 'reset-with-backup'   // mode = prefer-remote, local saved on backup branch
-  | 'error';              // resolution attempt itself failed
+  | 'aborted' // mode = abort, no-op + reason returned
+  | 'forced-push' // mode = prefer-local, --force-with-lease succeeded
+  | 'reset-with-backup' // mode = prefer-remote, local saved on backup branch
+  | 'error'; // resolution attempt itself failed
 
 export interface ConflictResolutionResult {
   readonly mode: ConflictMode;

@@ -26,17 +26,18 @@
  *
  * @module @cli/commands/update
  */
-import type { Command } from 'commander';
+
 import { join } from 'node:path';
-import { resolveRoot, RootNotFoundError } from '../../core/environment/index.js';
+import type { Command } from 'commander';
+import { RootNotFoundError, resolveRoot } from '../../core/environment/index.js';
 import { resolveMachinePaths } from '../../core/paths/index.js';
 import {
   BackupManager,
   backupsDirFor,
+  type UpdateResult,
   updateEnvRepo,
   updatePlugins,
   updateSkillsRepo,
-  type UpdateResult,
 } from '../../domains/update-orchestrator/index.js';
 
 const SKILLS_REPO_SOURCE = 'https://github.com/iteenschmiede/claude-config.git';
@@ -76,7 +77,6 @@ function printLine(line: string): void {
 }
 
 function printErr(line: string): void {
-  // biome-ignore lint/suspicious/noConsole: error reporter to stderr
   console.error(line);
 }
 
@@ -123,10 +123,7 @@ function printResult(result: UpdateResult, json: boolean): void {
   printLine(`        (${result.durationMs}ms)`);
 }
 
-async function doRollback(
-  globals: GlobalOpts,
-  rollbackArg: string | boolean,
-): Promise<void> {
+async function doRollback(globals: GlobalOpts, rollbackArg: string | boolean): Promise<void> {
   let paths: ResolvedUpdatePaths;
   try {
     paths = resolveUpdatePaths(globals);
@@ -165,10 +162,7 @@ async function doEnv(globals: GlobalOpts, paths: ResolvedUpdatePaths): Promise<U
   return result;
 }
 
-async function doSkills(
-  globals: GlobalOpts,
-  paths: ResolvedUpdatePaths,
-): Promise<UpdateResult> {
+async function doSkills(globals: GlobalOpts, paths: ResolvedUpdatePaths): Promise<UpdateResult> {
   const result = await updateSkillsRepo({
     destination: paths.skillsDir,
     source: SKILLS_REPO_SOURCE,
@@ -185,10 +179,7 @@ async function doSkills(
   return result;
 }
 
-async function doPlugins(
-  globals: GlobalOpts,
-  paths: ResolvedUpdatePaths,
-): Promise<UpdateResult> {
+async function doPlugins(globals: GlobalOpts, paths: ResolvedUpdatePaths): Promise<UpdateResult> {
   const result = await updatePlugins({ logsDir: paths.logsDir });
   printResult(result, globals.json === true);
   return result;
@@ -197,9 +188,7 @@ async function doPlugins(
 export function registerUpdateCommand(program: Command): void {
   program
     .command('update')
-    .description(
-      'Tiered auto-update for env-repo + skills-repo + plugins (ADR-0005).',
-    )
+    .description('Tiered auto-update for env-repo + skills-repo + plugins (ADR-0005).')
     .option('--env', 'env-repo ff-only pull')
     .option('--skills', 'skills-repo selective-merge')
     .option('--plugins', 'explicit plugin updates (Phase 5 catalog)')
@@ -268,9 +257,7 @@ export function registerUpdateCommand(program: Command): void {
       const hasError = results.some((r) => r.state === 'error');
       const hasAborted = results.some(
         (r) =>
-          r.state === 'aborted-dirty' ||
-          r.state === 'aborted-diverged' ||
-          r.state === 'no-remote',
+          r.state === 'aborted-dirty' || r.state === 'aborted-diverged' || r.state === 'no-remote',
       );
       if (hasError) process.exit(1);
       if (hasAborted) process.exit(2);

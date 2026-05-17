@@ -17,11 +17,7 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
-import {
-  AuthError,
-  type CredentialsFileEnvelope,
-  type SchemaCheckResult,
-} from './types.js';
+import { AuthError, type CredentialsFileEnvelope, type SchemaCheckResult } from './types.js';
 
 interface CredentialsReaderOpts {
   /** Override the home directory (tests). */
@@ -92,7 +88,11 @@ export function readCredentialsFile(
 export function checkCredentialsSchema(opts: CredentialsReaderOpts = {}): SchemaCheckResult {
   const path = resolveCredentialsPath(opts);
   if (!existsSync(path)) {
-    return { ok: true, missingFields: [], warning: 'no .credentials.json present (not logged in?)' };
+    return {
+      ok: true,
+      missingFields: [],
+      warning: 'no .credentials.json present (not logged in?)',
+    };
   }
   let raw: string;
   try {

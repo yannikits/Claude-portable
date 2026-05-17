@@ -14,18 +14,18 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import type { Command } from 'commander';
-import { resolveRoot, RootNotFoundError } from '../../core/environment/index.js';
+import { RootNotFoundError, resolveRoot } from '../../core/environment/index.js';
 import { resolveMachinePaths } from '../../core/paths/index.js';
 import {
-  SourceParseError,
-  TarballInstallError,
+  type Catalog,
   githubTarballUrl,
   installFromTarball,
+  type PluginManifest,
   parseSource,
   resolveCapabilities,
+  SourceParseError,
+  TarballInstallError,
   tarballCacheDirFor,
-  type Catalog,
-  type PluginManifest,
 } from '../../domains/catalog/index.js';
 
 interface GlobalOpts {
@@ -44,12 +44,11 @@ function printLine(line: string): void {
 }
 
 function printErr(line: string): void {
-  // biome-ignore lint/suspicious/noConsole: stderr reporter
   console.error(line);
 }
 
 async function actInstall(globals: GlobalOpts, raw: string): Promise<void> {
-  let parsed;
+  let parsed: ReturnType<typeof parseSource>;
   try {
     parsed = parseSource(raw);
   } catch (err) {

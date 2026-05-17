@@ -13,14 +13,12 @@
  *
  * @module @cli/commands/agent
  */
-import type { Command } from 'commander';
+
 import { join } from 'node:path';
-import { resolveRoot, RootNotFoundError } from '../../core/environment/index.js';
+import type { Command } from 'commander';
+import { RootNotFoundError, resolveRoot } from '../../core/environment/index.js';
 import { resolveMachinePaths } from '../../core/paths/index.js';
-import {
-  AgentRunsRepository,
-  agentRunsIndexPathFor,
-} from '../../domains/agent-runs/index.js';
+import { AgentRunsRepository, agentRunsIndexPathFor } from '../../domains/agent-runs/index.js';
 
 interface GlobalOpts {
   readonly root?: string;
@@ -38,7 +36,6 @@ function printLine(line: string): void {
 }
 
 function printErr(line: string): void {
-  // biome-ignore lint/suspicious/noConsole: stderr reporter
   console.error(line);
 }
 

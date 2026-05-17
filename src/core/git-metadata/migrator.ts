@@ -8,14 +8,7 @@
  *
  * @module @core/git-metadata/migrator
  */
-import {
-  existsSync,
-  mkdirSync,
-  readdirSync,
-  readFileSync,
-  realpathSync,
-  statSync,
-} from 'node:fs';
+import { existsSync, mkdirSync, readdirSync, readFileSync, realpathSync, statSync } from 'node:fs';
 import { isAbsolute, join, resolve } from 'node:path';
 import { simpleGit } from 'simple-git';
 import { externalGitDirFor } from '../paths/index.js';
@@ -134,7 +127,10 @@ export async function migrateGitMetadata(opts: MigrateOpts): Promise<MigrationRe
       externalGitDir,
       `${dotGit} does not exist — vault is not yet a Git repository`,
       startedAt,
-      { detail: 'Initialize the repo with `git init` inside the vault first, then re-run migration.' },
+      {
+        detail:
+          'Initialize the repo with `git init` inside the vault first, then re-run migration.',
+      },
     );
   }
 
@@ -153,9 +149,16 @@ export async function migrateGitMetadata(opts: MigrateOpts): Promise<MigrationRe
     try {
       pointsAt = readGitfileTarget(dotGit, workTree);
     } catch (err) {
-      return buildResult('error', workTree, externalGitDir, `Cannot read gitfile ${dotGit}`, startedAt, {
-        error: err instanceof Error ? err.message : String(err),
-      });
+      return buildResult(
+        'error',
+        workTree,
+        externalGitDir,
+        `Cannot read gitfile ${dotGit}`,
+        startedAt,
+        {
+          error: err instanceof Error ? err.message : String(err),
+        },
+      );
     }
     if (pointsAt === null) {
       return buildResult(

@@ -11,14 +11,11 @@
  * @module @cli/commands/doctor
  */
 import type { Command } from 'commander';
-import { resolveRoot, RootNotFoundError } from '../../core/environment/index.js';
 import { runDoctor } from '../../core/doctor/index.js';
+import { RootNotFoundError, resolveRoot } from '../../core/environment/index.js';
 import { migrateGitMetadata } from '../../core/git-metadata/index.js';
-import { formatDoctorReportText, formatDoctorReportJson } from '../presenters/doctor.js';
-import {
-  formatMigrationResultText,
-  formatMigrationResultJson,
-} from '../presenters/migration.js';
+import { formatDoctorReportJson, formatDoctorReportText } from '../presenters/doctor.js';
+import { formatMigrationResultJson, formatMigrationResultText } from '../presenters/migration.js';
 
 interface GlobalOpts {
   readonly root?: string;

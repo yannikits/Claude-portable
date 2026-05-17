@@ -1,7 +1,7 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { mkdtempSync, rmSync, existsSync, readFileSync, writeFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { BusyFlag, type BusyState } from '../../../src/domains/vault-sync/index.js';
 
 describe('BusyFlag', () => {
@@ -17,12 +17,14 @@ describe('BusyFlag', () => {
     if (existsSync(tmpBase)) rmSync(tmpBase, { recursive: true, force: true });
   });
 
-  function makeFlag(overrides: Partial<{
-    hostname: string;
-    pid: number;
-    isPidAlive: (pid: number) => boolean;
-    now: () => Date;
-  }> = {}): BusyFlag {
+  function makeFlag(
+    overrides: Partial<{
+      hostname: string;
+      pid: number;
+      isPidAlive: (pid: number) => boolean;
+      now: () => Date;
+    }> = {},
+  ): BusyFlag {
     return new BusyFlag({
       filePath,
       hostname: overrides.hostname ?? 'test-host',

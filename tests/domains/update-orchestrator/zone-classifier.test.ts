@@ -1,13 +1,7 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import {
-  mkdtempSync,
-  mkdirSync,
-  writeFileSync,
-  rmSync,
-  existsSync,
-} from 'node:fs';
-import { join } from 'node:path';
+import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { ZoneClassifier } from '../../../src/domains/update-orchestrator/index.js';
 
 describe('ZoneClassifier', () => {
@@ -72,10 +66,7 @@ describe('ZoneClassifier', () => {
 
   it('honours frontmatter claudeos: locked', () => {
     writeUpstream('daily-review/SKILL.md', 'u\n');
-    writeLocal(
-      'daily-review/SKILL.md',
-      '---\nclaudeos: locked\nother: foo\n---\n# body\n',
-    );
+    writeLocal('daily-review/SKILL.md', '---\nclaudeos: locked\nother: foo\n---\n# body\n');
     const c = new ZoneClassifier({ upstreamRoot, localRoot });
     const result = c.classify('daily-review/SKILL.md');
     expect(result.zone).toBe('locked');

@@ -1,8 +1,8 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import {
-  runReviewLoop,
   type FileToReview,
   type ReviewDecision,
+  runReviewLoop,
 } from '../../../src/domains/update-orchestrator/index.js';
 
 function makeFile(overrides: Partial<FileToReview> & { relPath: string }): FileToReview {
@@ -120,9 +120,7 @@ describe('runReviewLoop', () => {
   });
 
   it('always calls decide for modified files even with autoAccept', async () => {
-    const decide = vi
-      .fn<(f: FileToReview) => Promise<ReviewDecision>>()
-      .mockResolvedValue('keep');
+    const decide = vi.fn<(f: FileToReview) => Promise<ReviewDecision>>().mockResolvedValue('keep');
     const applyUpgrade = vi.fn();
     await runReviewLoop({
       files: [makeFile({ relPath: 'mod/SKILL.md' })],

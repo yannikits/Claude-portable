@@ -4,16 +4,17 @@
  *
  * @module @domains/secrets
  */
+
+export { EncryptedFileStore } from './encrypted-file-store.js';
+export { createSecretStore } from './factory.js';
+export { KeyringStore, probeKeyring } from './keyring-store.js';
 export type {
   SecretBackend,
   SecretMetadata,
   SecretStore,
 } from './types.js';
 export {
-  SecretsError,
   SecretBackendUnavailableError,
+  SecretsError,
   SecretsLockedError,
 } from './types.js';
-export { KeyringStore, probeKeyring } from './keyring-store.js';
-export { EncryptedFileStore } from './encrypted-file-store.js';
-export { createSecretStore } from './factory.js';
