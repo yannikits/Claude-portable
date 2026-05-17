@@ -18,6 +18,7 @@ import { assertValid, ValidationError } from '../../core/validation/index.js';
 import {
   type CatalogConfig,
   CatalogConfigSchema,
+  type CatalogEntry,
   type CatalogLock,
   CatalogLockSchema,
 } from './schema.js';
@@ -126,4 +127,73 @@ export function readCatalogLock(lockPath: string): CatalogLock | null {
 export function writeCatalogLock(lockPath: string, lock: CatalogLock): void {
   assertValid<CatalogLock>(CatalogLockSchema, lock, CATALOG_LOCK_FILENAME);
   writeJsonAtomic(lockPath, lock);
+}
+
+// ---------- mutation helpers (Phase 5l) ----------
+
+export class UnknownCatalogEntryError extends Error {
+  constructor(
+    public readonly id: string,
+    public readonly catalogPath: string,
+  ) {
+    super(`catalog entry "${id}" not found in ${catalogPath}`);
+    this.name = 'UnknownCatalogEntryError';
+  }
+}
+
+export interface SetEnabledResult {
+  /** The entry's `enabled` value before the operation. */
+  readonly previous: boolean;
+  /** False when the entry already had the requested value (no-op). */
+  readonly changed: boolean;
+}
+
+/**
+ * Flip an entry's `enabled` flag in catalog.json. Atomic + validated.
+ * No-op when the entry already has the requested value (still returns
+ * `{ changed: false }`).
+ */
+export function setCatalogEntryEnabled(
+  catalogPath: string,
+  id: string,
+  enabled: boolean,
+): SetEnabledResult {
+  const catalog = readCatalog(catalogPath);
+  const idx = catalog.entries.findIndex((e) => e.id === id);
+  if (idx === -1) throw new UnknownCatalogEntryError(id, catalogPath);
+  const target = catalog.entries[idx] as CatalogEntry;
+  if (target.enabled === enabled) return { previous: target.enabled, changed: false };
+  const updated: CatalogConfig = {
+    ...catalog,
+    entries: catalog.entries.map((e, i) => (i === idx ? { ...e, enabled } : e)),
+  };
+  writeCatalog(catalogPath, updated);
+  return { previous: target.enabled, changed: true };
+}
+
+export interface RemoveEntryResult {
+  /** The full entry that was removed (useful for CLI confirmations). */
+  readonly removed: CatalogEntry;
+}
+
+/**
+ * Remove an entry from catalog.json. Throws when the id is unknown so
+ * the CLI can return a non-zero exit code; the alternative (silent
+ * no-op) would mask typos.
+ *
+ * v1 does NOT delete the on-disk install directory — that needs a
+ * scope-aware path resolver and the install pipeline (Phase 5m or 6).
+ * Callers should warn users that artefacts remain on disk.
+ */
+export function removeCatalogEntry(catalogPath: string, id: string): RemoveEntryResult {
+  const catalog = readCatalog(catalogPath);
+  const idx = catalog.entries.findIndex((e) => e.id === id);
+  if (idx === -1) throw new UnknownCatalogEntryError(id, catalogPath);
+  const removed = catalog.entries[idx] as CatalogEntry;
+  const updated: CatalogConfig = {
+    ...catalog,
+    entries: catalog.entries.filter((_, i) => i !== idx),
+  };
+  writeCatalog(catalogPath, updated);
+  return { removed };
 }

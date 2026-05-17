@@ -39,8 +39,13 @@ export {
   catalogPathsFor,
   EMPTY_CATALOG,
   InvalidCatalogError,
+  type RemoveEntryResult,
   readCatalog,
   readCatalogLock,
+  removeCatalogEntry,
+  type SetEnabledResult,
+  setCatalogEntryEnabled,
+  UnknownCatalogEntryError,
   writeCatalog,
   writeCatalogLock,
 } from './catalog-store.js';

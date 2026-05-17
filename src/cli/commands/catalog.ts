@@ -27,10 +27,13 @@ import {
   parseSource,
   readCatalog,
   readCatalogLock,
+  removeCatalogEntry,
   resolveCapabilities,
   SourceParseError,
+  setCatalogEntryEnabled,
   TarballInstallError,
   tarballCacheDirFor,
+  UnknownCatalogEntryError,
 } from '../../domains/catalog/index.js';
 
 interface GlobalOpts {
@@ -214,6 +217,64 @@ function actList(globals: GlobalOpts): void {
   }
 }
 
+function resolveCatalogPath(globals: GlobalOpts, action: string): string {
+  let root: ReturnType<typeof resolveRoot>;
+  try {
+    root = resolveRoot(globals.root === undefined ? {} : { explicit: globals.root });
+  } catch (err) {
+    if (err instanceof RootNotFoundError) {
+      printErr(`catalog ${action}: ${err.message}`);
+      process.exit(1);
+    }
+    throw err;
+  }
+  return catalogPathsFor(root.path).catalogPath;
+}
+
+function actSetEnabled(globals: GlobalOpts, id: string, enabled: boolean): void {
+  const verb = enabled ? 'enable' : 'disable';
+  const catalogPath = resolveCatalogPath(globals, verb);
+  try {
+    const result = setCatalogEntryEnabled(catalogPath, id, enabled);
+    if (globals.json === true) {
+      printJson({ ok: true, action: verb, id, ...result });
+      return;
+    }
+    if (!result.changed) {
+      printLine(`[OK] ${id} already ${enabled ? 'enabled' : 'disabled'} (no change)`);
+      return;
+    }
+    printLine(`[OK] ${verb}d ${id}`);
+  } catch (err) {
+    if (err instanceof UnknownCatalogEntryError || err instanceof InvalidCatalogError) {
+      printErr(`catalog ${verb}: ${err.message}`);
+      process.exit(1);
+    }
+    throw err;
+  }
+}
+
+function actUninstall(globals: GlobalOpts, id: string): void {
+  const catalogPath = resolveCatalogPath(globals, 'uninstall');
+  try {
+    const result = removeCatalogEntry(catalogPath, id);
+    if (globals.json === true) {
+      printJson({ ok: true, action: 'uninstall', removed: result.removed });
+      return;
+    }
+    printLine(`[OK] uninstalled ${id} (source ${result.removed.source})`);
+    printLine(
+      '     note: on-disk install directory was NOT removed. Delete manually if you no longer need it.',
+    );
+  } catch (err) {
+    if (err instanceof UnknownCatalogEntryError || err instanceof InvalidCatalogError) {
+      printErr(`catalog uninstall: ${err.message}`);
+      process.exit(1);
+    }
+    throw err;
+  }
+}
+
 function notInMvp(globals: GlobalOpts, action: string): void {
   const hint =
     `catalog ${action}: not in v1 MVP. The catalog.json + catalog.lock.json ` +
@@ -254,7 +315,28 @@ export function registerCatalogCommand(program: Command): void {
       actList(command.optsWithGlobals<GlobalOpts>());
     });
 
-  for (const sub of ['uninstall', 'enable', 'disable', 'update', 'lock', 'sync']) {
+  catalog
+    .command('enable <id>')
+    .description('Set catalog.json entry to enabled: true (atomic, schema-validated)')
+    .action((id: string, _opts: unknown, command: Command) => {
+      actSetEnabled(command.optsWithGlobals<GlobalOpts>(), id, true);
+    });
+
+  catalog
+    .command('disable <id>')
+    .description('Set catalog.json entry to enabled: false')
+    .action((id: string, _opts: unknown, command: Command) => {
+      actSetEnabled(command.optsWithGlobals<GlobalOpts>(), id, false);
+    });
+
+  catalog
+    .command('uninstall <id>')
+    .description('Remove an entry from catalog.json (on-disk install dir is NOT deleted)')
+    .action((id: string, _opts: unknown, command: Command) => {
+      actUninstall(command.optsWithGlobals<GlobalOpts>(), id);
+    });
+
+  for (const sub of ['update', 'lock', 'sync']) {
     catalog
       .command(sub)
       .description(`${sub} — staged for catalog.json lifecycle (Phase 6 sidecar)`)

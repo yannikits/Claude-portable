@@ -10,6 +10,9 @@ import {
   InvalidCatalogError,
   readCatalog,
   readCatalogLock,
+  removeCatalogEntry,
+  setCatalogEntryEnabled,
+  UnknownCatalogEntryError,
   writeCatalog,
   writeCatalogLock,
 } from '../../../src/domains/catalog/index.js';
@@ -51,6 +54,26 @@ const sampleLock: CatalogLock = {
   ],
 };
 
+const multiCatalog: CatalogConfig = {
+  version: 1,
+  entries: [
+    {
+      id: 'sample-plugin',
+      kind: 'plugin',
+      source: 'github:acme/sample-plugin@v1.0.0',
+      enabled: true,
+      scope: 'user',
+    },
+    {
+      id: 'second',
+      kind: 'skill',
+      source: 'github:acme/second',
+      enabled: false,
+      scope: 'project',
+    },
+  ],
+};
+
 describe('catalogPathsFor', () => {
   it('places catalog.json + catalog.lock.json under <root>/config/', () => {
     const paths = catalogPathsFor(root);
@@ -64,8 +87,6 @@ describe('readCatalog', () => {
     const { catalogPath } = catalogPathsFor(root);
     const cat = readCatalog(catalogPath);
     expect(cat).toEqual(EMPTY_CATALOG);
-    // returned object is a fresh copy — caller can mutate without
-    // poisoning the module-level constant
     expect(cat).not.toBe(EMPTY_CATALOG);
   });
 
@@ -196,5 +217,100 @@ describe('writeCatalogLock', () => {
       ],
     } as unknown as CatalogLock;
     expect(() => writeCatalogLock(lockPath, bad)).toThrowError(/Invalid catalog\.lock\.json/);
+  });
+});
+
+describe('setCatalogEntryEnabled', () => {
+  it('flips enabled true -> false and persists', () => {
+    const { catalogPath } = catalogPathsFor(root);
+    writeCatalog(catalogPath, multiCatalog);
+    const result = setCatalogEntryEnabled(catalogPath, 'sample-plugin', false);
+    expect(result).toEqual({ previous: true, changed: true });
+    const after = readCatalog(catalogPath);
+    expect(after.entries.find((e) => e.id === 'sample-plugin')?.enabled).toBe(false);
+    expect(after.entries.find((e) => e.id === 'second')?.enabled).toBe(false);
+  });
+
+  it('flips enabled false -> true and persists', () => {
+    const { catalogPath } = catalogPathsFor(root);
+    writeCatalog(catalogPath, multiCatalog);
+    const result = setCatalogEntryEnabled(catalogPath, 'second', true);
+    expect(result).toEqual({ previous: false, changed: true });
+    expect(readCatalog(catalogPath).entries.find((e) => e.id === 'second')?.enabled).toBe(true);
+  });
+
+  it('returns {changed: false} when value already matches and skips write', () => {
+    const { catalogPath } = catalogPathsFor(root);
+    writeCatalog(catalogPath, multiCatalog);
+    const { statSync } = require('node:fs') as typeof import('node:fs');
+    const mtimeBefore = statSync(catalogPath).mtimeMs;
+    const result = setCatalogEntryEnabled(catalogPath, 'sample-plugin', true);
+    expect(result).toEqual({ previous: true, changed: false });
+    expect(statSync(catalogPath).mtimeMs).toBe(mtimeBefore);
+  });
+
+  it('throws UnknownCatalogEntryError for unknown id', () => {
+    const { catalogPath } = catalogPathsFor(root);
+    writeCatalog(catalogPath, multiCatalog);
+    expect(() => setCatalogEntryEnabled(catalogPath, 'nope', true)).toThrowError(
+      UnknownCatalogEntryError,
+    );
+  });
+
+  it('leaves other entries untouched', () => {
+    const { catalogPath } = catalogPathsFor(root);
+    writeCatalog(catalogPath, multiCatalog);
+    setCatalogEntryEnabled(catalogPath, 'sample-plugin', false);
+    const after = readCatalog(catalogPath);
+    expect(after.entries.find((e) => e.id === 'second')).toEqual(multiCatalog.entries[1]);
+  });
+});
+
+describe('removeCatalogEntry', () => {
+  it('removes the matching entry and returns it', () => {
+    const { catalogPath } = catalogPathsFor(root);
+    writeCatalog(catalogPath, multiCatalog);
+    const result = removeCatalogEntry(catalogPath, 'sample-plugin');
+    expect(result.removed.id).toBe('sample-plugin');
+    expect(result.removed.source).toBe('github:acme/sample-plugin@v1.0.0');
+    const after = readCatalog(catalogPath);
+    expect(after.entries.map((e) => e.id)).toEqual(['second']);
+  });
+
+  it('throws UnknownCatalogEntryError for unknown id and does not mutate the file', () => {
+    const { catalogPath } = catalogPathsFor(root);
+    writeCatalog(catalogPath, multiCatalog);
+    const before = readFileSync(catalogPath, 'utf8');
+    expect(() => removeCatalogEntry(catalogPath, 'never-installed')).toThrowError(
+      UnknownCatalogEntryError,
+    );
+    expect(readFileSync(catalogPath, 'utf8')).toBe(before);
+  });
+
+  it('round-trips through the schema (post-remove read still validates)', () => {
+    const { catalogPath } = catalogPathsFor(root);
+    writeCatalog(catalogPath, multiCatalog);
+    removeCatalogEntry(catalogPath, 'second');
+    const after = readCatalog(catalogPath);
+    expect(after).toEqual({
+      version: 1,
+      entries: [multiCatalog.entries[0]],
+    });
+  });
+
+  it('UnknownCatalogEntryError carries the id and the path', () => {
+    const { catalogPath } = catalogPathsFor(root);
+    writeCatalog(catalogPath, multiCatalog);
+    try {
+      removeCatalogEntry(catalogPath, 'missing');
+      throw new Error('expected UnknownCatalogEntryError');
+    } catch (err) {
+      expect(err).toBeInstanceOf(UnknownCatalogEntryError);
+      const ue = err as UnknownCatalogEntryError;
+      expect(ue.id).toBe('missing');
+      expect(ue.catalogPath).toBe(catalogPath);
+      expect(ue.message).toContain('missing');
+      expect(ue.message).toContain(catalogPath);
+    }
   });
 });
