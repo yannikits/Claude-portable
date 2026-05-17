@@ -74,7 +74,14 @@ jobs:
         run: npm run build
 
       - name: build sidecar binary ($TARGET_TRIPLE)
+        if: matrix.label != 'macos-universal'
         run: npm run sidecar:build
+
+      - name: build sidecar binaries (macOS universal — x86_64 + aarch64)
+        if: matrix.label == 'macos-universal'
+        run: |
+          SIDECAR_TRIPLE=x86_64-apple-darwin npm run sidecar:build
+          SIDECAR_TRIPLE=aarch64-apple-darwin npm run sidecar:build
 
       - name: tauri build
         uses: tauri-apps/tauri-action@v0

@@ -13,14 +13,19 @@ try {
         throw "dist/sidecar/index.js missing after build"
     }
 
-    Write-Host "[2/4] resolving rustc target triple"
-    $rustcVer = & rustc -Vv 2>$null
-    if ($LASTEXITCODE -ne 0) {
-        throw "rustc not found; install rustup first (winget install Rustlang.Rustup)"
+    Write-Host "[2/4] resolving target triple"
+    if ($env:SIDECAR_TRIPLE) {
+        $triple = $env:SIDECAR_TRIPLE
+        Write-Host "  using SIDECAR_TRIPLE override: $triple"
+    } else {
+        $rustcVer = & rustc -Vv 2>$null
+        if ($LASTEXITCODE -ne 0) {
+            throw "rustc not found; install rustup first (winget install Rustlang.Rustup), or set SIDECAR_TRIPLE env-var"
+        }
+        $hostLine = $rustcVer | Select-String -Pattern '^host:\s*(.+)$'
+        if (-not $hostLine) { throw "Could not parse host triple from rustc -Vv output" }
+        $triple = $hostLine.Matches.Groups[1].Value.Trim()
     }
-    $hostLine = $rustcVer | Select-String -Pattern '^host:\s*(.+)$'
-    if (-not $hostLine) { throw "Could not parse host triple from rustc -Vv output" }
-    $triple = $hostLine.Matches.Groups[1].Value.Trim()
 
     $nodeMajor = (node --version) -replace '^v(\d+)\..*', '$1'
     $pkgTarget = switch -Regex ($triple) {

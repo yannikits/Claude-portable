@@ -10,13 +10,18 @@ npm run build
 entry="$repo_root/dist/sidecar/index.js"
 [[ -f "$entry" ]] || { echo "dist/sidecar/index.js missing after build" >&2; exit 1; }
 
-echo "[2/4] resolving rustc target triple"
-if ! command -v rustc >/dev/null 2>&1; then
-  echo "rustc not found; install rustup first" >&2
-  exit 1
+echo "[2/4] resolving target triple"
+if [[ -n "${SIDECAR_TRIPLE:-}" ]]; then
+  triple="$SIDECAR_TRIPLE"
+  echo "  using SIDECAR_TRIPLE override: $triple"
+else
+  if ! command -v rustc >/dev/null 2>&1; then
+    echo "rustc not found; install rustup first, or set SIDECAR_TRIPLE env-var" >&2
+    exit 1
+  fi
+  triple="$(rustc -Vv | sed -n 's/^host:[[:space:]]*//p' | tr -d '[:space:]')"
+  [[ -n "$triple" ]] || { echo "Could not parse host triple from rustc -Vv" >&2; exit 1; }
 fi
-triple="$(rustc -Vv | sed -n 's/^host:[[:space:]]*//p' | tr -d '[:space:]')"
-[[ -n "$triple" ]] || { echo "Could not parse host triple from rustc -Vv" >&2; exit 1; }
 
 node_major="$(node --version | sed 's/^v\([0-9]*\)\..*/\1/')"
 ext=""
