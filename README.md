@@ -2,7 +2,7 @@
 
 OS-unabhängige Entwicklungs-Umgebung rund um Anthropic Claude. Tauri-GUI + Node-CLI + cloud-mount Vault-Sync.
 
-> **Status:** v1 in Entwicklung. Phase 0–5 abgeschlossen (Bootstrap, Doctor, Vault-Sync, claude-bridge + Secrets, Update-Orchestrator-Foundation, Agent-Runs + Auth + Catalog). Offen: Phase 6 Tauri-GUI, Phase 7 Cross-Platform + CI. Tracker: [`tasks/todo.md`](tasks/todo.md).
+> **Status:** v1 in Entwicklung. Phase 0–5 abgeschlossen (Bootstrap, Doctor, Vault-Sync, claude-bridge + Secrets, Update-Orchestrator-Foundation, Agent-Runs + Auth + komplette Catalog-Pipeline inkl. ETag-URL-Loader, `^`/`~`-Ranges, catalog.json/lock.json Schema + 9/9 Subcommands). 514/515 Tests grün, `npm run ci` exit 0 (90/78/93/92 % Coverage). Offen: Phase 6 Tauri-GUI, Phase 7 Cross-Platform + CI. Tracker: [`tasks/todo.md`](tasks/todo.md).
 >
 > Vorgänger: `claude-portable` (USB-only Variante). Die alten Launch-Scripts liegen in `legacy/` und sind nicht mehr aktiv.
 
@@ -88,7 +88,7 @@ POSIX äquivalent — `./claude-os` statt `.\claude-os.cmd`, `export CLAUDE_OS_R
 | `claude-os update [--env\|--skills\|--plugins\|--all\|--rollback [ts]]` | ready (Foundation) | Tiered Auto-Update mit Selective-Merge-Foundation. Full interactive review staged für eine Folge-Iteration — siehe v1-Abweichungen unten. |
 | `claude-os agent list\|show\|replay` | ready | Agent-Run-Browser (replay = print-only in v1, full re-spawn staged) |
 | `claude-os auth status\|login\|profile create\|use\|list\|delete` | ready | Anthropic-CLI-Auth + Multi-Profile via `$ANTHROPIC_CONFIG_DIR`-Sandboxing |
-| `claude-os catalog install\|resolve` | ready (Foundation) | github-Source-Install + Capability-Resolution-Dry-Run. `list/lock/sync/uninstall/enable/disable/update` staged für Phase-6-Sidecar. |
+| `claude-os catalog install\|resolve\|list\|enable\|disable\|uninstall\|lock\|sync\|update [<id>]` | ready | Vollständige Catalog-Pipeline: github-Tarball-Install + Capability-Resolution-Dry-Run, catalog.json/lock.json schema-validiert (TypeBox + assertValid), Mutation-Subcommands real (atomic write + UnknownCatalogEntryError), `lock` (fetch+sha256+cache, marketplace/local skip mit warning), `sync` (extract enabled-entries nach `<root>/config/{skills\|plugins\|mcp}/<id>`), `update [<id>]` (full re-lock oder single-entry merge). |
 
 Globale Flags: `--root <path>` (statt `$CLAUDE_OS_ROOT`), `--json`, `-v/--verbose`.
 
@@ -147,15 +147,17 @@ Alle wesentlichen Design-Entscheidungen sind in [`docs/architecture/adr/`](docs/
 - **Agent-Runs Index in JSON statt SQLite** — sql.js drop-in für v1.x; v1-Performance für Early-Adoption-Datensätze trivial.
 - **macOS-Keychain-Read** für `.credentials.json` deferred zu v1.x — File-Fallback funktioniert auch auf macOS.
 - **Refresh-Mutex / proaktiver Token-Refresh deferred** — claude.exe besitzt den Refresh; `auth status` warnt bei expiresAt < 1h.
-- **Marketplace ETag-URL-Fetch deferred** — RegistryLoader ist injectable, file-Loader shipped, URL-Loader Phase-6.
-- **Capability-Resolver Version-Constraints** beschränkt auf `>=` / `>` / `<=` / `<` / `=` (keine `^` / `~`-Ranges in v1).
-- **catalog.json / catalog.lock.json Lifecycle** deferred zur Phase-6-Sidecar-Integration. `catalog list/uninstall/enable/disable/update/lock/sync` zeigen Phase-6-Pointer.
+- ~~**Marketplace ETag-URL-Fetch deferred**~~ → Phase 5k (Commit `15ae558`): `urlLoader({url, cacheDir, fetch?})` mit If-None-Match + 304-Reuse, atomic body/etag cache, injectable fetch.
+- ~~**Capability-Resolver Version-Constraints** beschränkt auf `>=`/`>`/`<=`/`<`/`=`~~ → Phase 5j (Commit `fee2aff`): `^` + `~` implementiert per npm-semver left-most-non-zero rule.
+- ~~**catalog.json / catalog.lock.json Lifecycle deferred**~~ → Phase 5i/l/m/n (Commits `cff079c`/`4fa4f7d`/`bb195f0`/`5abac44`): TypeBox-Schema + atomic Store, `list/enable/disable/uninstall` Mutations, `lock` (sha256-Cache) + `sync` (extract→install-dirs) + `update [<id>]` (full-relock oder merge-by-id). Komplette 9/9 Catalog-CLI real.
+- **Catalog-Lock `bindings: []`** (v1.x): braucht Plugin-Manifest-Reader (Tarball-Peek oder Post-Sync re-read) + `resolveCapabilities`-Run. Schema forward-kompatibel; Realität (Plugins ohne `requires`/`provides`) macht den Aufwand für v1 nicht wert.
 - **`agent replay` print-only** — full re-spawn der gespeicherten Prompts ist v1.x.
+- **Coverage-Scope** (2026-05-17): vitest-Coverage erfasst nur unit-testbaren Code. Ausgeschlossen: `src/cli/**` (Commander-Glue → real-binary Smoke), `keyring-store.ts` (native @napi-rs/keyring), `plugins.ts` (Phase-4f-Placeholder). Aktuelle Werte: 90/78/93/92 % stmt/branch/func/line — `npm run ci` exit 0.
 
 ## Entwicklung
 
 ```bat
-npm test                          :: 408/408 grün (+1 slow gated)
+npm test                          :: 514/515 grün (+1 slow gated)
 npm run build                     :: tsc -> dist/
 npm run check                     :: biome lint
 npm run ci                        :: biome ci + tsc + coverage

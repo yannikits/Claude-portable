@@ -156,3 +156,53 @@ Gilt analog für jedes Domain-Modell mit readonly-Props. Phase-2f und Phase-3d h
 **Lektion:** Bei Exit-Code-Tests von CLI-Tools NIE durch eine Pipe filtern und dann `$?` lesen. Bash setzt `$?` auf das Pipe-Tail. Entweder Pipe entfernen und Output via `>/dev/null` weglenken (`cmd >/dev/null 2>&1 ; echo $?`), oder `${PIPESTATUS[0]}` (bash-specific) für den ersten Glied-Exit nutzen.
 
 **Anwendung:** CLI-Exit-Code-Tests in Smoke-Sequenzen: separate Schritte mit explizitem `$?` direkt nach dem Tool, bevor irgendeine Pipe oder weitere Aufrufe folgen. Oder via Test-Framework (Vitest mit `child_process.spawn`) wo der Exit-Code typed-strukturiert kommt.
+
+---
+
+## 2026-05-17 — biome v2.3 → v2.4 Schema-Drift bricht silent CI
+
+**Situation:** Die Migration vom biome 2.3 auf 2.4 (Auto-Bump durch `npm install`) erzeugte 149 Errors + 10 Warnings, weil drei Schema-Keys umbenannt wurden: `files.ignore` → `files.includes` (mit Negativ-Globs `!**/dist`), `organizeImports.enabled` → `assist.actions.source.organizeImports: "on"`, und der `$schema`-URL-Pfad. Ausserdem wurde `--apply` durch `--write` ersetzt. Plus: 83 Suppression-Comments referenzierten Rule-Namen die in v2.4 umbenannt wurden → `suppressions/unused` flood.
+
+**Lektion:** `npx biome migrate --write` macht die Schema-Migration automatisch und vollständig. Suppression-Drift und neue Rules erfordern eine eigene Cleanup-Pass (häufig auto-fixable via `biome check --write`). Bei einem Major-Version-Bump zuerst `migrate` aufrufen, DANN `check --write`, dann die Restposten manuell. Nie ein Major in CI hochziehen ohne diesen Dreischritt — sonst rottet das Tree silent unter der Pre-commit-Linie.
+
+**Anwendung:** Bei jedem `@biomejs/biome`-MAJOR-Bump (oder `@apply`/`--apply`-Flag-Wechsel): `npm run check` testen, wenn rot → `npx biome migrate --write && npx biome check --write` als erstes. Verbleibende Errors einzeln durchgehen, ggf. Suppressions umbenennen oder löschen (`noConsole.options.allow` deckt z.B. `console.error` ab — der Suppress war pre-existing dead code).
+
+---
+
+## 2026-05-17 — `core.hooksPath` korrumpiert sich zu `--version/_`
+
+**Situation:** Husky's `prepare` script (`husky || true`) wurde beim ersten Run mit einem fehlerhaften Flag aufgerufen und persistierte `git config --local core.hooksPath` auf den Literal-String `--version/_` statt `.husky/_`. Subsequent `git commit` führte zu `env: unknown option -- version/_/pre-commit` weil git versuchte `--version/_/pre-commit` als Hook-Pfad zu sourcen.
+
+**Lektion:** `core.hooksPath` ist lokal gespeichert (`.git/config`) und überlebt jeden npm-reinstall. Wenn der Hook nicht fired oder mit unsinnigen `env`-Fehlern aussteigt, IMMER zuerst `git config core.hooksPath` checken — der Pfad muss `.husky/_` (für husky v9) bzw. `.husky` (für v8) sein, alles andere ist Korruption. Reset: `git config --local --unset core.hooksPath && npm run prepare`.
+
+**Anwendung:** Bei jedem "Pre-commit hook macht nichts" oder "Hook fired mit kaputtem env-Fehler"-Bug erst `git config core.hooksPath` lesen, BEVOR an `.husky/`-Files herumeditiert wird. Doctor-Erweiterung-Kandidat: Husky-State-Check in `claude-os doctor` der hooksPath-Wert validiert.
+
+---
+
+## 2026-05-17 — Windows CMD 8KB-Limit bricht lint-staged bei vielen Files
+
+**Situation:** Ein Cleanup-Commit mit 110 staged Files explodierte mit "Die Befehlszeile ist zu lang" weil lint-staged per default alle Dateinamen als positional args an `biome check --write --no-errors-on-unmatched` anhängte. Windows CMD `cmd.exe` hat ein hartes 8191-Char-Limit für die gesamte Kommandozeile.
+
+**Lektion:** lint-staged JSON-Config-Form (`{"glob": ["cmd"]}`) hängt IMMER Filepaths an. Die einzige Lösung um das Anhängen zu unterdrücken ist die JS-Function-Form (`.lintstagedrc.cjs` mit `module.exports = { glob: () => "fixed cmd string" }`). Biome 2.x hat genau dafür einen `--staged`-Flag der direkt den git-Index liest — Kombination ist file-count-unabhängig.
+
+**Anwendung:** Bei jeder lint-staged-Pipeline auf Windows die `.lintstagedrc.cjs` Function-Form + `biome check --staged` (oder ESLint's `--no-error-on-unmatched-pattern` + similar tool-native Staged-Discovery) verwenden. JSON-Form ist für Single-File-Repos OK, blast-radius bei großem Cleanup-Commit aber tödlich.
+
+---
+
+## 2026-05-17 — `new Response('', {status: 304})` wirft per WHATWG-Spec
+
+**Situation:** Test für 304-Not-Modified-Mock-Response: `new Response('', {status: 304})` warf `TypeError: Response constructor: Invalid response status code 304`. Per WHATWG Fetch-Spec ist 304 ein "null body status" (gleiche Klasse wie 101/103/204/205) — der Response-Constructor weigert sich Body (auch leeren String) für diese Codes zu akzeptieren.
+
+**Lektion:** Für 304-Mocks im Test entweder `new Response(null, {status: 304})` benutzen, oder direkt ein duck-typed Plain-Object `{status: 304, ok: false, headers: new Headers()}` als Response casten. Letzteres ist robuster für Mocks weil man eh nur die paar Properties testet die der Producer-Code anfasst.
+
+**Anwendung:** Bei Fetch-Mocks für Conditional-Requests (304, 412, 416): vermeide `new Response(body, ...)` mit non-null body bei null-body-statuses. Duck-typed Mock + as-cast ist die kürzeste Variante. Wenn man echte Response-Methoden braucht: `new Response(null, {status: 304})` für 304/204, `new Response(body)` nur für 200/etc.
+
+---
+
+## 2026-05-17 — Coverage-Threshold: 0%-Files sind oft Integration, nicht Bug
+
+**Situation:** Nach Phase 5l/m/n stürzte Coverage auf 64/59/70/64 % (alle drei Stmt/Branch/Line unter Threshold) — `npm run ci` rot. Der Per-File-Report zeigte: ALLE `src/cli/**`-Files bei 0 % (Commander-Glue, verified via real-binary smoke), `keyring-store.ts` 5.7 % (native @napi-rs Module), `plugins.ts` 9 % (Phase-4f Placeholder). Domain-Code war konstant 80-97 %.
+
+**Lektion:** Coverage-Threshold-Drops sind nicht immer ein Test-Gap. CLI-Entry-Points sind per Definition Integration-Code (mock commander = test the mock, nicht den Wire). Native-Module-Wrapper sind per Definition nicht unit-testbar (echte Keychain-Round-trips brauchen OS-Setup). Placeholder sind by-design uncovered bis Replacement landet. Honest fix: `coverage.exclude` mit dokumentierter Kategorie pro Block, nicht Threshold-Drop oder hollow-Test-Geneste.
+
+**Anwendung:** Wenn `npm run ci` Coverage rot wirft: erst per-file table anschauen, dann pro 0 %-File entscheiden ob (a) echter Test-Gap (= adden), (b) Integration-Glue (= excluden + Smoke documenten), (c) Native/Placeholder (= excluden + Begründung). Documented exclusion ist seriöser als Threshold-Senkung.
