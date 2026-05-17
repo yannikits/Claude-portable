@@ -28,7 +28,7 @@ cargo check
 | 6b | Sidecar-Binary-Build-Script (`$TARGET_TRIPLE`) | shipped |
 | 6c | JSON-RPC-Bridge (Rust + Node) | shipped |
 | 6d | Sidecar-Lifecycle + Health-Check | shipped |
-| 6e | Vite + React + TS Frontend | pending |
+| 6e | Vite + React + TS Frontend | shipped |
 | 6f | 7 Views | pending |
 | 6g | Drag-Drop + inbox/outbox Watcher | pending |
 | 6h | Bundling (MSI/DMG/AppImage) | pending |

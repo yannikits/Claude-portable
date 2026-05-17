@@ -1,9 +1,21 @@
 pub mod rpc;
 pub mod supervisor;
 
+use serde_json::Value;
 use std::sync::Arc;
 use supervisor::SupervisorState;
 use tauri::{Manager, WindowEvent};
+
+#[tauri::command]
+async fn rpc_call(
+    state: tauri::State<'_, Arc<SupervisorState>>,
+    method: String,
+    params: Value,
+) -> Result<Value, String> {
+    let rpc_opt = state.rpc.lock().await.clone();
+    let rpc = rpc_opt.ok_or_else(|| "sidecar not available".to_string())?;
+    rpc.call(&method, params).await.map_err(|e| e.to_string())
+}
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -15,6 +27,7 @@ pub fn run() {
             supervisor::start(app.handle().clone(), state);
             Ok(())
         })
+        .invoke_handler(tauri::generate_handler![rpc_call])
         .on_window_event(|window, event| {
             if let WindowEvent::CloseRequested { api, .. } = event {
                 api.prevent_close();
