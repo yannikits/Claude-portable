@@ -26,3 +26,8 @@ export {
   type ReviewLoopResult,
   type ReviewOutcome,
 } from './review-loop.js';
+export {
+  ResumableChecklist,
+  type ChecklistSnapshot,
+  type ChecklistStatus,
+} from './resumable-checklist.js';
