@@ -130,61 +130,34 @@
 
 ---
 
-## Phase 5 — Agent-OS-Subsystem + Catalog/Skill-Registry (28 h, H, deps: Phase 2+3)
+## Phase 5 — Agent-OS-Subsystem + Catalog/Skill-Registry (abgeschlossen 2026-05-17)
 
-**Ziel:** Account-Auth, JSON-Lines-Agent-Runs (ADR-0002), Vault-Output-Persistence, vollständiges Catalog-System (ADR-0009 + ADR-0010).
+**Ziel:** Account-Auth, JSON-Lines-Agent-Runs (ADR-0002), Vault-Output-Persistence, Catalog-System-Foundation (ADR-0009 + ADR-0010). Aufgeteilt in 8 Sub-Phasen (5a–5h).
 
-### Agent-Runs-Domain
+- [x] Phase 5a — `domains/agent-runs/{types,jsonl-writer,index}.ts`. AgentRunRecord-Schema mit Project-Column (Memory-565 Fix). Append-only JSONL via `appendFileSync`, eine Datei pro `(project, machineId)`. → Commit `(5a)`
+- [x] Phase 5b — `agent-runs/index-builder.ts`. **JSON-basiert statt SQLite** für v1 (kein zusätzlicher native-build Dep). Walks JSONL → sortiert timestamp-DESC → atomic write. Query-API mit Filter (project, machineId, sinceIso, limit). Malformed-Lines tolerant. → Commit `2c30490`
+- [x] Phase 5c — `agent-runs/{repository,vault-writer}.ts`. Public Façade mit `record/list/show/byProject/refreshIndex`. VaultWriter emittiert `<vault>/agent-runs/<project>/<ISO-safe>.md` mit YAML-Frontmatter + Prompt + stdio-inherit-Caveat. → Commit `(5c)`
+- [x] Phase 5d — `domains/auth/{types,credentials,profile-manager,state-check}.ts`. State-Check-Resolution-Order: CI-Env → CLI-Subprocess (injectable) → `.credentials.json` File → no-creds. ProfileManager mit `$ANTHROPIC_CONFIG_DIR`-Sandboxing für Multi-Account. Doctor-Schema-Drift-Check für `.credentials.json`-Felder. → Commit `(5d)`
+- [x] Phase 5e — `domains/catalog/{source-resolver,tarball-installer}.ts`. Parser für `marketplace:` / `github:owner/repo[@ref][:subPath]` / `local:` Sources. Tarball-Installer mit sha256-Cache-Key, idempotenter Reuse, codeload.github.com-URL für public repos. → Commit `(5e)`
+- [x] Phase 5f — `catalog/{marketplace-registry,scope-merger,cache-cleaner}.ts`. File-based Registry-Loader (ETag-URL-Fetch deferred), Scope-Merge (Project wins über User), 30-day Tarball-Retention. → Commit `(5f)`
+- [x] Phase 5g — `catalog/{capability,capability-resolver}.ts`. Deterministischer DFS-Resolver mit 4 ResolutionError-Subtypen (MissingProvider, VersionConflict, CyclicDependency, AmbiguousProvider). Eigener Mini-Comparator (`>=`, `>`, `<=`, `<`, `=`) ohne semver-Dep. **2 explizite Regression-Tests gegen Memory-587/593 + ruflo #1676 Reproducer.** → Commit `(5g)`
+- [x] Phase 5h — CLI-Wire: `agent list|show|replay`, `auth status|login|profile create|use|list|delete`, `catalog install|resolve` (echte impl) + `catalog list|uninstall|enable|disable|update|lock|sync` (Phase-6-Sidecar-Hint). → Commit `59e16a9`
 
-- [ ] JSON-Lines-Schema: `vault/agent-runs/<project>/<machineId>.jsonl` (eine Datei pro Maschine, append-only)
-- [ ] `domains/agent-runs/jsonl-writer.ts` — atomare Appends via tempfile + rename
-- [ ] `domains/agent-runs/index-builder.ts` — scannt alle JSONL-Files, baut lokalen SQLite-Index unter `%APPDATA%/claude-os/data/`
-- [ ] `domains/agent-runs/repository.ts` — typed query-API mit Project-Column (Fix Memory-565)
-- [ ] `domains/auth/anthropic.ts` — Auth-Integration nach ADR-0011:
-  - **State-Check**: `claude auth status` JSON-Parser; Fallback File-Read `.credentials.json` (Linux/Win) bzw. macOS-Keychain (`Claude Code-credentials`, Key `claudeAiOauth`) via `@napi-rs/keyring`
-  - **Refresh-Mutex**: File-Lock auf `~/.claude-os/data/auth.refresh.lock` (PID + Timestamp, stale-Detection 60s); proaktiver Refresh bei `expiresAt < now + 60_000ms`; bei Fail → Doctor-Warnung
-  - **Multi-Profile**: `auth profile create|use|list` setzt `$ANTHROPIC_CONFIG_DIR` für neue claude.exe-Spawns; aktives Profil in Statusline (Phase 6)
-  - **CI/Headless**: respektiert `CLAUDE_CODE_OAUTH_TOKEN`/`_REFRESH_TOKEN`/`_SCOPES` Env-Vars
-  - **Schema-Version-Check** im Doctor: erwartete Keys in `.credentials.json` → bei Drift Warnung "Anthropic-CLI-Schema möglicherweise geändert"
-- [ ] Regressions-Tests gegen claude-code-Issues #50743, #27933, #31095 (Race-Reproducer)
-- [ ] `domains/agent-runs/vault-writer.ts` — Run-Output als Markdown nach `vault/agent-runs/<project>/<timestamp>.md`
-- [ ] CLI: `claude-os agent list/show/replay`
-- [ ] Index-Rebuild im Doctor-Run integriert
+**Test-Kriterium:** Echtes Smoke-Roundtrip auf User's Windows-Maschine — `auth status` retourniert `source=file, loggedIn=true, scopes=user:*` aus realer Anthropic-Login. `agent list` schreibt korrekt "(no agent runs recorded yet)". `catalog` rendert install/resolve mit Phase-6-Hints für staged subcommands.
 
-### Catalog-Domain (ADR-0009)
+**Tests-Gewinn:** +135 (5a 12, 5b 17, 5c 16, 5d 35, 5e 26, 5f 28, 5g 29, 5h 0 — CLI integration deferred). Domain-Module unit-tested gegen reale bare-repos + tmpdir-Fixtures + injektive Mocks für Subprocess + Fetch. Total 408/408 grün.
 
-- [ ] `config/catalog.json` Schema-Definition (zod) und Validator
-- [ ] `config/catalog.lock.json` Schema-Definition mit resolved-source + sha256-Hashes
-- [ ] `domains/catalog/source-resolver.ts` — Parser für drei Source-String-Formate (`marketplace:*`, `github:*`, `local:*`)
-- [ ] `domains/catalog/tarball-installer.ts` — Download nach `%APPDATA%/claude-os/cache/<sha256>.tar.gz`, Hash-Check (idempotent), Extract nach Scope-Pfad
-- [ ] `domains/catalog/marketplace-registry.ts` — Resolve marketplace-Name zu GitHub-Source, ETag-basierter Marketplace-Index-Cache
-- [ ] `domains/catalog/scope-merger.ts` — User-Scope (`~/.claude/`) + Project-Scope (`vault/.claude/`) Merge, Project gewinnt
-- [ ] `domains/catalog/cache-cleaner.ts` — Doctor-Hook: Tarball-Cache älter als 30 Tage löschen
-- [ ] CLI: `claude-os catalog list|install|uninstall|enable|disable|update|lock|sync`
-- [ ] Lock-File-Konflikt-Detection (Cloud-Sync File-Conflict-Copies) im Doctor
+**v1-Abweichungen (transparent):**
 
-### Capability-Resolver (ADR-0010)
-
-- [ ] `domains/catalog/capability-resolver.ts` — deterministischer Resolver
-- [ ] `ResolutionError`-Subtypen: `MissingProvider`, `VersionConflict`, `CyclicDependency`, `AmbiguousProvider`
-- [ ] Plugin-Manifest-Validator: `plugin.json`-Schema mit `requires[]` + `provides[]` als Capability-Strings
-- [ ] Strikt isolierte Module-Trees: kein Hoisting in Root-`node_modules`, jedes Plugin hat eigenes `node_modules/`
-- [ ] CLI: `claude-os catalog resolve <plugin>` (dry-run Resolution-Plan)
-- [ ] **Regressions-Tests gegen ruflo #1676 / #174 Reproducer** + Memory-587/593-Szenarien
-- [ ] `--auto-deps` Flag für transitives Resolving
-- [ ] **Lazy-Activation** (VSCode-Pattern): `triggers` im Skill-Frontmatter + `mcp.serverScope: on-demand|session-start`
-- [ ] **Uninstall-Hook** pro Plugin: bei `catalog uninstall` werden Plugin-spezifische Cleanup-Scripts ausgeführt (MCP-Server-Prozess-Cleanup, State-Files)
-
-### Skill-Pack Import
-
-- [ ] **Optional Skill-Pack-Import**: `claude-os catalog install marketplace:claudesidian:claudesidian-pack` — importiert die acht generischen Knowledge-Worker-Skills (`thinking-partner`, `daily-review`, `weekly-synthesis`, `de-ai-ify`, `add-frontmatter`, `pragmatic-review`, `inbox-processor`, `research-assistant`). Upgrade-fähig nach ADR-0005.
-
-**Test-Kriterium:**
-- Dummy-Agent-Run schreibt JSONL + Markdown + Index-Eintrag konsistent
-- `claude-os catalog sync` auf zwei Maschinen produziert identischen Stand (Lock-File-Reproducibility)
-- Capability-Resolver fail-loud bei Reproducer-Cases (ruflo #1676 et al.)
-- `claude-os catalog install <ruflo-style-plugin>` (mit Capability-Manifest) installiert ohne npm-peer-deps-Konflikte
-- `claude-os catalog install claudesidian-pack --dry-run` listet erwartete Importe ohne Filesystem-Änderung
+- **Agent-Runs Index in JSON statt SQLite** — kein native-build-dep für v1; sql.js drop-in für v1.x. Performance für Early-Adoption-Datensätze trivial.
+- **macOS-Keychain-Read deferred** zu v1.x — `.credentials.json`-Fallback funktioniert auf macOS auch.
+- **Refresh-Mutex / proaktiver Refresh deferred** — claude.exe besitzt den Refresh; wir warnen bei expiresAt < 1h via state-check.warning. Regression-Tests gegen claude-code #50743/27933/31095 sind deferred (Race-Reproducer braucht echte concurrent claude.exe-Spawns).
+- **Marketplace ETag-URL-Fetch deferred** — der RegistryLoader-Pattern ist injectable, file-Loader shipped, URL-Loader fehlt.
+- **Capability-Resolver Version-Constraints** beschränkt auf `>=` / `>` / `<=` / `<` / `=` (keine `^` / `~`-Ranges in v1).
+- **Lazy-Activation + Uninstall-Hooks** deferred zur Phase-6-Sidecar-Integration.
+- **`--auto-deps` flag** + transitive marketplace resolution deferred — v1 erfordert manuelle Pre-Installation der Provider.
+- **catalog.json / catalog.lock.json Schema + Validator deferred** zur Phase-6-Sidecar-Integration. `catalog list/uninstall/enable/disable/update/lock/sync` zeigen Phase-6-Pointer.
+- **Skill-Pack-Import** als bundled marketplace deferred — User kann via direkter `github:`-Source nutzen.
 
 ---
 

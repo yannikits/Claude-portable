@@ -2,7 +2,7 @@
 
 OS-unabhängige Entwicklungs-Umgebung rund um Anthropic Claude. Tauri-GUI + Node-CLI + cloud-mount Vault-Sync.
 
-> **Status:** v1 in Entwicklung. Phase 0–4 abgeschlossen (Bootstrap, Doctor, Logging, Validation, Secrets, claude-bridge, Vault-Sync, Update-Orchestrator-Foundation). Offen: Phase 5 Agent-Runs + Catalog, Phase 6 Tauri-GUI, Phase 7 Cross-Platform + CI. Tracker: [`tasks/todo.md`](tasks/todo.md).
+> **Status:** v1 in Entwicklung. Phase 0–5 abgeschlossen (Bootstrap, Doctor, Vault-Sync, claude-bridge + Secrets, Update-Orchestrator-Foundation, Agent-Runs + Auth + Catalog). Offen: Phase 6 Tauri-GUI, Phase 7 Cross-Platform + CI. Tracker: [`tasks/todo.md`](tasks/todo.md).
 >
 > Vorgänger: `claude-portable` (USB-only Variante). Die alten Launch-Scripts liegen in `legacy/` und sind nicht mehr aktiv.
 
@@ -86,9 +86,9 @@ POSIX äquivalent — `./claude-os` statt `.\claude-os.cmd`, `export CLAUDE_OS_R
 | `claude-os vault unlock` | ready | Reset Busy-Flag (Crash-Recovery) |
 | `claude-os vault init-gitignore` | ready | Default-Template anwenden |
 | `claude-os update [--env\|--skills\|--plugins\|--all\|--rollback [ts]]` | ready (Foundation) | Tiered Auto-Update mit Selective-Merge-Foundation. Full interactive review staged für eine Folge-Iteration — siehe v1-Abweichungen unten. |
-| `claude-os catalog ...` | Phase 5 | Plugin/Skill-Marketplace |
-| `claude-os agent ...` | Phase 5 | Agent-Run-Browser |
-| `claude-os auth ...` | Phase 5 | Anthropic-CLI-Auth-Integration |
+| `claude-os agent list\|show\|replay` | ready | Agent-Run-Browser (replay = print-only in v1, full re-spawn staged) |
+| `claude-os auth status\|login\|profile create\|use\|list\|delete` | ready | Anthropic-CLI-Auth + Multi-Profile via `$ANTHROPIC_CONFIG_DIR`-Sandboxing |
+| `claude-os catalog install\|resolve` | ready (Foundation) | github-Source-Install + Capability-Resolution-Dry-Run. `list/lock/sync/uninstall/enable/disable/update` staged für Phase-6-Sidecar. |
 
 Globale Flags: `--root <path>` (statt `$CLAUDE_OS_ROOT`), `--json`, `-v/--verbose`.
 
@@ -135,16 +135,27 @@ Alle wesentlichen Design-Entscheidungen sind in [`docs/architecture/adr/`](docs/
 
 ## v1-Abweichungen (bekannt + transparent)
 
-- **`update --skills` Selective-Merge-Composition**: Die Bausteine (BackupManager, ZoneClassifier, DiffEngine, ReviewLoop, ResumableChecklist) sind isoliert getestet und einsatzbereit, die End-to-End-CLI-Komposition (upstream-mirror-clone → walk → classify → diff → review-loop → checklist → apply) ist noch nicht voll verdrahtet. `update --skills` bei `aborted-dirty` zeigt einen Hint statt zu starten. Vollständiger Flow ist eine Folge-Iteration.
-- **`update --plugins`**: Echte Plugin-Installation braucht den Phase-5-Catalog. Der CLI-Pfad gibt aktuell einen Phase-5-Pointer zurück; die separate Log-Datei-Infrastruktur (Memory-587/593-Mitigation) steht.
-- **`update --resume`**: ResumableChecklist-Modul ist fertig + getestet, aber die CLI-Orchestration für Resume hängt am Selective-Merge-Composition-Punkt oben.
+**Phase 4 (Update-Orchestrator):**
+
+- **`update --skills` Selective-Merge-Composition**: Die Bausteine (BackupManager, ZoneClassifier, DiffEngine, ReviewLoop, ResumableChecklist) sind isoliert getestet und einsatzbereit, die End-to-End-CLI-Komposition (upstream-mirror-clone → walk → classify → diff → review-loop → checklist → apply) ist noch nicht voll verdrahtet. `update --skills` bei `aborted-dirty` zeigt einen Hint statt zu starten.
+- **`update --resume`**: ResumableChecklist-Modul ist fertig + getestet, aber die CLI-Orchestration für Resume hängt an obigem Composition-Punkt.
 - **Interactive Review**: Die `decide`-Callback der ReviewLoop ist injectable; eine echte TTY-UI mit `enquirer` ist Folge-Iteration oder Phase-6-GUI. v1 nutzt `--auto-accept` für clean Diffs.
 - **`.skill-lock.json`** statt YAML (ADR-0005 §38 erwähnt YAML; JSON ist robuster, kein Parser nötig).
+
+**Phase 5 (Agent-Runs + Auth + Catalog):**
+
+- **Agent-Runs Index in JSON statt SQLite** — sql.js drop-in für v1.x; v1-Performance für Early-Adoption-Datensätze trivial.
+- **macOS-Keychain-Read** für `.credentials.json` deferred zu v1.x — File-Fallback funktioniert auch auf macOS.
+- **Refresh-Mutex / proaktiver Token-Refresh deferred** — claude.exe besitzt den Refresh; `auth status` warnt bei expiresAt < 1h.
+- **Marketplace ETag-URL-Fetch deferred** — RegistryLoader ist injectable, file-Loader shipped, URL-Loader Phase-6.
+- **Capability-Resolver Version-Constraints** beschränkt auf `>=` / `>` / `<=` / `<` / `=` (keine `^` / `~`-Ranges in v1).
+- **catalog.json / catalog.lock.json Lifecycle** deferred zur Phase-6-Sidecar-Integration. `catalog list/uninstall/enable/disable/update/lock/sync` zeigen Phase-6-Pointer.
+- **`agent replay` print-only** — full re-spawn der gespeicherten Prompts ist v1.x.
 
 ## Entwicklung
 
 ```bat
-npm test                          :: 245/245 grün (+1 slow gated)
+npm test                          :: 408/408 grün (+1 slow gated)
 npm run build                     :: tsc -> dist/
 npm run check                     :: biome lint
 npm run ci                        :: biome ci + tsc + coverage
