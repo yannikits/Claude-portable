@@ -29,6 +29,7 @@
     "active": true,
     "targets": ["msi", "dmg", "appimage"],
     "icon": ["icons/icon.png"],
+    "externalBin": ["binaries/claude-os-sidecar"],
     "category": "DeveloperTool",
     "shortDescription": "claude-os desktop shell",
     "longDescription": "Tauri shell for claude-os — vault sync, catalog, agent runs, secrets."
