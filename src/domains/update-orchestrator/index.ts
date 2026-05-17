@@ -17,3 +17,12 @@ export {
   type Classification,
   type Zone,
 } from './zone-classifier.js';
+export { diffFiles, type DiffStatus, type DiffSummary } from './diff-engine.js';
+export {
+  runReviewLoop,
+  type FileToReview,
+  type ReviewDecision,
+  type ReviewLoopOpts,
+  type ReviewLoopResult,
+  type ReviewOutcome,
+} from './review-loop.js';
