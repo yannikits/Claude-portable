@@ -26,8 +26,6 @@ pub fn next_backoff(strike: usize) -> Option<Duration> {
 #[derive(Deserialize)]
 struct RpcEnvelope {
     #[serde(default)]
-    id: Option<u64>,
-    #[serde(default)]
     result: Option<Value>,
     #[serde(default)]
     error: Option<RpcErrorObj>,
