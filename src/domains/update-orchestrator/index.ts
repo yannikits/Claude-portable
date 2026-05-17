@@ -6,3 +6,9 @@
 export type { UpdateResult, UpdateScope, UpdateState } from './types.js';
 export { updateEnvRepo } from './env-repo.js';
 export { updateSkillsRepo } from './skills-repo.js';
+export {
+  BackupManager,
+  backupsDirFor,
+  backupPathFor,
+  type BackupEntry,
+} from './backup-manager.js';
