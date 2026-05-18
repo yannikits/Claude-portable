@@ -1,12 +1,15 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
   type AgentListResult,
   type CatalogListResult,
+  deleteSecret,
   getSettings,
   getVaultStatus,
   listAgentRuns,
   listCatalog,
+  listSecrets,
   ping,
+  type SecretsListResult,
   type SettingsReadResult,
   type VaultStatusResult,
 } from '../lib/rpc';
@@ -315,10 +318,95 @@ export function SettingsPage() {
 }
 
 export function SecretsPage() {
+  const [data, setData] = useState<SecretsListResult | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [pendingDelete, setPendingDelete] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
+
+  const refresh = useCallback(async () => {
+    setLoading(true);
+    try {
+      const result = await listSecrets();
+      setData(result);
+      setError(null);
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void refresh();
+  }, [refresh]);
+
+  async function handleDelete(key: string) {
+    if (!window.confirm(`Secret "${key}" wirklich löschen?`)) return;
+    setPendingDelete(key);
+    setActionError(null);
+    try {
+      const result = await deleteSecret(key);
+      if (!result.deleted) {
+        setActionError(`Secret "${key}" wurde nicht gefunden (möglicherweise bereits gelöscht).`);
+      }
+      await refresh();
+    } catch (e: unknown) {
+      setActionError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setPendingDelete(null);
+    }
+  }
+
   return (
-    <Stub
-      title="Secrets"
-      hint="secrets.list RPC kommt in 6f-tail. Values bleiben out-of-band — UI listet nur Namen."
-    />
+    <section className="page">
+      <h1>Secrets</h1>
+      <p className="muted">
+        Nur Namen — Values bleiben out-of-band. <code>set</code> / <code>get</code> nur per CLI (
+        <code>claude-os secrets set &lt;key&gt;</code>).
+      </p>
+      <Status loading={loading} error={error} />
+      {actionError && <p className="banner banner-error">{actionError}</p>}
+      {data && (
+        <>
+          <p className="muted">
+            Backend: <code>{data.backend}</code> · {data.count} Einträge
+          </p>
+          {data.entries.length === 0 ? (
+            <p className="muted">Keine Secrets gespeichert.</p>
+          ) : (
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>key</th>
+                  <th>backend</th>
+                  <th>Aktion</th>
+                </tr>
+              </thead>
+              <tbody>
+                {data.entries.map((s) => (
+                  <tr key={s.key}>
+                    <td>
+                      <code>{s.key}</code>
+                    </td>
+                    <td>{s.backend}</td>
+                    <td>
+                      <button
+                        type="button"
+                        className="btn-danger"
+                        disabled={pendingDelete === s.key}
+                        onClick={() => handleDelete(s.key)}
+                      >
+                        {pendingDelete === s.key ? 'Lösche …' : 'Löschen'}
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </>
+      )}
+    </section>
   );
 }

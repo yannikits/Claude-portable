@@ -125,6 +125,24 @@ export function registerMethods(dispatcher: RpcDispatcher, opts: MethodOpts = {}
     };
   });
 
+  dispatcher.register('secrets.list', async () => {
+    const store = createSecretStore({ env: env() });
+    const entries = await store.list();
+    // SecretMetadata is already values-free: { key, backend } only. Returning it
+    // verbatim is safe per ADR-0004 §51 — never log or expose values.
+    return { backend: store.backend, count: entries.length, entries };
+  });
+
+  dispatcher.register('secrets.delete', async (rawParams: unknown) => {
+    const params = (rawParams ?? {}) as { key?: string };
+    if (typeof params.key !== 'string' || params.key.length === 0) {
+      throw new Error('secrets.delete: params.key must be a non-empty string');
+    }
+    const store = createSecretStore({ env: env() });
+    const deleted = await store.delete(params.key);
+    return { key: params.key, deleted, backend: store.backend };
+  });
+
   dispatcher.register('agent.list', (rawParams: unknown) => {
     const params = (rawParams ?? {}) as { project?: string; limit?: number };
     const root = rootPath();

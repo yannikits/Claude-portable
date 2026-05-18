@@ -118,6 +118,33 @@ export async function getSettings(): Promise<SettingsReadResult> {
   return rpcCall<SettingsReadResult>('settings.read');
 }
 
+export type SecretBackend = 'keyring' | 'encrypted-file';
+
+export interface SecretMetadata {
+  key: string;
+  backend: SecretBackend;
+}
+
+export interface SecretsListResult {
+  backend: SecretBackend;
+  count: number;
+  entries: SecretMetadata[];
+}
+
+export interface SecretsDeleteResult {
+  key: string;
+  deleted: boolean;
+  backend: SecretBackend;
+}
+
+export async function listSecrets(): Promise<SecretsListResult> {
+  return rpcCall<SecretsListResult>('secrets.list');
+}
+
+export async function deleteSecret(key: string): Promise<SecretsDeleteResult> {
+  return rpcCall<SecretsDeleteResult>('secrets.delete', { key });
+}
+
 export const FILES_DROPPED_EVENT = 'files://dropped';
 export const INBOX_CHANGED_EVENT = 'inbox://changed';
 export const OUTBOX_CHANGED_EVENT = 'outbox://changed';
