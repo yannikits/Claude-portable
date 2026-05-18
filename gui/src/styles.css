@@ -233,3 +233,23 @@ code {
 .badge-muted {
   color: var(--muted);
 }
+
+.btn-danger {
+  background: transparent;
+  border: 1px solid var(--danger, #d9534f);
+  color: var(--danger, #d9534f);
+  padding: 0.2rem 0.7rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+
+.btn-danger:hover:not(:disabled) {
+  background: var(--danger, #d9534f);
+  color: #fff;
+}
+
+.btn-danger:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
