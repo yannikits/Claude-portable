@@ -267,8 +267,8 @@ v1.0.0 ist GA. Diese Liste sammelt die natürlichen nächsten Schritte für kün
 
 ### v1.4 — MCP-Bundle pro Domain (ADR-0007)
 
-- [ ] **claude-os als MCP-Server**. Aktuell exposed das Sidecar JSON-RPC nur an die Tauri-Shell. ADR-0007 plant zusätzlich MCP-Server-Mode damit externe Tools (z.B. anderes claude-Instanz, custom-agents) die domain-Functions nutzen können. Pattern: zweiter Entry-Point `src/mcp/index.ts` der `RpcDispatcher` wiederverwendet (transport-agnostisch design dank Phase 6c), MCP-spezifischer Transport-Wrapper.
-- [ ] **Tool-Manifest** für jede Domain — `catalog.list / vault.status / agent.list / inbox.import / secrets.list` als MCP-Tools deklariert mit JSON-Schema-Input-Validierung.
+- [x] **claude-os als MCP-Server** — Spike implementiert 2026-05-19. Neuer Entry-Point `src/mcp/index.ts` re-exports `runMcpServer` aus `src/mcp/server.ts`, das `@modelcontextprotocol/sdk` `StdioServerTransport` mit dem existierenden `RpcDispatcher` aus `src/sidecar/rpc.ts` verdrahtet. `RpcDispatcher.invoke(method, params)` als neue public-API ermöglicht non-NDJSON Direkt-Calls. CLI `claude-os mcp serve` startet den Server, primary spawn-target ist Claude Desktop / Claude Code via `claude_desktop_config.json` bzw. `claude mcp add`. Stdio-only in v1.4 (HTTP/SSE deferred), keine Auth/ACL (spawning client trust).
+- [x] **Tool-Manifest** für jede Domain — implementiert 2026-05-19. `src/mcp/tools.ts` exportiert `MCP_TOOLS`-Registry mit 6 Tools (`claude-os.catalog.list`, `claude-os.vault.status`, `claude-os.agent.list`, `claude-os.settings.read`, `claude-os.secrets.list` Keys-only, `claude-os.inbox.import` mutating). Jedes Tool hat JSON-Schema-Input-Validierung über das MCP-SDK `ListToolsRequestSchema`-Pattern. +6 Tests (Registry-Shape, methodName-Sidecar-Parity, findToolByName, RpcDispatcher.invoke happy/error path). Doc: [`docs/mcp-integration.md`](../docs/mcp-integration.md).
 
 ### v1.5+ — Plugin-Echo + Bestands-User-Sync
 

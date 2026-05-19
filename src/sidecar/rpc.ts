@@ -37,6 +37,21 @@ export class RpcDispatcher {
     return [...this.handlers.keys()].sort();
   }
 
+  /**
+   * Direct method invocation, bypassing the NDJSON envelope. Used by
+   * non-stdio transports (MCP server, in-process tests) so they share the
+   * same handler registry as the Tauri sidecar without re-implementing
+   * domain plumbing.
+   *
+   * @throws {Error} when the method is unknown (`MethodNotFound`)
+   * @throws whatever the handler throws (no JSON-RPC error-envelope wrap)
+   */
+  async invoke(method: string, params: unknown = null): Promise<unknown> {
+    const handler = this.handlers.get(method);
+    if (!handler) throw new Error(`MethodNotFound: ${method}`);
+    return await handler(params);
+  }
+
   async handle(line: string): Promise<RpcResponse | null> {
     let parsed: RpcRequest;
     try {
