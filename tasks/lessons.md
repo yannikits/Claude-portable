@@ -13,6 +13,16 @@ Format pro Eintrag:
 
 ---
 
+## 2026-05-20 — GitHub Desktop zeigt bei Pre-Commit-Hook-Failure nur den PATH
+
+**Situation:** User hat versucht, fünf staged Files (darunter `.graphify_step_ast.py` und `graphify-out/graph.json` mit ~1,7 Mio. Zeilen) via GitHub Desktop zu committen. Der Husky-Pre-Commit-Hook (`npx lint-staged` → `biome check --staged`) scheiterte. GitHub Desktop's "Commit failed"-Dialog zeigte als gesamten Output nur eine einzelne Zeile mit dem komplett ausgegebenen `PATH`-Environment — keine biome-Fehlermeldung, keine `lint-staged`-Zusammenfassung, kein konkreter File-Hinweis.
+
+**Lektion:** GitHub Desktop captured Pre-Commit-Hook-Failures unter Windows oft nur teilweise — wenn der Hook ohne strukturierten stderr-Output bricht (z. B. weil biome auf einer Datei oberhalb `files.maxSize` ohne klares Diagnostic abstürzt, oder weil cmd.exe das Output abschneidet), bleibt im UI nur was der Shell beim Crash dumped, häufig `PATH`. Das macht den eigentlichen Fehler unsichtbar. Mitigations: (a) `biome.json files.maxSize` defensiv setzen damit klare Diagnostics auch bei großen Dateien kommen, (b) generated/scratch-Verzeichnisse (`graphify-out/`, `three-brain-out/`) explizit in `biome.json files.includes` als `!**/dir` ausschließen UND in `.gitignore`, (c) bei Diagnose-Bedarf nicht GitHub Desktop, sondern `git commit` aus der Shell für ehrliches stderr.
+
+**Anwendung:** Wenn GitHub Desktop einen "Commit failed"-Dialog ohne klare Fehlermeldung zeigt, sofort über die Shell wiederholen — der echte Output ist dort. Generell: Pre-Commit-Hook-Konfiguration muss so robust sein, dass selbst beim Failure ein lesbarer Fehler-Pfad existiert. Für Skill-Output-Verzeichnisse die im Repo-Root landen können (`graphify-out/`, `three-brain-out/`) gehören sowohl `.gitignore` als auch biome's `files.includes`-Negation als Defense-in-Depth.
+
+---
+
 ## 2026-05-15 — /grill-me Wert vs. Implementations-Reflex
 
 **Situation:** Im /grill-me wurde B4 = Electron mit Argument "Rust-Toolchain auf 3 Maschinen ist Wartungslast" entschieden. Researcher-Spike anschließend widerlegte das Argument (Rust ist nur Build-Zeit-Dep des Maintainers, Nutzer bekommen reines Binary).
