@@ -102,6 +102,32 @@ jobs:
           prerelease: true
           args: ${{ matrix.tauri_args }}
 
+      - name: install zsync (linux)
+        if: matrix.label == 'linux-x86_64'
+        run: sudo apt-get install -y zsync
+
+      - name: generate AppImage zsync (linux, tag push only)
+        if: matrix.label == 'linux-x86_64' && startsWith(github.ref, 'refs/tags/v')
+        shell: bash
+        run: |
+          APPIMAGE=$(find gui/src-tauri/target/release/bundle/appimage -name '*.AppImage' | head -n1)
+          if [ -z "$APPIMAGE" ]; then
+            echo "::error::No AppImage found for zsync generation"
+            exit 1
+          fi
+          BASENAME=$(basename "$APPIMAGE")
+          URL="https://github.com/${GITHUB_REPOSITORY}/releases/download/${GITHUB_REF_NAME}/${BASENAME}"
+          zsyncmake -u "$URL" -o "${APPIMAGE}.zsync" "$APPIMAGE"
+          ls -la "${APPIMAGE}.zsync"
+
+      - name: attach zsync to draft release (linux, tag push only)
+        if: matrix.label == 'linux-x86_64' && startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          draft: true
+          files: gui/src-tauri/target/release/bundle/appimage/*.AppImage.zsync
+
       - name: upload bundle artifacts
         if: always()
         uses: actions/upload-artifact@v4
@@ -111,7 +137,9 @@ jobs:
             gui/src-tauri/target/release/bundle/**/*.msi
             gui/src-tauri/target/release/bundle/**/*.dmg
             gui/src-tauri/target/release/bundle/**/*.AppImage
+            gui/src-tauri/target/release/bundle/**/*.AppImage.zsync
             gui/src-tauri/target/**/release/bundle/**/*.msi
             gui/src-tauri/target/**/release/bundle/**/*.dmg
             gui/src-tauri/target/**/release/bundle/**/*.AppImage
+            gui/src-tauri/target/**/release/bundle/**/*.AppImage.zsync
           if-no-files-found: warn
