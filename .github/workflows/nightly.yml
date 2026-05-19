@@ -1,0 +1,72 @@
+name: nightly
+
+on:
+  schedule:
+    # 02:00 UTC daily — long-running E2E + cross-platform smoke
+    - cron: "0 2 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: nightly-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  long-running:
+    name: long-running ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-22.04, windows-latest, macos-latest]
+    env:
+      RUN_SLOW_TESTS: "1"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+
+      - name: install
+        run: npm ci
+
+      - name: build (cli + sidecar source)
+        run: npm run build
+
+      - name: vitest (slow + sidecar restart E2E)
+        run: npx vitest run
+
+      - name: prepare failure-issue body
+        if: failure()
+        shell: bash
+        run: |
+          cat > .nightly-failure.md <<EOF
+          ## Nightly run failed on \`${{ matrix.os }}\`
+
+          - **Workflow:** ${{ github.workflow }}
+          - **Run:** ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          - **Trigger:** ${{ github.event_name }}
+          - **SHA:** ${{ github.sha }}
+          - **Date (UTC):** $(date -u +%Y-%m-%dT%H:%M:%SZ)
+
+          Failing job: \`long-running ${{ matrix.os }}\`
+
+          Either fix the underlying issue or — if it's a known flake (Windows
+          git EPERM races etc.) — re-run \`gh run rerun --failed\` once before
+          investigating further. See \`tasks/lessons.md\` for prior triage patterns.
+          EOF
+
+      - name: open issue on failure
+        if: failure()
+        uses: peter-evans/create-issue-from-file@v5
+        with:
+          title: "nightly failure: ${{ matrix.os }} (run #${{ github.run_id }})"
+          content-filepath: .nightly-failure.md
+          labels: |
+            nightly-failure
+            ci
