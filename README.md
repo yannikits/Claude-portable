@@ -179,6 +179,7 @@ Voraussetzung: Rust-Toolchain via [rustup](https://rustup.rs/) + plattformspezif
 - [`docs/migration-from-portable.md`](docs/migration-from-portable.md) — 7-Schritte-Migration von claude-portable v0.x (USB) zu claude-os v1
 - [`docs/macos-gatekeeper.md`](docs/macos-gatekeeper.md) — unsignierte DMG auf macOS öffnen
 - [`docs/linux-updates.md`](docs/linux-updates.md) — AppImage Self-Update via zsync (v1.3+)
+- [`docs/mcp-integration.md`](docs/mcp-integration.md) — claude-os als MCP-Server für Claude Desktop / Claude Code (v1.4+)
 - [`gui/README.md`](gui/README.md) — Tauri-Shell + Sidecar build
 - [`tasks/todo.md`](tasks/todo.md) — Phase-Tracker, Reviews, Deferrals, v1.x Roadmap
 - [`tasks/lessons.md`](tasks/lessons.md) — cross-session pattern-Sammlung
