@@ -81,6 +81,32 @@ export function Dashboard() {
   const catalog = useRpc(() => listCatalog());
   const vault = useRpc(() => getVaultStatus());
   const agents = useRpc(() => listAgentRuns({ limit: 1 }));
+  const schedules = useRpc(() => listSchedules());
+  const mcpClients = useRpc(() => getMcpClientsStatus());
+
+  // Schedule-Aggregat: enabled vs disabled + nächster Fire
+  const scheduleSummary = schedules.data
+    ? (() => {
+        const enabled = schedules.data.entries.filter((s) => s.enabled).length;
+        const disabled = schedules.data.entries.length - enabled;
+        // nächste Fire-Zeit aus allen enabled entries (ISO-strings sortierbar)
+        const nextFires = schedules.data.entries
+          .filter((s) => s.enabled && s.next !== null && s.next !== undefined)
+          .map((s) => s.next as string)
+          .sort();
+        return { enabled, disabled, nextFire: nextFires[0] ?? null };
+      })()
+    : null;
+
+  // MCP-Health-Aggregat: count pro kind
+  const mcpSummary = mcpClients.data
+    ? (() => {
+        const total = mcpClients.data.entries.length;
+        const alive = mcpClients.data.entries.filter((e) => e.result.kind === 'alive').length;
+        const issues = total - alive;
+        return { total, alive, issues };
+      })()
+    : null;
 
   return (
     <section className="page">
@@ -109,6 +135,41 @@ export function Dashboard() {
           <h3>Agent Runs</h3>
           <Status loading={agents.loading} error={agents.error} />
           {agents.data && <p>{agents.data.count} aufgezeichnet</p>}
+        </div>
+        <div className="card">
+          <h3>Schedule</h3>
+          <Status loading={schedules.loading} error={schedules.error} />
+          {scheduleSummary && (
+            <>
+              <p>
+                {scheduleSummary.enabled} aktiv · {scheduleSummary.disabled} aus
+              </p>
+              <p className="muted" style={{ fontSize: '11px' }}>
+                {scheduleSummary.nextFire
+                  ? `nächste: ${scheduleSummary.nextFire}`
+                  : '(keine fällige)'}
+              </p>
+            </>
+          )}
+        </div>
+        <div className="card">
+          <h3>MCP-Clients</h3>
+          <Status loading={mcpClients.loading} error={mcpClients.error} />
+          {mcpSummary && (
+            <p>
+              <span className="mcp-status mcp-status--alive">{mcpSummary.alive} alive</span>
+              {mcpSummary.issues > 0 && (
+                <>
+                  {' · '}
+                  <span className="mcp-status mcp-status--crashed">
+                    {mcpSummary.issues} Problem{mcpSummary.issues === 1 ? '' : 'e'}
+                  </span>
+                </>
+              )}
+              {' · '}
+              {mcpSummary.total} total
+            </p>
+          )}
         </div>
       </div>
     </section>
