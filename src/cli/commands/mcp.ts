@@ -17,6 +17,7 @@ import {
   checkServerStatus,
   discoverMcpClients,
   type McpServerStatus,
+  probeServers,
   summariseStatuses,
 } from '../../domains/mcp-clients/index.js';
 import { runMcpServer } from '../../mcp/index.js';
@@ -105,6 +106,50 @@ export function registerMcpCommand(program: Command): void {
       if (discovery.malformedConfigs.length > 0) {
         printLine('Warnungen:');
         for (const m of discovery.malformedConfigs) printLine(`  - ${m.path}: ${m.reason}`);
+      }
+    });
+
+  clients
+    .command('probe')
+    .description('Live-Probe: spawnt jeden Server, sendet MCP-initialize+tools/list, killt ihn')
+    .option('--timeout <ms>', 'Probe-Timeout pro Server in ms (Default 5000)', '5000')
+    .option('--concurrency <n>', 'Parallele Probes (Default 3)', '3')
+    .action(async (opts: { timeout: string; concurrency: string }, command) => {
+      const globalOpts = command.optsWithGlobals() as GlobalOpts;
+      const discovery = discoverMcpClients({ projectCwd: process.cwd() });
+      if (discovery.servers.length === 0) {
+        if (globalOpts.json === true) printJson({ probes: [] });
+        else printLine('(keine MCP-Server zum Proben gefunden)');
+        return;
+      }
+      const timeoutMs = Number.parseInt(opts.timeout, 10);
+      const concurrency = Number.parseInt(opts.concurrency, 10);
+      if (!Number.isFinite(timeoutMs) || timeoutMs <= 0) {
+        console.error(`Fehler: --timeout muss eine positive Zahl sein, war "${opts.timeout}"`);
+        process.exit(2);
+      }
+      const probes = await probeServers(discovery.servers, { timeoutMs, concurrency });
+      if (globalOpts.json === true) {
+        printJson({ probes });
+        return;
+      }
+      const aliveCount = probes.filter((p) => p.result.kind === 'alive').length;
+      printLine(
+        `${probes.length} MCP-Server probed — ${aliveCount} alive, ${probes.length - aliveCount} mit Problemen.\n`,
+      );
+      for (const p of probes) {
+        const marker = p.result.kind === 'alive' ? '[ALIVE]' : '[FAIL]';
+        const extra =
+          p.result.kind === 'alive'
+            ? `${p.result.toolsCount} Tools, ${p.result.durationMs}ms, protocol ${p.result.protocolVersion}`
+            : `${p.result.kind}: ${'message' in p.result ? p.result.message : 'siehe kind'}`;
+        printLine(`${marker} ${p.entry.name}  (${p.entry.host})`);
+        printLine(`    ${extra}`);
+        if (p.result.kind === 'crashed' && p.result.stderr.length > 0) {
+          const preview = p.result.stderr.slice(0, 200);
+          printLine(`    stderr: ${preview}${p.result.stderr.length > 200 ? '...' : ''}`);
+        }
+        printLine('');
       }
     });
 }

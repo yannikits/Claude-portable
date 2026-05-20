@@ -11,6 +11,12 @@
 export { type McpClientPaths, type ResolveOpts, resolveMcpClientPaths } from './config-paths.js';
 export { discoverMcpClients } from './discovery.js';
 export {
+  type ProbeOpts,
+  type ProbeResult,
+  probeServer,
+  probeServers,
+} from './live-probe.js';
+export {
   checkServerStatus,
   type StatusCheckOpts,
   summariseStatuses,
