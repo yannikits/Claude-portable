@@ -13,7 +13,33 @@
  */
 
 import type { Command } from 'commander';
+import {
+  checkServerStatus,
+  discoverMcpClients,
+  type McpServerStatus,
+  summariseStatuses,
+} from '../../domains/mcp-clients/index.js';
 import { runMcpServer } from '../../mcp/index.js';
+
+interface GlobalOpts {
+  readonly json?: boolean;
+}
+
+function printJson(payload: unknown): void {
+  // biome-ignore lint/suspicious/noConsole: CLI output
+  console.log(JSON.stringify(payload, null, 2));
+}
+
+function printLine(line: string): void {
+  // biome-ignore lint/suspicious/noConsole: CLI output
+  console.log(line);
+}
+
+function renderStatus(s: McpServerStatus): string {
+  const marker = s.kind === 'ok' ? '[OK]' : s.kind === 'disabled' ? '[OFF]' : '[!]';
+  const host = s.entry.host;
+  return `${marker} ${s.entry.name}  (${host})\n    cmd: ${s.entry.command} ${s.entry.args.join(' ')}\n    ${s.message}`;
+}
 
 export function registerMcpCommand(program: Command): void {
   const mcp = program.command('mcp').description('Model Context Protocol server (v1.4)');
@@ -27,6 +53,58 @@ export function registerMcpCommand(program: Command): void {
       } catch (err) {
         console.error(`claude-os mcp serve failed: ${err instanceof Error ? err.message : err}`);
         process.exit(1);
+      }
+    });
+
+  const clients = mcp
+    .command('clients')
+    .description('MCP-Server entdecken die in Claude Desktop / Claude Code konfiguriert sind');
+
+  clients
+    .command('list')
+    .description('Alle entdeckten MCP-Server mit Static-Status-Check listen')
+    .action(async (_opts, command) => {
+      const globalOpts = command.optsWithGlobals() as GlobalOpts;
+      const discovery = discoverMcpClients({ projectCwd: process.cwd() });
+      const statuses = discovery.servers.map((entry) => checkServerStatus(entry));
+      if (globalOpts.json === true) {
+        printJson({
+          discovery: {
+            missingConfigPaths: discovery.missingConfigPaths,
+            malformedConfigs: discovery.malformedConfigs,
+          },
+          servers: statuses,
+          summary: summariseStatuses(statuses),
+        });
+        return;
+      }
+      if (statuses.length === 0) {
+        printLine('(keine MCP-Server in den entdeckten Configs gefunden)');
+        if (discovery.missingConfigPaths.length > 0) {
+          printLine('');
+          printLine('Geprüfte Pfade die nicht existierten:');
+          for (const p of discovery.missingConfigPaths) printLine(`  - ${p}`);
+        }
+        if (discovery.malformedConfigs.length > 0) {
+          printLine('');
+          printLine('Malformed Configs:');
+          for (const m of discovery.malformedConfigs) printLine(`  - ${m.path}: ${m.reason}`);
+        }
+        return;
+      }
+      const summary = summariseStatuses(statuses);
+      printLine(
+        `${statuses.length} MCP-Server entdeckt — ${summary.ok} ok, ${summary.disabled} off, ${
+          summary['command-missing'] + summary['arg-path-missing'] + summary['env-missing']
+        } mit Problemen.\n`,
+      );
+      for (const s of statuses) {
+        printLine(renderStatus(s));
+        printLine('');
+      }
+      if (discovery.malformedConfigs.length > 0) {
+        printLine('Warnungen:');
+        for (const m of discovery.malformedConfigs) printLine(`  - ${m.path}: ${m.reason}`);
       }
     });
 }
