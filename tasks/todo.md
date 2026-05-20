@@ -409,3 +409,69 @@ v1.0.0 ist GA. Diese Liste sammelt die natürlichen nächsten Schritte für kün
 - `npm test` → 88/88 grün (+21 neue Tests: 13 paths + 8 migrator)
 - `npm run build` → dist/ populated
 - Real Smoke: `node dist/cli/index.js doctor --migrate-git-metadata --json` retourniert `no-git-dir` korrekt (kein vault/ im claude-portable repo), externalGitDir resolved nach `%APPDATA%\claude-os\git-metadata\vault.git`
+
+---
+
+## Session 2026-05-20 — Auftrag aus Downloads/claude-code-auftrag.md
+
+**Quelle:** `C:\Users\reapertakashi\Downloads\claude-code-auftrag.md`
+**Rolle (per Auftrag):** Senior Developer, autonome Entscheidungen.
+**Ziel:** Vier offene PRs verifizieren + ADRs nachziehen + Auto-Migrate + Auto-Deps-Spec + Stop-Hook-Bug fixen + Cowork-OS-Video integrieren + GitHub-Desktop-Fehler beheben.
+
+### Auftrag 1a — PR-Verifikation (Stand 2026-05-20 ~01:08 lokal)
+
+Alle vier offenen PRs basieren auf `main@d46ba58` (current HEAD). CI ist nach Repo-Public-Switch durchgelaufen.
+
+| PR | Branch | Head | Base | CI | Mergeable | State | Notes |
+|---|---|---|---|---|---|---|---|
+| #31 | `chore/repo-cleanup` | `2b27e5e` | `main@d46ba58` | grün (5/5) | MERGEABLE | CLEAN | Räumt 16 paste-artefakt-Files + `--version/`-Dir; ignored `graphify-out/` + `.graphify_step_ast.py`; löst Merge-Konflikt in v1.2-Section. |
+| #32 | `feat/v1.5-plugin-binding-resolution` | `6d86f71` | `main@d46ba58` | grün (5/5 nach Re-Run) | MERGEABLE | CLEAN | Phase 5o (Plugin-Binding-Resolution). +19 Tests. Erster Run zeigte Windows-Flakiness in `update-orchestrator/skills-repo.test.ts:42` + `vault-sync/conflict-policy.test.ts:79` (EPERM auf tmpdir-Cleanup, pre-existing Issue) — Re-Run grün, kein Bezug zu Phase 5o. |
+| #33 | `docs/phase-5o-adr-lessons` | `c117488` | `main@d46ba58` | grün (5/5) | MERGEABLE | CLEAN | ADR-0015 + 2 lessons.md-Einträge (Discriminated-Union-Sentinel; tar v7 onentry flow-mode). |
+| #34 | `docs/adr-0016-mcp-single-server` | `d53fea3` | `main@d46ba58` | grün (5/5) | MERGEABLE | CLEAN | ADR-0016 für v1.4 MCP-Single-Server-Bridge + ADR-0007-Status-Update + Dead-Link-Fix in `docs/mcp-integration.md`. |
+
+**Konflikt-Risiko untereinander:**
+- #31 (.gitignore + todo.md v1.2-Section + 16 Dateilöschungen) vs. #32 (touches `src/domains/catalog/*` + todo.md v1.5+-Section) — **kein Konflikt** (verschiedene todo.md-Bereiche).
+- #32 vs. #33 (`docs/architecture/adr/0015-...md` + `tasks/lessons.md` Append) — **kein Konflikt**.
+- #33 vs. #34 (`docs/architecture/adr/0016-...md` + ADR-0007-Header-Update + `docs/mcp-integration.md`) — **kein Konflikt**.
+- #31 vs. #34 (todo.md v1.2 vs. ADR-Files) — **kein Konflikt**.
+
+**Empfohlene Merge-Reihenfolge:** #31 → #32 → #33 → #34 (cleanup first; Impl vor Docs).
+
+### Auftrag 1b — ADRs nachziehen
+
+Auftrag spezifizierte Nummern 0012/0013 — sind bereits belegt (TypeBox / Pino). Senior-Call: nächste freie Nummern 0017/0018. Pfad gemäß Repo-Konvention `docs/architecture/adr/` (nicht `docs/adr/`).
+
+- [ ] **ADR-0017 — v1.2 Chat-View-MVP** (PR #29): line-buffered `child_process` statt `node-pty`.
+- [ ] **ADR-0018 — v1.3 AppImage-zsync** (PR #21): standalone-zsync, `bundle.appimage.includeUpdater` nicht verwendet.
+
+### Auftrag 1c — Auto-Migrate CLI-Subcommand
+
+- [ ] Eigener Branch `feat/v1.5-auto-migrate` (unabhängig von PR #32).
+- [ ] `claude-os migrate --from-portable <path>` automatisiert 7 Schritte aus `docs/migration-from-portable.md`.
+- [ ] Verlustfrei: unbekannte Felder geloggt, nicht verworfen.
+- [ ] Tests: pro v0.x-Variante, Roundtrip, Idempotenz, kaputte Config (kontrollierter Abbruch), unbekannte Felder.
+- [ ] Risk-Path `**/migrations/**` → Codex-Review nach Impl (Three-Brain-Skill-Mandate).
+
+### Auftrag 1d — `--auto-deps`-Flag (Spec only bis PR #32 mergt)
+
+- [ ] `docs/specs/auto-deps-flag.md`: gewünschtes Verhalten, Edge-Cases, CLI-Signatur, Fehler bei zyklischen Deps, Test-Matrix.
+
+### Auftrag 2 — "Running stop hooks… 3/4" Hänger
+
+- [ ] Investigation: Anthropic-Claude-Code-Harness-internal (nicht patchbar) ODER lokale husky pre-commit?
+- [ ] Fix mit Regression-Test + Stress-Test (≥20 Läufe) wenn lokal.
+- [ ] Vorher/Nachher-Logfile in Review-Sektion.
+
+### Auftrag 3 — Cowork-OS-Video analysieren + integrieren
+
+- [ ] Gemini-Analyse läuft (Job `bzwfdyill`, Output in `three-brain-out/2026-05-20-cowork-os/`).
+- [ ] Integrationsplan in `docs/integration-plan-cowork-os.md` mit Akzeptanzkriterien pro Feature.
+- [ ] Sinnvolle Teile in v1 implementieren, Rest mit Begründung deferred.
+
+### Auftrag 4 — GitHub-Desktop-Commit-Failure-Root-Cause
+
+Screenshot-Befund: 5 staged Files inkl. `.graphify_step_ast.py` + `graphify-out/*` (graph.json ≈ 1.7M Zeilen). Husky-Pre-Commit-Hook gab nur einen PATH-Dump aus statt strukturierter Fehlermeldung → GitHub Desktop zeigt nur den PATH. PR #31 ignored bereits diese Files → erster Trigger weg. Aber Root-Cause tiefer: husky/lint-staged Konfiguration nicht robust gegen Riesendateien.
+
+- [ ] Husky-Hook auf Robustheit prüfen (`.husky/pre-commit` + `.lintstagedrc.cjs`).
+- [ ] `biome check` mit `--no-errors-on-unmatched` + Glob ist OK — Frage ist warum nur PATH ausgegeben wird.
+- [ ] Verifikation: simuliere Commit mit Großdatei in Staging → klare Meldung, kein Hänger.
