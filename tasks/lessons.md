@@ -13,6 +13,26 @@ Format pro Eintrag:
 
 ---
 
+## 2026-05-20 — Discriminated-Union-Sentinel statt Type-Narrowing-Wrestling
+
+**Situation:** Phase 5o lockBuilder musste zwei Sub-States des `ManifestReadResult`-Fail-Branches unterscheiden: "kein plugin.json" (silent) vs. "plugin.json malformed" (warn). Erster Versuch verglich gegen `NO_MANIFEST.reason` — TypeScript-Build failed mit TS2339, weil `NO_MANIFEST` als ganze Union getypt war und die Property `reason` nicht ohne `ok === false`-Narrowing ableitbar.
+
+**Lektion:** Wenn Code von außerhalb der Discriminated-Union einen Failure-Reason matchen muss, einen **separat exportierten Sentinel-String-Constant** publizieren statt vom Objekt-Constant zu projizieren. `export const NO_MANIFEST_REASON = '...'` ist erstens immer dem Compiler sichtbar, zweitens dokumentiert sich selbst, drittens kann das Objekt-Constant zur API-Ergonomie behalten werden.
+
+**Anwendung:** Jede Domain mit `{ok: true | false}`-Result-Pattern, wo Caller auf bestimmte Fail-Reasons reagieren müssen ohne erst `ok === false` zu narrowen. Auch nützlich für Test-Assertions die nicht durch das Narrowing-Boilerplate wollen.
+
+---
+
+## 2026-05-20 — tar v7 onentry braucht 'data'-Listener nicht .resume()
+
+**Situation:** Beim Implementieren des Tarball-Manifest-Peek hatte ich initial einen Reflex `entry.resume()` + danach `entry.on('data', ...)` zu rufen — basierend auf Node-Stream-Idiomen. Resultat: leere Chunks, weil `.resume()` den Stream startet, bevor der Listener angemeldet ist.
+
+**Lektion:** In `tar v7`s `onentry`-Callback: wenn ich Entry-Daten WILL, registriere ich `entry.on('data', ...)` und `entry.on('end', ...)` — das **schaltet automatisch in flow mode** und ich darf KEIN `.resume()` aufrufen. Wenn ich die Entry-Daten NICHT will, MUSS ich `entry.resume()` aufrufen, sonst hängt der Tar-Stream weil Backpressure greift.
+
+**Anwendung:** Generell beim Konsumieren von Node-Streams mit selektivem Interesse pro Entry: erst entscheiden ob das Entry konsumiert wird; bei "ja" Listener attachen (kein .resume()); bei "nein" .resume() rufen. Mischen ist der Bug-Mode.
+
+---
+
 ## 2026-05-15 — /grill-me Wert vs. Implementations-Reflex
 
 **Situation:** Im /grill-me wurde B4 = Electron mit Argument "Rust-Toolchain auf 3 Maschinen ist Wartungslast" entschieden. Researcher-Spike anschließend widerlegte das Argument (Rust ist nur Build-Zeit-Dep des Maintainers, Nutzer bekommen reines Binary).
