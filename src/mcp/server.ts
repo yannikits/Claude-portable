@@ -48,7 +48,7 @@ export async function createMcpServer(opts: CreateMcpServerOpts = {}): Promise<S
   const server = new Server(
     {
       name: opts.serverName ?? 'claude-os',
-      version: opts.serverVersion ?? '1.2.1',
+      version: opts.serverVersion ?? '1.5.0',
     },
     {
       capabilities: { tools: {} },
