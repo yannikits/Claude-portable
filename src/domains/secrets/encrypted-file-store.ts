@@ -21,6 +21,25 @@
  *   2. `$CLAUDE_OS_SECRETS_KEY` env var
  *   3. Throws `SecretsLockedError` — caller must surface UX prompt
  *
+ * SECURITY NOTE (M9, 2026-05-21 code-review): the atomic-write pattern
+ * uses `writeFileSync(tmp, ..., { mode: 0o600 })` + `renameSync(tmp,
+ * finalPath)`. POSIX systems honor the 0o600 mode (user-only read +
+ * write). **Windows IGNORES the mode argument** — the resulting
+ * `secrets.enc` inherits the parent directory's ACL. On a multi-user
+ * Windows host, this can mean OTHER local users on the same machine
+ * can READ the encrypted-secrets-blob (they still need the master key
+ * to decrypt, but offline brute-force becomes possible).
+ *
+ * Mitigation on Windows:
+ *   - Single-user host: default ACL on `%APPDATA%\claude-os\` is
+ *     user-only, so the file inherits safe permissions.
+ *   - Multi-user host: run `icacls "%APPDATA%\claude-os\secrets.enc"
+ *     /inheritance:r /grant:r "%USERNAME%":F` after first creation,
+ *     or move the dataDir to a user-private location.
+ *   - Production deployments: prefer the @napi-rs/keyring backend
+ *     (`CLAUDE_OS_SECRETS_BACKEND=keyring`) — Windows Credential
+ *     Manager has proper per-user isolation.
+ *
  * @module @domains/secrets/encrypted-file-store
  */
 
