@@ -33,6 +33,7 @@ import {
 import { createSecretStore, SecretsLockedError } from '../domains/secrets/index.js';
 import { BusyFlag, loadVaultConfig } from '../domains/vault-sync/index.js';
 import type { ChatSessions } from './chat-sessions.js';
+import { createMtimeCache, mtimeCached } from './mtime-cache.js';
 import type { RpcDispatcher } from './rpc.js';
 
 interface MethodOpts {
@@ -82,6 +83,16 @@ function isUnder(candidate: string, root: string): boolean {
 export function registerMethods(dispatcher: RpcDispatcher, opts: MethodOpts = {}): void {
   const env = (): NodeJS.ProcessEnv => opts.env ?? process.env;
   const home = (): string => opts.home ?? homedir();
+
+  // M14 (2026-05-21 code-review): mtime-keyed caches fuer haeufig
+  // gepollte konfigurations-files. Pro registerMethods-call eigene
+  // cache-Instanzen — bei sidecar-restart (Tauri-shell-relaunch) sind
+  // sie weg, das ist die User-Aktion fuer "fresh state".
+  const catalogCache = createMtimeCache<ReturnType<typeof readCatalog>>();
+  const catalogLockCache = createMtimeCache<ReturnType<typeof readCatalogLock>>();
+  const vaultConfigCache = createMtimeCache<ReturnType<typeof loadVaultConfig>>();
+  const schedulesCache = createMtimeCache<ReturnType<typeof readSchedules>>();
+
   dispatcher.register('catalog.list', () => {
     const paths = catalogPathsFor(rootPath());
     // M11 (2026-05-21 code-review): InvalidCatalogError propagiert sonst
@@ -89,8 +100,16 @@ export function registerMethods(dispatcher: RpcDispatcher, opts: MethodOpts = {}
     // interne Pfad-Struktur zu sehen. Catch + opaque error-shape, success
     // shape bleibt back-compat-stabil.
     try {
-      const catalog = readCatalog(paths.catalogPath);
-      const lock = readCatalogLock(paths.lockPath);
+      const catalog = mtimeCached(
+        paths.catalogPath,
+        () => readCatalog(paths.catalogPath),
+        catalogCache,
+      );
+      const lock = mtimeCached(
+        paths.lockPath,
+        () => readCatalogLock(paths.lockPath),
+        catalogLockCache,
+      );
       return {
         catalogPath: paths.catalogPath,
         lockPath: paths.lockPath,
@@ -177,8 +196,11 @@ export function registerMethods(dispatcher: RpcDispatcher, opts: MethodOpts = {}
     const vaultPath = join(root, 'vault');
     const busyFlagPath = join(machine.dataDir, 'vault-sync-state.json');
     const configPath = join(machine.dataDir, 'vault-config.json');
+    // BusyFlag bleibt uncached — busy-state ist sub-second-volatile und
+    // GUI-polling will den frischen Wert sehen (Dashboard zeigt sonst
+    // einen stehengebliebenen "sync laeuft" auch nach release).
     const busy = new BusyFlag({ filePath: busyFlagPath }).read();
-    const config = loadVaultConfig(configPath);
+    const config = mtimeCached(configPath, () => loadVaultConfig(configPath), vaultConfigCache);
     return { vaultPath, busy, config };
   });
 
@@ -505,7 +527,12 @@ export function registerMethods(dispatcher: RpcDispatcher, opts: MethodOpts = {}
 
   dispatcher.register('schedule.list', () => {
     const machine = resolveMachinePaths();
-    const store = readSchedules(machine.dataDir);
+    // M14: nur die READ-path cached. Add/Remove/Enable rufen direkt
+    // readSchedules ohne cache, weil sie sofort writeSchedules folgen —
+    // ein cache-Hit zwischen read und write wuerde stale-Daten ueber-
+    // schreiben.
+    const schedulesPath = join(machine.dataDir, 'schedules.json');
+    const store = mtimeCached(schedulesPath, () => readSchedules(machine.dataDir), schedulesCache);
     const enriched = store.entries.map((entry: ScheduleEntry) => {
       let next: string | null = null;
       try {
