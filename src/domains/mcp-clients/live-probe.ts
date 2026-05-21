@@ -120,6 +120,16 @@ export async function probeServer(
   const stderrBuf: string[] = [];
   const stdoutLines: string[] = [];
   const pendingIds = new Set<number>([1, 2]);
+  // M31 (2026-05-21 code-review): protocolVersion in local closure-var
+  // statt auf `entry` zu mutieren — caller bekommt sein Entry-Object
+  // ohne Side-effect-Mutation zurueck.
+  let probedProtocolVersion: string | undefined;
+  // M32 (2026-05-21 code-review): per-stream line-buffer fuer split
+  // JSON-RPC-Responses. Wenn der MCP-Server eine grosse `tools/list`-
+  // Antwort emittiert, kann sie ueber mehrere stdout-`data`-Events
+  // splitten — `tryParseJsonLine` failt dann auf beiden Halbteilen.
+  // Wir buffern bis `\n` ankommt.
+  let stdoutPartialLine = '';
 
   // Track REAL exit (nicht nur "signal gesendet") fuer den SIGKILL-Fallback.
   // `child.killed` ist nach erfolgreichem kill('SIGTERM') sofort true — das
@@ -172,8 +182,13 @@ export async function probeServer(
     });
 
     child.stdout?.on('data', (chunk: Buffer) => {
-      const text = chunk.toString('utf8');
-      for (const rawLine of text.split('\n')) {
+      // M32 (2026-05-21 code-review): newline-Boundaries respektieren.
+      // Wenn ein chunk mitten in einer JSON-Response endet, buffern wir
+      // den Trail bis das naechste chunk den Rest plus \n liefert.
+      stdoutPartialLine += chunk.toString('utf8');
+      const parts = stdoutPartialLine.split('\n');
+      stdoutPartialLine = parts.pop() ?? '';
+      for (const rawLine of parts) {
         if (rawLine === '') continue;
         stdoutLines.push(rawLine);
         const msg = tryParseJsonLine(rawLine);
@@ -192,8 +207,7 @@ export async function probeServer(
           if (msg.id === 1) {
             // Initialize geantwortet — sende initialized + tools/list
             const result = msg.result as { protocolVersion?: string } | undefined;
-            (entry as { _probeProtocolVersion?: string })._probeProtocolVersion =
-              result?.protocolVersion ?? MCP_PROTOCOL_VERSION;
+            probedProtocolVersion = result?.protocolVersion ?? MCP_PROTOCOL_VERSION;
             try {
               child.stdin?.write(`${buildInitialized()}\n`);
               child.stdin?.write(`${buildListTools(2)}\n`);
@@ -210,9 +224,7 @@ export async function probeServer(
             // tools/list geantwortet — Probe erfolgreich
             const result = msg.result as { tools?: unknown[] } | undefined;
             const toolsCount = Array.isArray(result?.tools) ? (result?.tools?.length ?? 0) : 0;
-            const protocolVersion =
-              (entry as { _probeProtocolVersion?: string })._probeProtocolVersion ??
-              MCP_PROTOCOL_VERSION;
+            const protocolVersion = probedProtocolVersion ?? MCP_PROTOCOL_VERSION;
             clearTimeout(overallTimer);
             finish({
               kind: 'alive',
