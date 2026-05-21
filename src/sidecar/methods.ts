@@ -22,11 +22,13 @@ import { registerCatalogMethods } from './methods/catalog.js';
 import { registerChatMethods } from './methods/chat.js';
 import { registerInboxMethods } from './methods/inbox.js';
 import { registerMcpMethods } from './methods/mcp.js';
+import { registerPtyMethods } from './methods/pty.js';
 import { registerScheduleMethods } from './methods/schedule.js';
 import { registerSecretsMethods } from './methods/secrets.js';
 import { registerSettingsMethods } from './methods/settings.js';
 import { registerVaultMethods } from './methods/vault.js';
 import { createMtimeCache } from './mtime-cache.js';
+import type { PtyChatSessions } from './pty-chat-sessions.js';
 import type { RpcDispatcher } from './rpc.js';
 
 interface MethodOpts {
@@ -34,6 +36,8 @@ interface MethodOpts {
   readonly home?: string;
   /** Optional ChatSessions instance (v1.2 MVP) — chat.* RPCs only registered when provided. */
   readonly chatSessions?: ChatSessions;
+  /** Optional PtyChatSessions instance (v1.x) — pty.* RPCs only registered when provided. */
+  readonly ptyChatSessions?: PtyChatSessions;
   /** Optional MCP-Watcher handle (v1.7) — mcp.clients.status only registered when provided. */
   readonly mcpWatcher?: WatcherHandle;
 }
@@ -83,6 +87,7 @@ export function registerMethods(dispatcher: RpcDispatcher, opts: MethodOpts = {}
   registerSettingsMethods(dispatcher, ctx);
   registerSecretsMethods(dispatcher, ctx);
   if (opts.chatSessions !== undefined) registerChatMethods(dispatcher, opts.chatSessions);
+  if (opts.ptyChatSessions !== undefined) registerPtyMethods(dispatcher, opts.ptyChatSessions);
   registerScheduleMethods(dispatcher, ctx);
   if (opts.mcpWatcher !== undefined) registerMcpMethods(dispatcher, opts.mcpWatcher);
   registerAgentMethods(dispatcher, ctx);
