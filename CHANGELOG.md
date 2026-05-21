@@ -4,6 +4,14 @@ Alle relevanten Aenderungen an `claude-os` werden hier dokumentiert. Format orie
 
 ## [Unreleased]
 
+_(noch keine Aenderungen)_
+
+## [1.6.0] — 2026-05-21
+
+Comprehensive Code-Review-Pass: 60+ Items adressiert quer ueber 9 Blocks (Critical/Codex-R2/M-Security/M-Architektur/M-Performance/M-Correctness/M-Tests/M-Docs/Cleanup) + alle 6 deferred-followups. Sidecar-process-arch komplett gehaertet (RCE/symlink/path-traversal/TOCTOU/argv-injection-defenses), full security-test-suite, Tauri-Rust nonce-handshake fuer RPC-MITM-defense-in-depth.
+
+Tests: 845/848 grun (+200 vs v1.5.3). CI: ubuntu+macOS+Windows+Rust-cargo-check alle gruen.
+
 ### Sicherheit (Critical-Block aus Code-Review 2026-05-21)
 
 - **C1** `scheduler/runner` — `shell: true` RCE entfernt; user-supplied commands werden via argv-tokenization an `spawn` weitergereicht (PR #61).
@@ -105,6 +113,7 @@ Pre-Code-Review-State. Siehe [`tasks/todo.md`](tasks/todo.md) §"Session 2026-05
 
 Initialer Release-Tag nach Abschluss Phase 0-7.
 
-[Unreleased]: https://github.com/yannikits/Claude-portable/compare/v1.5.3...HEAD
+[Unreleased]: https://github.com/yannikits/Claude-portable/compare/v1.6.0...HEAD
+[1.6.0]: https://github.com/yannikits/Claude-portable/releases/tag/v1.6.0
 [1.5.3]: https://github.com/yannikits/Claude-portable/releases/tag/v1.5.3
 [1.0.0]: https://github.com/yannikits/Claude-portable/releases/tag/v1.0.0
