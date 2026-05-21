@@ -1,6 +1,7 @@
-import { copyFileSync, existsSync, mkdirSync, statSync } from 'node:fs';
+import { existsSync, lstatSync, mkdirSync, realpathSync, statSync } from 'node:fs';
+import { copyFile as fspCopyFile } from 'node:fs/promises';
 import { homedir } from 'node:os';
-import { basename, join } from 'node:path';
+import { basename, join, relative } from 'node:path';
 import { resolveRoot } from '../core/environment/index.js';
 import { resolveMachinePaths } from '../core/paths/index.js';
 import { AgentRunsRepository, agentRunsIndexPathFor } from '../domains/agent-runs/index.js';
@@ -45,6 +46,21 @@ interface MethodOpts {
 
 function rootPath(): string {
   return resolveRoot({}).path;
+}
+
+/**
+ * C2 (2026-05-21 code-review): true wenn `candidate` denselben Pfad ODER
+ * eine Subdirectory von `root` ist. Beide muessen bereits canonical /
+ * absolute sein. Plattform-unabhaengig via `path.relative`.
+ */
+function isUnder(candidate: string, root: string): boolean {
+  const rel = relative(root, candidate);
+  if (rel === '' || rel === '.') return true;
+  if (rel.startsWith('..')) return false;
+  // Auf Windows kann relative absolute paths zurueckgeben (verschiedene
+  // Laufwerke). Solche Pfade sind NICHT unter `root`.
+  if (/^[A-Za-z]:[/\\]/.test(rel) || rel.startsWith('/')) return false;
+  return true;
 }
 
 export function registerMethods(dispatcher: RpcDispatcher, opts: MethodOpts = {}): void {
@@ -130,18 +146,68 @@ export function registerMethods(dispatcher: RpcDispatcher, opts: MethodOpts = {}
     return { vaultPath, busy, config };
   });
 
-  dispatcher.register('inbox.import', (rawParams: unknown) => {
+  dispatcher.register('inbox.import', async (rawParams: unknown) => {
     const params = (rawParams ?? {}) as { paths?: readonly string[] };
     if (!Array.isArray(params.paths)) {
       throw new Error('inbox.import: params.paths must be a string[]');
     }
-    const inboxDir = join(rootPath(), 'inbox');
+    const root = rootPath();
+    const inboxDir = join(root, 'inbox');
     mkdirSync(inboxDir, { recursive: true });
+
+    // C2 (2026-05-21 code-review): Path-traversal + symlink-exfil-Schutz.
+    // Vorher konnte ein RPC-caller `inbox.import({paths: ["~/.claude/.credentials.json"]})`
+    // rufen, das file ins vault/inbox/ kopieren und via vault-sync git-push
+    // exfiltrieren. Fix: lstat (kein symlink-follow) + realpath + deny-list
+    // gegen sensitive Roots.
+    const machine = resolveMachinePaths();
+    const h = home();
+    const denyRoots: readonly string[] = [
+      machine.dataDir, // <dataDir>/secrets.enc, logs, vault-sync-state, ...
+      join(h, '.claude'), // Anthropic .credentials.json + ~/.claude/skills etc.
+      root, // Niemals aus dem cloud-mount-root selbst kopieren (recursion).
+    ];
+
     const stamp = new Date().toISOString().replaceAll(':', '-');
     const written: string[] = [];
     for (const src of params.paths) {
+      if (typeof src !== 'string' || src.length === 0) {
+        throw new Error(`inbox.import: each path must be a non-empty string, got ${typeof src}`);
+      }
+      // lstat (NICHT stat) — symlink-target wird NICHT gefolgt.
+      let lstatInfo: ReturnType<typeof lstatSync>;
+      try {
+        lstatInfo = lstatSync(src);
+      } catch (err) {
+        throw new Error(
+          `inbox.import: cannot stat "${src}": ${err instanceof Error ? err.message : String(err)}`,
+        );
+      }
+      if (lstatInfo.isSymbolicLink()) {
+        throw new Error(`inbox.import: refusing to copy symlink "${src}"`);
+      }
+      if (!lstatInfo.isFile()) {
+        throw new Error(`inbox.import: not a regular file: "${src}"`);
+      }
+      // Canonical path zur deny-root-Pruefung. realpathSync auf einem
+      // nicht-Symlink ist idempotent + macht relative paths absolut.
+      let canonical: string;
+      try {
+        canonical = realpathSync(src);
+      } catch (err) {
+        throw new Error(
+          `inbox.import: realpath failed for "${src}": ${err instanceof Error ? err.message : String(err)}`,
+        );
+      }
+      for (const denyRoot of denyRoots) {
+        if (isUnder(canonical, denyRoot)) {
+          throw new Error(
+            `inbox.import: refusing to copy from sensitive root "${canonical}" (under "${denyRoot}")`,
+          );
+        }
+      }
       const dest = join(inboxDir, `${stamp}-${basename(src)}`);
-      copyFileSync(src, dest);
+      await fspCopyFile(canonical, dest);
       written.push(dest);
     }
     return { count: written.length, paths: written };
