@@ -133,7 +133,7 @@ Desktop-App-Shell mit Claude-Desktop-Look-and-Feel (per [ADR-0001](docs/architec
 **GUI-Tabs:**
 
 - **Dashboard** — Status-Cards (Sidecar / Catalog / Vault / Agent Runs)
-- **Chat** — Line-buffered claude-Spawn mit Stop/Spawn-Buttons (ADR-0017)
+- **Chat** — Full-TTY claude-Spawn via xterm.js + node-pty: interaktive Prompts (`/login`, Passwoerter), volle ANSI-Sequences, Resize-aware (ADR-0021). Legacy line-buffered `chat.*`-RPC bleibt parallel (ADR-0017).
 - **Catalog** — `+ Install` Form mit Auto-Deps-Toggle + Plugin-Liste (ADR-0020)
 - **Vault** — Conflict-Mode + Busy-State + Schedule-Config
 - **Agent Runs** — Letzte 50 Runs aus dem JSONL-Store
@@ -229,6 +229,7 @@ Alle wesentlichen Design-Entscheidungen sind in [`docs/architecture/adr/`](docs/
 - [ADR-0018 — AppImage Self-Update via zsync (v1.3)](docs/architecture/adr/0018-appimage-zsync-self-update.md)
 - [ADR-0019 — Sidecar Background-Services-Pattern (v1.5/v1.7)](docs/architecture/adr/0019-sidecar-background-services.md)
 - [ADR-0020 — Auto-Deps Fixed-Point-Resolution (v1.5)](docs/architecture/adr/0020-auto-deps-fixed-point-resolution.md)
+- [ADR-0021 — Full-TTY Chat-View via node-pty + xterm.js (v1.x)](docs/architecture/adr/0021-pty-upgrade-xterm-node-pty.md)
 
 ## v1-Abweichungen (bekannt + transparent)
 

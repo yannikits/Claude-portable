@@ -13,6 +13,16 @@ Format pro Eintrag:
 
 ---
 
+## 2026-05-21 — Native modules in pkg-bundled Node: sideload als komplettes Package
+
+**Situation:** v1.x-PTY-Upgrade fuegte `node-pty` zum Sidecar hinzu. Erster Implementations-Versuch monkey-patched `node-pty/lib/utils.js loadNativeModule()` damit `.node`-Files aus einem env-Var-Pfad geladen werden. Beim ersten Run im pkg-Bundle: `Cannot find module 'node-pty/lib/utils.js'`. Root-cause: `@yao-pkg/pkg` macht static-analysis fuer `require('literal-string')`-Aufrufe — `createRequire(import.meta.url).require(x)` ist dynamisch und wird nicht getraced. node-pty landete NICHT im Snapshot. Zusaetzlich: selbst wenn es im Snapshot waere, koennten die `.node`-Files dort nicht funktionieren (native modules brauchen on-disk-Paths). Zweiter Issue: node-ptys interner `child_process.fork('conpty_console_list_agent.js')` re-spawned in einem pkg-Bundle die gesamte Sidecar-EXE statt das Helper-Script (weil `process.execPath` aufs Bundle zeigt) — `AttachConsole failed`-Crash beim Kill.
+
+**Lektion:** Bei Native-Modulen in pkg-Bundles **niemals monkey-patchen**, sondern das **komplette Package on-disk neben den Sidecar shippen**. Build-Script kopiert `node_modules/<pkg>/` (oder die noetigen Teile: package.json + lib/ + prebuilds/<arch>/) nach `binaries/<pkg>/`, Tauri `bundle.resources` zieht es in den Installer. Loader im Sidecar resolved via `dirname(process.execPath) + '/<pkg>'`. Native-loaders im Package finden ihre `.node`-Files dann ueber die normalen relativen Pfade — keine Modifikation der Library noetig. Bei interaktivem `child_process.fork()` von library-internen Helper-Scripts: nach Option suchen die das umgeht (z. B. node-ptys `useConptyDll:true`), sonst geht's nicht in pkg.
+
+**Anwendung:** Pattern dokumentiert in ADR-0021 und implementiert in `scripts/build-sidecar.{ps1,sh}` + `src/sidecar/pty-binding-loader.ts`. Bei zukuenftigen Native-Dep-Adds (z. B. wenn @napi-rs/keyring im Sidecar funktionieren soll statt via `CLAUDE_OS_SECRETS_BACKEND=file` umgangen zu werden): gleiches Pattern — package nach `binaries/<name>/` sideloaden, loader via execPath-relative path. Skript-fork-Helper aufdecken vor dem Spike (`grep -r 'fork(.*__dirname'` in node_modules).
+
+---
+
 ## 2026-05-20 — React useEffect-Closure-Race bei Event-Filtern (v1.5.1 Hotfix)
 
 **Situation:** ChatPage in der GUI (PR #29) registrierte `onChatOutput`/`onChatExit`-Listener im useEffect mit Filter `if (p.sessionId !== sessionId) return;` und Dependency `[sessionId, append]`. Sequenz im User-Test (Screenshot 2026-05-20 22_30_55):
