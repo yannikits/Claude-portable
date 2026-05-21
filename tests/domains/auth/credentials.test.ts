@@ -1,4 +1,12 @@
-import { existsSync, mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  realpathSync,
+  rmSync,
+  symlinkSync,
+  writeFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
@@ -50,8 +58,12 @@ describe('resolveCredentialsPath', () => {
         home: '/home/me',
         env: { ANTHROPIC_CONFIG_DIR: symlinkDir },
       });
-      // realpath aufgeloest → der returned path geht durch realDir, nicht symlinkDir
-      expect(path).toBe(join(realDir, '.credentials.json'));
+      // realpath aufgeloest → der returned path geht durch realDir, nicht symlinkDir.
+      // CI-Hinweis: auf macOS ist `/var` → `/private/var` ein system-level Symlink.
+      // tmpdir() retourniert oft `/var/folders/...` aber realpath kanonisiert das zu
+      // `/private/var/folders/...`. Wir canonicalisieren beide Seiten der Equality
+      // (`realpathSync(realDir)`) damit der Test plattform-stabil bleibt.
+      expect(path).toBe(join(realpathSync(realDir), '.credentials.json'));
     } finally {
       rmSync(tmpBase, { recursive: true, force: true });
     }

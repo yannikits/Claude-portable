@@ -68,6 +68,9 @@ describe('resolveMcpClientPaths', () => {
       platformOverride: 'win32',
       homeOverride: 'C:\\Users\\test',
     });
-    expect(paths.claudeDesktop).toContain('AppData\\Roaming');
+    // CI: `path.join` benutzt OS-Separator. Auf macOS-CI rendert das
+    // `AppData/Roaming`; auf Windows `AppData\Roaming`. Regex matcht
+    // beide damit der platformOverride-Test plattform-stabil ist.
+    expect(paths.claudeDesktop).toMatch(/AppData[\\/]Roaming/);
   });
 });
