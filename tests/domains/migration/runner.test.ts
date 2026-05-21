@@ -193,4 +193,33 @@ describe('executePlan — execute', () => {
     expect(secretStep?.message).toContain('OPENAI_API_KEY');
     expect(secretStep?.message).not.toContain('sk-x');
   });
+
+  it('M36: nach erstem failed-Step werden Folge-Steps als "aborted" markiert', async () => {
+    // Reproducer fuer M29-Behavior (abort-on-failure) + M36-Test:
+    // Wenn copy-tree fehlschlaegt (target existiert mit conflicting
+    // file und overwrite=false), MUSS der naechste Step (z. B.
+    // collect-secrets) als 'aborted' markiert sein — NICHT als 'skipped'
+    // (das wuerde dry-run-Output suggerieren).
+    const source = makePortable({ withGit: true, withEnv: true });
+    const target = mkdtempSync(join(workDir, 'target-'));
+    // Pre-populate target/vault mit conflicting file → copy-tree wird
+    // fail mit errorOnExist (overwrite=false default).
+    const existing = join(target, 'vault');
+    fsModule.mkdirSync(existing, { recursive: true });
+    fsModule.writeFileSync(join(existing, 'note.md'), 'PRE-EXISTING', 'utf8');
+
+    const plan = buildMigrationPlan({ sourceRoot: source, targetRoot: target });
+    const result = await executePlan({ plan });
+
+    expect(result.success).toBe(false);
+    // Erster copy-tree Step muss failed sein
+    const firstFailedIdx = result.results.findIndex((r) => r.status === 'failed');
+    expect(firstFailedIdx).toBeGreaterThanOrEqual(0);
+    // Alle Folge-Steps MUESSEN 'aborted' sein, NICHT 'skipped'
+    for (let i = firstFailedIdx + 1; i < result.results.length; i++) {
+      const r = result.results[i];
+      expect(r?.status).toBe('aborted');
+      expect(r?.message).toMatch(/vorheriger Schritt ist fehlgeschlagen/);
+    }
+  });
 });
