@@ -20,6 +20,12 @@ Dokumentiert die fundamentalen Architektur-Entscheidungen für die Evolution von
 | [0012](0012-schema-validation-typebox.md) | Schema-Validation mit TypeBox (statt zod) | Akzeptiert | 2026-05-15 |
 | [0013](0013-logging-pino.md) | Strukturiertes Logging mit pino (Redaction, Rotation, Tauri-Stderr-Mirror) | Akzeptiert | 2026-05-16 |
 | [0014](0014-code-quality-biome.md) | Code-Quality-Toolchain: biome mit ESLint-Hybrid-Escape | Akzeptiert | 2026-05-16 |
+| [0015](0015-plugin-binding-resolution.md) | Plugin-Binding-Resolution (Phase 5o) | Akzeptiert | 2026-05-20 |
+| [0016](0016-mcp-single-server-bridge.md) | MCP-Single-Server-Bridge (v1.4) | Akzeptiert | 2026-05-20 |
+| [0017](0017-chat-view-mvp-line-buffered.md) | Chat-View-MVP über line-buffered `child_process` (v1.2) | Akzeptiert | 2026-05-20 |
+| [0018](0018-appimage-zsync-self-update.md) | AppImage Self-Update via zsync (v1.3) | Akzeptiert | 2026-05-20 |
+| [0019](0019-sidecar-background-services.md) | Sidecar Background-Services-Pattern (v1.5/v1.7) | Akzeptiert | 2026-05-20 |
+| [0020](0020-auto-deps-fixed-point-resolution.md) | Auto-Deps Fixed-Point-Resolution (v1.5) | Akzeptiert | 2026-05-20 |
 
 ## Format
 
