@@ -67,12 +67,15 @@ Alle relevanten Aenderungen an `claude-os` werden hier dokumentiert. Format orie
 - **M41** `docs/architecture/adr/README.md` — Index um ADR-0015 bis 0020 erweitert (PR #67).
 - **M42** — Dieses CHANGELOG.md (PR #67).
 
+### Performance (Folge-Iteration nach Cleanup-Sprint)
+
+- **M14** `sidecar/mtime-cache.ts` — neue `mtimeCached(path, loader, cache)`-Helper mit per-file `{mtimeMs, size}`-key + tombstone-Support. Wired in `catalog.list`, `vault.status` (config-Pfad, BusyFlag bleibt uncached), `schedule.list`. Spart ~5-20ms blocking-I/O pro Dashboard-Poll-RPC. 8 neue Tests (cache-hit/miss, mtime-change, size-change, missing-tombstone, transitions, multi-path-isolation). 823/826 vitest gruen (PR #76).
+
 ### Deferred als Follow-ups
 
 - **M3** mcp-Trust-Prompt — braucht GUI-Design-Sprint.
 - **M5** secrets cross-process file-lock — braucht `proper-lockfile`-Dep oder Custom-OS-EXCL-Loop.
 - **M8** RPC-Nonce — braucht koordinierten Tauri-Shell-Pull (`gui/src-tauri/`).
-- **M14** sidecar config-file mtime-cache — touches 5 RPC-Handler.
 - **M18** `cli/commands/catalog.ts:actAutoDeps` Refactor zu `installFromGithubWithAutoDeps`-Call.
 - **M21** `sidecar/methods.ts` Split nach RPC-Namespace.
 
