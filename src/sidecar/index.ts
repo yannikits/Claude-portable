@@ -7,6 +7,7 @@ import { startScheduler } from '../domains/scheduler/index.js';
 import { ChatSessions } from './chat-sessions.js';
 import { createSidecarLogger } from './logger.js';
 import { registerMethods } from './methods.js';
+import { PtyChatSessions } from './pty-chat-sessions.js';
 import { RpcDispatcher, runRpcServer } from './rpc.js';
 import { type InboxOutboxWatchers, setupWatchers } from './watchers.js';
 
@@ -60,7 +61,23 @@ function emitNotification(method: string, params: unknown): void {
 }
 
 const chatSessions = new ChatSessions(emitNotification);
-logger.info('sidecar: chat-sessions ready');
+logger.info('sidecar: chat-sessions ready (v1.2 line-buffered)');
+
+// v1.x: PTY-backed sessions parallel zu den line-buffered chat-sessions.
+// node-pty wird via pty-binding-loader monkey-patch geladen damit das
+// sideloaded `.node`-Binary aus CLAUDE_OS_PTY_BINDINGS_DIR funktioniert
+// auch unter pkg-Bundles. Load-Error wird gelogged, aber bringt den
+// Sidecar nicht runter — pty.* RPCs sind dann einfach unregistered.
+let ptyChatSessions: PtyChatSessions | null = null;
+try {
+  ptyChatSessions = new PtyChatSessions(emitNotification);
+  logger.info('sidecar: pty-chat-sessions ready (v1.x full-tty)');
+} catch (err) {
+  logger.warn(
+    { err: err instanceof Error ? err.message : String(err) },
+    'sidecar: pty-chat-sessions disabled (node-pty failed to load)',
+  );
+}
 
 let watchers: InboxOutboxWatchers | null = null;
 try {
@@ -115,6 +132,7 @@ dispatcher.register('shutdown', () => {
   queueMicrotask(async () => {
     logger.info('sidecar: shutdown requested via RPC');
     await chatSessions.shutdownAll();
+    await ptyChatSessions?.shutdownAll();
     await schedulerHandle.stop();
     await mcpWatcherHandle.stop();
     await watchers?.close();
@@ -123,11 +141,16 @@ dispatcher.register('shutdown', () => {
   return { ok: true };
 });
 
-registerMethods(dispatcher, { chatSessions, mcpWatcher: mcpWatcherHandle });
+registerMethods(dispatcher, {
+  chatSessions,
+  ...(ptyChatSessions !== null ? { ptyChatSessions } : {}),
+  mcpWatcher: mcpWatcherHandle,
+});
 
 await runRpcServer({ dispatcher });
 
 await chatSessions.shutdownAll();
+await ptyChatSessions?.shutdownAll();
 await schedulerHandle.stop();
 await mcpWatcherHandle.stop();
 await watchers?.close();
