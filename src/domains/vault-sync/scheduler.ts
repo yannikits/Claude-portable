@@ -45,6 +45,13 @@ export interface SchedulerOpts {
   };
   /** Override now() (tests). */
   readonly now?: () => Date;
+  /**
+   * M27 (2026-05-21 code-review): optional chokidar-error-Sink. Vorher
+   * war der `watcher.on('error')`-Handler ein No-op — EMFILE/EACCES und
+   * andere chokidar-Errors blieben unsichtbar. Default: stderr-Log.
+   * Caller kann eigenen Logger injizieren.
+   */
+  readonly onWatcherError?: (err: unknown) => void;
 }
 
 export interface SchedulerStatus {
@@ -81,6 +88,7 @@ export class VaultScheduler {
   private readonly now: () => Date;
   private readonly usePolling: boolean;
   private readonly cloudProvider: ReturnType<typeof detectCloudProvider>;
+  private readonly onWatcherError: (err: unknown) => void;
 
   private watcher: FSWatcher | null = null;
   private timer: ReturnType<typeof setTimeout> | null = null;
@@ -106,6 +114,15 @@ export class VaultScheduler {
     this.now = opts.now ?? (() => new Date());
     this.cloudProvider = detectCloudProvider(opts.workTree);
     this.usePolling = opts.forceUsePolling ?? this.cloudProvider !== 'unknown';
+    this.onWatcherError =
+      opts.onWatcherError ??
+      ((err) => {
+        // M27-Default: stderr-Log mit minimaler shape. Sidecar/CLI kann
+        // einen Pino-Logger injizieren wenn struktiertes Logging gewollt.
+        const message = err instanceof Error ? err.message : String(err);
+        // biome-ignore lint/suspicious/noConsole: scheduler is a domain — Logger-Injection ist optional
+        console.error(`vault-sync chokidar error: ${message}`);
+      });
   }
 
   start(): void {
@@ -129,9 +146,10 @@ export class VaultScheduler {
     this.watcher.on('change', onEvent);
     this.watcher.on('unlink', onEvent);
     this.watcher.on('unlinkDir', onEvent);
-    this.watcher.on('error', () => {
-      /* swallow — chokidar surfaces transient errors that should not crash the scheduler */
-    });
+    // M27 (2026-05-21 code-review): chokidar-Errors NICHT mehr silent
+    // verworfen — durch injectable `onWatcherError` (Default: stderr-Log)
+    // werden EMFILE/EACCES/inotify-Watch-Limit-Erreicht sichtbar.
+    this.watcher.on('error', (err) => this.onWatcherError(err));
   }
 
   async stop(): Promise<void> {
