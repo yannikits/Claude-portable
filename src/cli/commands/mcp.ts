@@ -115,6 +115,15 @@ export function registerMcpCommand(program: Command): void {
         console.error(`Fehler: --timeout muss eine positive Zahl sein, war "${opts.timeout}"`);
         process.exit(2);
       }
+      // M28 (2026-05-21 code-review): --concurrency abc → NaN → vorher
+      // `Math.min(NaN, N)` = NaN → Array.from({length: NaN}) = leeres
+      // Array → 0 probes silent. Jetzt parse-error mit exit 2.
+      if (!Number.isFinite(concurrency) || concurrency <= 0) {
+        console.error(
+          `Fehler: --concurrency muss eine positive Zahl sein, war "${opts.concurrency}"`,
+        );
+        process.exit(2);
+      }
       const probes = await probeServers(discovery.servers, { timeoutMs, concurrency });
       if (globalOpts.json === true) {
         printJson({ probes });

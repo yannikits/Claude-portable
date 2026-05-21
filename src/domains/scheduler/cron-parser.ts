@@ -169,6 +169,15 @@ export function parseCron(expression: string): ParsedCron {
  *
  * `tz` steuert ob lokal oder UTC interpretiert wird; Default 'UTC'
  * vermeidet DST-Falle.
+ *
+ * M26 (2026-05-21 code-review): bei `tz: 'local'` und DST-Sprung
+ * (spring-forward) wird die uebersprungene Stunde NICHT gefeuert —
+ * `cursor.setTime(+60_000)` ueberspringt direkt 2:00 → 3:00 in
+ * Zeitzonen mit Sommerzeit-Umstellung. Akzeptierte Limitation fuer
+ * v1: ein einzeln-betroffener Fire pro Jahr (Spring-Forward) bzw. ein
+ * doppelt-feuernder Fire (Fall-Back) sind in einem 60s-Tick-Loop
+ * vertretbar; User die exakte DST-stabile Schedules brauchen sollen
+ * `tz: 'UTC'` setzen.
  */
 export function nextFire(
   parsed: ParsedCron,
