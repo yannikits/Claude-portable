@@ -6,6 +6,7 @@ import '@xterm/xterm/css/xterm.css';
 import { AuthLoginModal } from '../components/auth-login-modal';
 import {
   type AgentListResult,
+  activateProfile,
   addScheduleEntry,
   type CatalogInstallAutoDepsResult,
   type CatalogListResult,
@@ -715,6 +716,7 @@ export function SettingsPage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [loginModalOpen, setLoginModalOpen] = useState(false);
+  const [switchingProfile, setSwitchingProfile] = useState(false);
 
   const reload = useCallback(async () => {
     setLoading(true);
@@ -728,6 +730,23 @@ export function SettingsPage() {
       setLoading(false);
     }
   }, []);
+
+  const handleProfileSwitch = useCallback(
+    async (name: string) => {
+      if (data === null || name === data.anthropic.activeProfile) return;
+      setSwitchingProfile(true);
+      setError(null);
+      try {
+        await activateProfile(name);
+        await reload();
+      } catch (e: unknown) {
+        setError(e instanceof Error ? e.message : String(e));
+      } finally {
+        setSwitchingProfile(false);
+      }
+    },
+    [data, reload],
+  );
 
   useEffect(() => {
     void reload();
@@ -758,18 +777,37 @@ export function SettingsPage() {
             <dt>$ANTHROPIC_CONFIG_DIR</dt>
             <dd>{data.anthropic.envOverride ?? <span className="muted">(unset)</span>}</dd>
             <dt>Aktives Profil</dt>
-            <dd>{data.anthropic.activeProfile ?? <span className="muted">(default)</span>}</dd>
-            <dt>Verfügbare Profile</dt>
             <dd>
               {data.anthropic.availableProfiles.length === 0 ? (
-                <span className="muted">keine</span>
+                <span className="muted">
+                  (default — keine Profile angelegt;{' '}
+                  <code>claude-os auth profile create &lt;name&gt;</code>)
+                </span>
               ) : (
-                data.anthropic.availableProfiles.map((p) => (
-                  <span key={p.name} className={p.active ? 'badge badge-ok' : 'badge badge-muted'}>
-                    {p.name}
-                  </span>
-                ))
+                <select
+                  className="profile-select"
+                  value={data.anthropic.activeProfile ?? ''}
+                  onChange={(e) => void handleProfileSwitch(e.target.value)}
+                  disabled={!sidecarOk || switchingProfile}
+                  title={
+                    sidecarOk
+                      ? 'Profil wechseln (schreibt auth-active-profile.json)'
+                      : 'Sidecar nicht erreichbar — Read-Only-Modus'
+                  }
+                >
+                  {data.anthropic.activeProfile === null && (
+                    <option value="" disabled>
+                      (kein Profil aktiv)
+                    </option>
+                  )}
+                  {data.anthropic.availableProfiles.map((p) => (
+                    <option key={p.name} value={p.name}>
+                      {p.name}
+                    </option>
+                  ))}
+                </select>
               )}
+              {switchingProfile && <span className="muted"> · wechsle …</span>}
             </dd>
             <dt>.credentials.json vorhanden</dt>
             <dd>

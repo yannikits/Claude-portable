@@ -232,6 +232,10 @@ export async function getSettings(): Promise<SettingsReadResult> {
   return rpcCall<SettingsReadResult>('settings.read');
 }
 
+export async function activateProfile(name: string): Promise<{ activeProfile: string }> {
+  return rpcCall<{ activeProfile: string }>('settings.activateProfile', { name });
+}
+
 export type SecretBackend = 'keyring' | 'encrypted-file';
 
 export interface SecretMetadata {

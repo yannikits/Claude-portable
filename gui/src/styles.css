@@ -558,6 +558,21 @@ code {
   border-radius: 4px;
 }
 
+.profile-select {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text);
+  padding: 4px 8px;
+  font-size: 13px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, monospace;
+}
+
+.profile-select:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 /* Schedule-Event-Tags (Phase 3 GUI) */
 .schedule-tag {
   display: inline-block;
