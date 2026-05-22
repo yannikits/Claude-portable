@@ -19,6 +19,11 @@ tauri-plugin-shell = "2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 tokio = { version = "1", features = ["macros", "rt-multi-thread", "io-util", "process", "sync", "time"] }
+# Native password-input dialog (v1.x.+2). Cross-platform: Win32 message-box,
+# macOS NSAlert, Linux zenity/kdialog/matedialog fallback. Wert lebt nur im
+# Rust-stack des spawn_blocking-task, niemals im Renderer-JS-heap.
+tinyfiledialogs = "3"
+once_cell = "1"
 
 [profile.release]
 panic = "abort"

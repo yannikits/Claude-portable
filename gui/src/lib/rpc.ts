@@ -201,6 +201,7 @@ export async function listAgentRuns(
 export interface SettingsProfile {
   name: string;
   active: boolean;
+  configDir: string;
 }
 
 export interface ClaudeCodeSettingsFile {
@@ -234,6 +235,26 @@ export async function getSettings(): Promise<SettingsReadResult> {
 
 export async function activateProfile(name: string): Promise<{ activeProfile: string }> {
   return rpcCall<{ activeProfile: string }>('settings.activateProfile', { name });
+}
+
+export interface ProfileCreateResult {
+  name: string;
+  configDir: string;
+  active: boolean;
+}
+
+export async function createProfile(name: string): Promise<ProfileCreateResult> {
+  return rpcCall<ProfileCreateResult>('settings.createProfile', { name });
+}
+
+export interface ProfileDeleteResult {
+  name: string;
+  deleted: boolean;
+  configDir: string;
+}
+
+export async function deleteProfile(name: string): Promise<ProfileDeleteResult> {
+  return rpcCall<ProfileDeleteResult>('settings.deleteProfile', { name });
 }
 
 export type SecretBackend = 'keyring' | 'encrypted-file';
@@ -281,6 +302,22 @@ export async function deleteSecret(key: string): Promise<SecretsDeleteResult> {
  */
 export async function setSecret(key: string, value: string): Promise<SecretsSetResult> {
   return rpcCall<SecretsSetResult>('secrets.set', { key, value });
+}
+
+/**
+ * v1.x.+2: setzt einen Secret-Wert via native OS-Dialog. Der Wert geht
+ * NIE durch den Renderer-JS-Heap — Rust-side `set_secret_native` zeigt
+ * den native password-dialog (tinyfiledialogs) und forwarded den Wert
+ * direkt in `secrets.set` ueber den existing SidecarRpc-channel.
+ *
+ * Typed errors:
+ *  - 'cancelled' — User hat den Dialog abgebrochen (kein UX-feedback noetig)
+ *  - 'dialog-unavailable' — Linux ohne zenity/kdialog/matedialog/qarma;
+ *    Frontend sollte auf den Inline-Mode aus PR #96 zurueckschalten
+ *  - 'sidecar not available' — Sidecar nicht hochgefahren / abgestuerzt
+ */
+export async function setSecretNative(key: string): Promise<SecretsSetResult> {
+  return invoke<SecretsSetResult>('set_secret_native', { key });
 }
 
 export const FILES_DROPPED_EVENT = 'files://dropped';
