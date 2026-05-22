@@ -1,6 +1,7 @@
 pub mod rpc;
 pub mod supervisor;
 
+use once_cell::sync::Lazy;
 use serde_json::{Value, json};
 use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
@@ -20,6 +21,77 @@ async fn rpc_call(
     let rpc_opt = state.rpc.lock().await.clone();
     let rpc = rpc_opt.ok_or_else(|| "sidecar not available".to_string())?;
     rpc.call(&method, params).await.map_err(|e| e.to_string())
+}
+
+/// v1.x.+2: probe ob ein native password-Dialog ueberhaupt verfuegbar ist.
+/// Win/macOS: tinyfiledialogs nutzt OS-built-in APIs → immer verfuegbar.
+/// Linux: tinyfiledialogs versucht zenity → kdialog → matedialog → qarma →
+/// pluma → fallback-text-mode. Wir probe'n den ersten erfolgreichen.
+/// Result wird via once_cell gecached — kein wiederholtes which-probing.
+static LINUX_DIALOG_AVAILABLE: Lazy<bool> = Lazy::new(|| {
+    if !cfg!(target_os = "linux") {
+        return true;
+    }
+    let candidates = ["zenity", "kdialog", "matedialog", "qarma"];
+    for cmd in &candidates {
+        let probe = std::process::Command::new("which")
+            .arg(cmd)
+            .output();
+        if let Ok(out) = probe {
+            if out.status.success() && !out.stdout.is_empty() {
+                return true;
+            }
+        }
+    }
+    false
+});
+
+/// v1.x.+2: native password-input via tinyfiledialogs.
+///
+/// Security-property: der Wert lebt ausschliesslich im Rust-stack der
+/// spawn_blocking-task + im SidecarRpc.call-Future. Er wird NIE in den
+/// return-payload dieser Tauri-command geschrieben — der Renderer
+/// bekommt nur `{ key, backend, updated }`-Shape von der secrets.set
+/// RPC-response zurueck.
+///
+/// Linux-fallback: wenn kein dialog-binary verfuegbar ist, returnt der
+/// Command einen typed `dialog-unavailable`-Error. Frontend detected
+/// das und schaltet auf den Inline-password-input-Mode aus PR #96.
+#[tauri::command]
+async fn set_secret_native(
+    state: tauri::State<'_, Arc<SupervisorState>>,
+    key: String,
+) -> Result<Value, String> {
+    let trimmed = key.trim().to_string();
+    if trimmed.is_empty() {
+        return Err("key must be non-empty".to_string());
+    }
+    if !*LINUX_DIALOG_AVAILABLE {
+        return Err("dialog-unavailable".to_string());
+    }
+    let rpc_opt = state.rpc.lock().await.clone();
+    let rpc = rpc_opt.ok_or_else(|| "sidecar not available".to_string())?;
+
+    // tinyfiledialogs::password_box ist sync + blocking. spawn_blocking
+    // verhindert dass der tokio runtime im async Tauri-command festhaengt.
+    let dialog_key = trimmed.clone();
+    let value_opt = tokio::task::spawn_blocking(move || {
+        tinyfiledialogs::password_box(
+            "claude-os — Secret",
+            &format!("Wert fuer Secret '{}':", dialog_key),
+        )
+    })
+    .await
+    .map_err(|e| format!("dialog task panic: {e}"))?;
+
+    let Some(value) = value_opt else {
+        return Err("cancelled".to_string());
+    };
+
+    let params = json!({ "key": trimmed, "value": value });
+    rpc.call("secrets.set", params)
+        .await
+        .map_err(|e| e.to_string())
 }
 
 const DROP_DEDUP_WINDOW_MS: u64 = 200;
@@ -62,7 +134,7 @@ pub fn run() {
             supervisor::start(app.handle().clone(), state);
             Ok(())
         })
-        .invoke_handler(tauri::generate_handler![rpc_call])
+        .invoke_handler(tauri::generate_handler![rpc_call, set_secret_native])
         .on_window_event(|window, event| match event {
             WindowEvent::CloseRequested { api, .. } => {
                 api.prevent_close();

@@ -304,6 +304,22 @@ export async function setSecret(key: string, value: string): Promise<SecretsSetR
   return rpcCall<SecretsSetResult>('secrets.set', { key, value });
 }
 
+/**
+ * v1.x.+2: setzt einen Secret-Wert via native OS-Dialog. Der Wert geht
+ * NIE durch den Renderer-JS-Heap — Rust-side `set_secret_native` zeigt
+ * den native password-dialog (tinyfiledialogs) und forwarded den Wert
+ * direkt in `secrets.set` ueber den existing SidecarRpc-channel.
+ *
+ * Typed errors:
+ *  - 'cancelled' — User hat den Dialog abgebrochen (kein UX-feedback noetig)
+ *  - 'dialog-unavailable' — Linux ohne zenity/kdialog/matedialog/qarma;
+ *    Frontend sollte auf den Inline-Mode aus PR #96 zurueckschalten
+ *  - 'sidecar not available' — Sidecar nicht hochgefahren / abgestuerzt
+ */
+export async function setSecretNative(key: string): Promise<SecretsSetResult> {
+  return invoke<SecretsSetResult>('set_secret_native', { key });
+}
+
 export const FILES_DROPPED_EVENT = 'files://dropped';
 export const INBOX_CHANGED_EVENT = 'inbox://changed';
 export const OUTBOX_CHANGED_EVENT = 'outbox://changed';

@@ -636,6 +636,31 @@ code {
   cursor: not-allowed;
 }
 
+.secret-mode-toggle {
+  display: flex;
+  gap: 16px;
+  font-size: 12px;
+  padding: 8px 12px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+}
+
+.secret-mode-toggle label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+}
+
+.secret-mode-toggle input[type="radio"] {
+  cursor: pointer;
+}
+
+.secret-mode-toggle input[type="radio"]:disabled {
+  cursor: not-allowed;
+}
+
 /* Schedule-Event-Tags (Phase 3 GUI) */
 .schedule-tag {
   display: inline-block;
