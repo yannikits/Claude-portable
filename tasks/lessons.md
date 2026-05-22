@@ -13,6 +13,24 @@ Format pro Eintrag:
 
 ---
 
+## 2026-05-22 — Sensitive data NIE durch Renderer: Tauri-command + spawn_blocking + native dialog
+
+**Situation:** v1.x.+2 wollte das v1.x.+1-Pattern verbessern bei dem der Secret-Wert kurzzeitig im React-state lebte. Mitigations (type=password, clear-on-submit, warn-banner) reduzierten das Risiko, eliminierten es aber nicht — Browser-DevTools-attach konnte den Wert waehrend der Eingabe sehen. Goal: Wert NIE im Renderer-JS-heap.
+
+**Lektion:** Das Pattern fuer sensitive-data-eingabe ohne Renderer-touch hat drei Bausteine:
+
+1. **Tauri-command nimmt nur die nicht-sensitiven Parameter** — `set_secret_native(key)`, NICHT `set_secret_native(key, password)`. Der Wert kommt NIE durch den invoke-payload. Wenn er da reinginge, waere er im Renderer JS-stack vor dem Tauri-IPC.
+
+2. **Rust-side holt den Wert via `spawn_blocking` + native dialog**. tinyfiledialogs::password_box ist OS-native (Win32 MessageBox-style, macOS NSAlert, Linux zenity/kdialog) — keine WebView, kein JS-heap. spawn_blocking wegen sync-blocking-API → vermeidet tokio-runtime-hang.
+
+3. **Rust forwarded direkt via SidecarRpc.call(target_method, value)** — der Wert wandert vom dialog-result direkt in den serde_json::Value der RPC-params. Returnt am Ende nur das **Result-status**-Shape (z. B. `{key, backend, updated}`); der eingegebene Wert taucht NIE im Tauri-command-return-payload auf. Renderer bekommt nur das was er wissen darf.
+
+Bonus-pattern: **`once_cell::sync::Lazy` fuer feature-probes** (z. B. Linux which zenity/kdialog) statt jedes mal `Command::new("which")` aufzurufen. Auf Plattformen wo der Probe nicht noetig ist (Win/macOS), return `true` early.
+
+**Anwendung:** Pattern dokumentiert in ADR-0023 und implementiert in `gui/src-tauri/src/lib.rs set_secret_native`. Bei zukuenftigen sensitive-payload-mutations (master-key-change, password-reset, token-paste): gleiches Pattern. Wenn `get_secret_via_native_dialog` jemals gebraucht wird (Wert ANZEIGEN), waere das auch ein native dialog mit dem Wert in der dialog-message (nie im Renderer return-path).
+
+---
+
 ## 2026-05-22 — Secret-Eingabe via Web-Renderer: type=password + clear-on-submit + IPC-Warning
 
 **Situation:** v1.x.+1 Secrets-Edit musste eine `secrets.set(key,value)`-Mutation via GUI exposen. Der Wert ist per Definition sensitiv (API-keys, OAuth-tokens) und musste durch den React-Renderer fliessen bevor er den Sidecar erreicht. DevTools koennen den `value`-State + den IPC-Call abgreifen waehrend der Wert in der App lebt. Default-Form-Inputs sammeln zusaetzliche Risiken: Browser-Save-Prompt, IME/spellcheck-Cloud-Sync, autofill aus password-manager-Side-Channels.

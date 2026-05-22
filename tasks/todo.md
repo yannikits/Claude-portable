@@ -377,6 +377,62 @@ existing CLI-Pfaden.
 - **Stale-Lock-Detection** koennte ein Doctor-Check werden — wenn
   `<secretsPath>.lock` >60s alt, ist es vermutlich kaputt.
 
+### v1.x.+2 — GUI Profile-Create/Delete + Native Password-Input (ADR-0023)
+
+**Ziel:** Beide Followups aus ADR-0022 schliessen — Profile-Lifecycle
+komplett im GUI, Secret-Eingabe ohne Renderer-RAM-touch.
+
+- [x] **Phase 1 — Profile-Create + Profile-Delete GUI** (Commit `8857563`).
+  Neue RPCs `settings.createProfile` + `settings.deleteProfile`
+  wrappen `ProfileManager.create/delete()`. Delete refused
+  active-profile (Backend safety-net + UI hides Loesch-Button fuer
+  active). `settings.read` jetzt `availableProfiles[]` mit zusaetzlich
+  `configDir`-Feld (additiv) damit das Delete-Modal den Pfad zeigt.
+  Neue Frontend-Components `ProfileCreateModal` (mit NAME_PATTERN
+  regex-validation) und `ProfileDeleteModal` (GitHub-Style
+  type-to-confirm: Loesch-Button disabled bis User exakten Namen
+  typed). SettingsPage zeigt "+ Profil anlegen"-Button + neue
+  "Profile verwalten"-Liste mit Per-Profile-Loesch-Button.
+  +7 backend tests, +7 gui modal tests.
+- [x] **Phase 2 — Native Password-Input via tinyfiledialogs** (Commit
+  `32a623c`). Neuer Tauri-Command `set_secret_native(key)` in
+  `gui/src-tauri/src/lib.rs` ruft `spawn_blocking` →
+  `tinyfiledialogs::password_box()` (OS-native: Win32 MessageBox-
+  style, macOS NSAlert, Linux zenity/kdialog/matedialog) und
+  forwarded den Wert direkt in `SidecarRpc.call("secrets.set",...)`.
+  **Wert beruehrt nie den Renderer-JS-Heap.** Linux-Fallback: einmalig
+  via `once_cell::sync::Lazy` `which`-probe; wenn kein dialog-binary
+  → typed `dialog-unavailable`-Error, Frontend auto-switches zu
+  Inline-Mode + zeigt Hinweis-Banner. SecretAddModal komplett-rewrite
+  mit Mode-Toggle "Native (empfohlen)" vs "Inline (Fallback)",
+  Persistenz in localStorage. +8 gui modal tests.
+- [x] **Phase 3 — ADR-0023 + docs** (dieser Commit).
+  `docs/architecture/adr/0023-profile-crud-and-native-password.md`
+  dokumentiert die 7 Sub-Entscheidungen + Security-Tradeoffs.
+  todo.md + lessons.md + README aktualisiert.
+
+**Test-Kriterium:** Auf Windows 10 + installiertem MSI:
+- Settings-Tab → "+ Profil anlegen" → name-input "work" → Anlegen →
+  SettingsPage zeigt neues Profil
+- Trash neben "personal" → Confirmation-Modal mit configDir-Pfad →
+  Profilname typen + Loeschen → entry verschwindet
+- Trash neben aktivem Profil fehlt by-design
+- Secrets-Tab → "+ Secret hinzufuegen" → Modal default Native-Mode →
+  key eintippen + "Wert eingeben…" → OS-native password-Dialog
+  erscheint → Wert + OK → Secret landet im store, modal closed
+- Toggle auf Inline-Mode → bestehender PR #96-Flow
+
+**v1.x.+2-Abweichungen / Risiken (transparent):**
+
+- **Lokaler Rust-Build nicht verifizierbar** (kein rustc auf der dev-
+  Maschine) — Verifikation per CI matrix.
+- **Native-Dialog UI stylesheet** matched nicht den Tauri-app-look
+  (OS-natives layout). Acceptable Trade-off vs Security-Gewinn.
+- **tinyfiledialogs binaries unsigned** — Tauri-Codesigning v1.3+
+  muss diese mit-signen.
+- **Profile-rename fehlt bewusst** — `ProfileManager` hat keine
+  rename()-Methode. Folge-PR braucht domain-Erweiterung zuerst.
+
 ### v1.5+ — Plugin-Echo + Bestands-User-Sync
 
 - [x] **Plugin-binding-Resolution** in `lockCatalog` — implementiert 2026-05-20 als Phase 5o. Neue `src/domains/catalog/tarball-manifest-reader.ts` streamt cached `.tar.gz` via `tar.list({onentry})`, sucht `plugin.json` unter dem GitHub-Wrapper-Dir (`stripComponents: 1`), TypeBox-validated (id/version/optional requires/provides). Neue `src/domains/catalog/binding-resolver.ts` aggregiert alle Plugin-Manifests in einen `Catalog` und ruft `resolveCapabilities` pro Entry → mapped `ResolutionBinding[]` → `CatalogLockBinding[]` (capability-asc-sorted für Determinismus). `lockCatalog` jetzt 4-pass: fetch → manifest-peek → resolve → emit; Skill/MCP-Entries bleiben binding-leer (Leaves, ADR-0010). Per-Entry-Resolver-Errors degradieren graceful (`bindings: []` + Warning). NO_MANIFEST stillgeschwiegen (v1-Reality für pre-ADR-0010 Plugins); nur Malformierungen warnen. **+19 Tests** (6 binding-resolver, 8 tarball-manifest-reader, 5 lock-builder), 576/576 grün.
