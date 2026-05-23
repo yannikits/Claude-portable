@@ -26,7 +26,13 @@ import {
   resolveAutoDeps,
 } from './auto-deps-resolver.js';
 import type { PluginManifest } from './capability-resolver.js';
-import { catalogPathsFor, readCatalog, writeCatalog, writeCatalogLock } from './catalog-store.js';
+import {
+  catalogPathsFor,
+  readCatalog,
+  readCatalogLock,
+  writeCatalog,
+  writeCatalogLock,
+} from './catalog-store.js';
 import { LockBuilderError, lockCatalog } from './lock-builder.js';
 import { createMarketplaceProviderLookup } from './marketplace-provider-lookup.js';
 import {
@@ -210,10 +216,12 @@ export async function installFromGithubWithAutoDeps(
   // hat eine sha256 -> Tarball im cacheDir). Wenn ein Plugin noch nicht
   // gelockt ist (z. B. weil catalog lock noch nicht lief), wird es
   // einfach uebersprungen — pessimistic-by-default ist OK.
+  // m8 (2026-05-23 todo-audit): readCatalogLock ist statisch importiert
+  // — dynamic import war ein Cycle-Avoidance-Workaround der nicht mehr
+  // noetig ist (catalog-store importiert auto-deps-install NICHT).
   const existingLockPath = catalogPaths.lockPath;
   try {
-    const existingLockMod = await import('./catalog-store.js');
-    const existingLock = existingLockMod.readCatalogLock(existingLockPath);
+    const existingLock = readCatalogLock(existingLockPath);
     if (existingLock !== null) {
       for (const lockEntry of existingLock.entries) {
         if (lockEntry.sha256.length === 0) continue;

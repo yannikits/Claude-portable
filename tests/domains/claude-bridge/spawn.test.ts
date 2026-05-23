@@ -1,4 +1,5 @@
-import { describe, expect, it } from 'vitest';
+import { EventEmitter } from 'node:events';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { spawnClaudeBridge } from '../../../src/domains/claude-bridge/index.js';
 
 /**
@@ -48,5 +49,72 @@ describe('spawnClaudeBridge', () => {
     });
     expect(result.exitCode).toBe(0);
     expect(result.durationMs).toBeGreaterThanOrEqual(150);
+  });
+
+  describe('m13_spawn — CLAUDE_OS_SECRETS_KEY stripping', () => {
+    let oldSecretsKey: string | undefined;
+
+    beforeEach(() => {
+      oldSecretsKey = process.env.CLAUDE_OS_SECRETS_KEY;
+      process.env.CLAUDE_OS_SECRETS_KEY = 'super-secret-master-key';
+    });
+
+    afterEach(() => {
+      if (oldSecretsKey === undefined) delete process.env.CLAUDE_OS_SECRETS_KEY;
+      else process.env.CLAUDE_OS_SECRETS_KEY = oldSecretsKey;
+    });
+
+    function makeSpawnFnSpy(): {
+      spawnFn: NonNullable<Parameters<typeof spawnClaudeBridge>[0]['spawnFn']>;
+      capturedEnv: () => NodeJS.ProcessEnv | undefined;
+    } {
+      let captured: NodeJS.ProcessEnv | undefined;
+      const spawnFn = ((_path: string, _args: readonly string[], spawnOpts?: unknown) => {
+        captured = (spawnOpts as { env?: NodeJS.ProcessEnv } | undefined)?.env;
+        const child = new EventEmitter() as EventEmitter & {
+          kill: (signal?: NodeJS.Signals | number) => boolean;
+          killed: boolean;
+          pid: number;
+        };
+        child.killed = false;
+        child.pid = 99999;
+        child.kill = () => true;
+        setImmediate(() => child.emit('exit', 0, null));
+        return child as unknown as ReturnType<
+          NonNullable<Parameters<typeof spawnClaudeBridge>[0]['spawnFn']>
+        >;
+      }) as NonNullable<Parameters<typeof spawnClaudeBridge>[0]['spawnFn']>;
+      return { spawnFn, capturedEnv: () => captured };
+    }
+
+    it('strippt CLAUDE_OS_SECRETS_KEY aus dem inherited process.env', async () => {
+      const { spawnFn, capturedEnv } = makeSpawnFnSpy();
+      await spawnClaudeBridge({
+        binaryPath: process.execPath,
+        args: ['-e', 'process.exit(0)'],
+        heartbeatIntervalMs: 0,
+        spawnFn,
+      });
+      const env = capturedEnv();
+      expect(env).toBeDefined();
+      expect(env?.CLAUDE_OS_SECRETS_KEY).toBeUndefined();
+      // andere Env-Vars muessen bleiben (smoke-check: PATH ist ueberall gesetzt)
+      expect(env?.PATH ?? env?.Path).toBeDefined();
+    });
+
+    it('strippt CLAUDE_OS_SECRETS_KEY auch wenn explicit opts.env gesetzt ist', async () => {
+      const { spawnFn, capturedEnv } = makeSpawnFnSpy();
+      await spawnClaudeBridge({
+        binaryPath: process.execPath,
+        args: ['-e', 'process.exit(0)'],
+        heartbeatIntervalMs: 0,
+        env: { CUSTOM_VAR: 'value', CLAUDE_OS_SECRETS_KEY: 'leaked' },
+        spawnFn,
+      });
+      const env = capturedEnv();
+      expect(env).toBeDefined();
+      expect(env?.CLAUDE_OS_SECRETS_KEY).toBeUndefined();
+      expect(env?.CUSTOM_VAR).toBe('value');
+    });
   });
 });

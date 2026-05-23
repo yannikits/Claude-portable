@@ -51,9 +51,18 @@ export async function spawnClaudeBridge(opts: BridgeOpts): Promise<BridgeResult>
     'claude-bridge.spawn',
   );
 
+  // m13_spawn (2026-05-23 todo-audit): strippe `CLAUDE_OS_SECRETS_KEY`
+  // aus dem environment damit der file-store-Master-Key nicht ueber den
+  // child-process leaken kann. Spiegelt das M13-Mitigation-Pattern aus
+  // chat-sessions.ts. Wirkt sowohl auf `opts.env`-overrides als auch
+  // auf den `process.env`-Default.
+  const childEnvBase = opts.env ?? process.env;
+  const childEnv = { ...childEnvBase };
+  delete childEnv.CLAUDE_OS_SECRETS_KEY;
+
   const child = spawnImpl(binary.path, [...opts.args], {
     stdio: 'inherit',
-    env: opts.env ?? process.env,
+    env: childEnv,
     ...(opts.cwd === undefined ? {} : { cwd: opts.cwd }),
   });
 

