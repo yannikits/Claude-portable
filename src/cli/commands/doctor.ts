@@ -23,7 +23,7 @@ interface DoctorOpts {
 }
 
 function printAndExit(output: string, code: number): never {
-  // biome-ignore lint/suspicious/noConsole: CLI presenter output goes to stdout by design
+  // biome-ignore lint/suspicious/noConsole: CLI presenter output by design
   console.log(output);
   process.exit(code);
 }
@@ -74,7 +74,7 @@ export function registerDoctorCommand(program: Command): void {
         globals.root === undefined ? {} : { explicitRoot: globals.root },
       );
       const output = json ? formatDoctorReportJson(report) : formatDoctorReportText(report);
-      // biome-ignore lint/suspicious/noConsole: CLI presenter output goes to stdout by design
+      // biome-ignore lint/suspicious/noConsole: CLI presenter output by design
       console.log(output);
       if (report.overall === 'fail') {
         process.exit(1);
