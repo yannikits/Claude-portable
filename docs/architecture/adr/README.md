@@ -26,6 +26,10 @@ Dokumentiert die fundamentalen Architektur-Entscheidungen für die Evolution von
 | [0018](0018-appimage-zsync-self-update.md) | AppImage Self-Update via zsync (v1.3) | Akzeptiert | 2026-05-20 |
 | [0019](0019-sidecar-background-services.md) | Sidecar Background-Services-Pattern (v1.5/v1.7) | Akzeptiert | 2026-05-20 |
 | [0020](0020-auto-deps-fixed-point-resolution.md) | Auto-Deps Fixed-Point-Resolution (v1.5) | Akzeptiert | 2026-05-20 |
+| [0021](0021-pty-upgrade-xterm-node-pty.md) | Full-TTY Chat-View via node-pty + xterm.js (v1.x) | Akzeptiert | 2026-05-21 |
+| [0022](0022-gui-auth-and-secrets-mutation.md) | GUI Anthropic-Login + Profile-Switch + Secrets-Edit (v1.x.+1) | Akzeptiert | 2026-05-22 |
+| [0023](0023-profile-crud-and-native-password.md) | GUI Profile-Create/Delete + Native Password-Input (v1.x.+2) | Akzeptiert | 2026-05-22 |
+| [0024](0024-mcp-trust-prompt-model.md) | MCP-Server Trust-Prompt-Model (M3) | Akzeptiert | 2026-05-23 |
 
 ## Format
 
