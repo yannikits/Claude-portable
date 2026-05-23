@@ -777,8 +777,8 @@ Screenshot-Befund: 5 staged Files inkl. `.graphify_step_ast.py` + `graphify-out/
 
 ### Nit
 
-- [ ] n1 — `src/cli/commands/catalog.ts:175,181,186` mixed DE/EN Error-Strings (`'kein Marketplace-Provider fuer'`)
-- [ ] n2 — `biome-ignore`-Kommentar-Drift `"CLI output"` vs `"CLI presenter output by design"` — Shared-Helper-Phrasing standardisieren
+- [x] n1 — Audit 2026-05-23: der referenzierte deutsche String `'kein Marketplace-Provider fuer'` existiert nicht (mehr) im Codebase (grep liefert no-matches). `src/cli/commands/catalog.ts:175,181,186` sind alle reines Englisch. Geschlossen ohne Code-Change.
+- [x] n2 — Standardisiert alle 4 `biome-ignore lint/suspicious/noConsole`-Kommentare auf `"CLI presenter output by design"` (waren vorher 2x `"CLI presenter output goes to stdout by design"` in doctor.ts). Shipped 2026-05-23.
 - [x] n3 — `src/cli/index.ts:101-122` Top-Level-catch zeigt Stack wenn `--verbose`/`-v` oder `CLAUDE_OS_VERBOSE=1` gesetzt (Fix shipped 2026-05-23). Argv-Scan vor Commander-Parse damit auch pre-action-Errors den Verbose-Mode triggern.
 - [x] n4 — `src/domains/mcp-clients/live-probe.ts:237-260` `killFallbackTimer` ist jetzt function-lokal in `finish()` (`const` statt closure-level `let`); Lint-Suppressor `void killFallbackTimer` entfernt. Shipped 2026-05-23.
 - [x] n5 — `src/domains/scheduler/cron-parser.ts:47-65,159-163,186-187,240-254` explizite `wildcardDayOfMonth`/`wildcardDayOfWeek`-Booleans auf `ParsedCron` ersetzen die `.size === <max>`-Heuristik. `fieldIsWildcard(raw)` markiert nur literales `*` (mit optional step-suffix) als Wildcard — eine voll-aufgezaehlte Liste wie `1-31` wird jetzt korrekt als restriktiv erkannt. +6 Regression-Tests (`tests/domains/scheduler/cron-parser.test.ts > "n5: wildcard-flag vs aufgezaehlte Liste"`). Shipped 2026-05-23.
