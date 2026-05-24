@@ -1,0 +1,166 @@
+# Claude OS — Security & Trust
+
+**Status:** Pflicht-Read vor jeder Arbeit an MSP-Bridges, Self-Improving-Skills oder Secrets-Handling. Verbindlich bei Konflikt mit `CLAUDE.md` / `ARCHITECTURE.md`, soweit Sicherheit betroffen.
+
+## 1. Threat-Model
+
+| Threat | Wer | Wo | Mitigation |
+|---|---|---|---|
+| Prompt-Injection über Vault-Notes | externer Inhalt im Vault | Memory-Retrieval | Frontmatter-`classification` respektieren, untrusted Inhalte markieren, niemals direkt als Instruction interpretieren |
+| Prompt-Injection über MSP-API-Responses | Customer-System-Daten | MCP-Tool-Returns | API-Response als Daten, nie als Instruction; Schema-Validation Pflicht |
+| Datenleck aus Customer-Daten in LLM-Provider | TANSS-Tickets, M365-Mails | Provider-Call | Klassifikation `customer-confidential` → Provider-Allowlist, Redaction-Hook vor Send |
+| Self-improving Skill exfiltriert Daten | LLM-generierter Skill | Skill-Auto-Promotion | Sandbox vor Aktivierung, Yannik-Review-Gate, Code-Diff anzeigen |
+| Compromised npm-Dependency | Supply-Chain | `npm install` | Lockfile-Pinning, `npm audit` in CI, Renovate für kontrollierte Updates |
+| Vault-Datei korrumpiert | filesystem-Fehler / OneDrive-Sync-Konflikt | `vault-sync` | Frontmatter-Validation, Konflikt-Notes als `*.conflict.md` separieren, nicht überschreiben |
+| MSP-Bridge zerstört Customer-Daten | versehentlicher Write | Phase 7 Write-Pfad | Approval-Gate, Rollback-Tokens, Dry-Run-Modus Default |
+| Cross-Tenant-Leak | falscher Workspace-Context | Memory-Retrieval | Workspace-Filter in FTS-Query, `workspace`-Frontmatter Pflicht |
+
+## 2. Data-Classification (Pflicht-Frontmatter `classification:`)
+
+| Klasse | Beispiele | Im Provider-Call? | Logging |
+|---|---|---|---|
+| `public` | Open-Source-Snippets, Doku-Auszüge | ja | normal |
+| `personal` | Yanniks Notizen, House-Watch | ja (Anthropic, nicht beliebige Free-Tier) | normal |
+| `operational` | Repo-interne Configs, ADRs | ja | normal |
+| `customer-confidential` | TANSS-Tickets, Kunden-Doku, NinjaOne-Inventar | **nein** ohne Redaction; nur über Provider-Allowlist + Redaction-Hook | mit Audit-Eintrag |
+| `secret` | API-Keys, Passwords, Tokens | **nie** im Prompt | nur Hash im Log |
+| `ephemeral` | Session-Transkripte, in-flight Daten | nein für Long-Term-Storage | rotierender Log |
+
+**Fail-safe Default:** fehlende Klassifizierung → als `customer-confidential` behandeln bis explizit umgesetzt.
+
+## 3. Secrets-Handling
+
+### 3.1 Storage
+- **Primary:** NAPI-RS Keyring (Windows Credential Manager, macOS Keychain)
+- **Secondary (Dev only):** `.env`-Files, niemals committed (`.gitignore` enforce)
+- **Niemals:** Plain-Text-Configs im Vault, im Code, in Logs
+
+### 3.2 Scopes
+- Anthropic-API-Key: 1 Key, full scope (kein Sub-Scope verfügbar)
+- TANSS/NinjaOne/Veeam/M365: **separater Read-Only-User pro Service** bei Erstanlage; Write-User erst bei Phase 7
+- M365: Application-Permissions minimal-scoped (z. B. `Mail.Read` statt `Mail.ReadWrite`)
+
+### 3.3 Rotation
+- Jeder Provider/Bridge muss Token-Rotation ohne Service-Restart unterstützen
+- Bei Compromise-Verdacht: sofort revoken, neuen Token via Keyring
+- Audit-Log enthält Token-Hash (erste 8 Zeichen), nie den Token selbst
+
+### 3.4 Redaction
+Vor jedem Provider-Call läuft Redaction-Hook:
+- Strings, die wie API-Keys aussehen (AWS-/Anthropic-/Stripe-/JWT-Patterns) → ersetzt durch `[REDACTED:type]`
+- E-Mail-Adressen in `customer-confidential` → ersetzt durch `[REDACTED:email]`
+- Logging immer redacted-Form, nie Original
+
+## 4. Audit-Log
+
+### 4.1 Loggen
+- Provider-Call (Modell, Token-Counts, Tool-Calls, Approval-Status)
+- MSP-Tool-Aufruf (Bridge, Endpoint, HTTP-Status, Customer-ID falls vorhanden)
+- Skill-Loading (Skill-Name, Version, Source)
+- Self-improving-Skill-Approval (Diff-Hash vorher/nachher, Yannik-Signatur)
+- Secrets-Access (Service, Operation, NIE den Token)
+- Vault-Mutation (path, classification, operation, workspace)
+- Workspace-Switch
+
+### 4.2 Format (JSONL)
+```jsonl
+{"ts":"2026-05-24T03:25:00Z","event":"provider_call","model":"<from-config>","tokens_in":1234,"tokens_out":567,"tool_calls":["vault_search"],"approval":"auto","workspace":"personal","correlation_id":"uuid"}
+```
+
+### 4.3 Aufbewahrung
+- Pfad: `<config>/audit/YYYY-MM/audit.jsonl`
+- Append-only — kein Edit, kein Delete (außer Retention-Cleanup)
+- Retention: 90 Tage default, konfigurierbar bis 7 Jahre (DSGVO MSP-Kontext)
+- Rotation: monatlich, gzip-Archive
+
+## 5. Self-Improving Skills (kritisch — ADR-003)
+
+Erlaubt erst nach ADR-003-Implementation. Bis dahin: nicht aktivieren.
+
+### 5.1 Lifecycle
+```
+draft → quarantined → reviewed → active → deprecated → disabled
+```
+
+- **draft:** Auto-generiert aus Lessons. Nicht ladbar.
+- **quarantined:** Im Sandbox-Workspace. Read-only-Test ausführbar.
+- **reviewed:** Yannik hat Diff gesehen und freigegeben.
+- **active:** Im normalen Skill-Loader.
+- **deprecated:** Warnung bei Nutzung, noch ladbar.
+- **disabled:** Nicht ladbar, bleibt zur Forensik.
+
+### 5.2 Review-Gate
+- Diff vorher/nachher als Side-by-Side in der GUI
+- Yannik-Signatur (lokaler Ed25519-Key in Keyring) → Audit-Log
+- Bei `customer-confidential`-Touchpoint: zusätzlicher Confirm
+
+### 5.3 Sandbox
+- Quarantined-Skills laufen in eigenem Process mit:
+  - kein Filesystem-Schreibzugriff außer `<sandbox>/`
+  - keine Netzwerk-Calls außer explicit-allowlist
+  - kein Zugriff auf `customer-confidential`-Notes
+  - Timeout 30s pro Tool-Call
+
+## 6. MSP-Bridges (Phase 6 + 7, separates Private-Repo)
+
+### 6.1 Read-Only-Phase (Phase 6)
+- Pro Bridge: dedizierter Read-Only-Service-Account
+- Schema-Validation jeder API-Response (TypeBox)
+- Audit-Log-Eintrag pro Call
+- Rate-Limiting pro Bridge (Default: 60 Calls/min)
+- **Kein Cache von Customer-Daten im Vault** — Bridge-Results sind ephemeral, nur in laufender Session
+
+### 6.2 Write-Phase (Phase 7) — Approval-Gate
+Vor jeder Write-Operation:
+1. Dry-Run gegen API (wenn unterstützt) oder Schema-Validation
+2. User-Approval-Prompt in GUI mit Diff-Anzeige
+3. Approval-Token in Audit-Log + Yannik-Signatur
+4. Erst dann tatsächlicher Write
+5. Rollback-Token zurückgeben (TANSS: ja, NinjaOne: teilweise)
+
+### 6.3 Tenant-Isolation (verzahnt mit Vault-Workspaces)
+- Jeder Customer hat eigenen Workspace: `workspaces/msp-customers/<customer-id>/`
+- Vault-Notes mit `tenant: <customer-id>`-Frontmatter (zusätzlich zu `workspace`)
+- Bridge-Calls signen mit Tenant-Header
+- Memory-Injection filtert per Workspace + Tenant — **niemals Cross-Tenant-Recall**
+- FTS-Query enthält `WHERE workspace = ? AND tenant = ?` immer
+
+### 6.4 DSGVO
+- Recht auf Löschung: CLI-Command, der alle Notes mit `tenant: <customer-id>` löscht
+- Datenschutz-Folgenabschätzung (DSFA) als Doku-Pflicht vor Phase 6-Go-Live
+- Auftragsverarbeitungs-Vertrag (AVV) mit Anthropic prüfen (US-Provider, EU-DPF-Status)
+
+## 7. Workspace-Skills-Schutz
+
+User-Skills in `workspace/skills/` sind **heilig**:
+- Kein Auto-Update ohne explizite User-Approval
+- Kein Auto-Delete
+- Bei Konflikt-Update: zweite Variante anlegen (`<name>-v2/`), nicht überschreiben
+- Backup-Pfad in `<vault>/.claude-os/skills-backup/`
+
+## 8. Verify-Bei-Bedrohung-Checkliste
+
+Bei jedem PR mit Berührung dieser Pfade läuft der Check:
+- [ ] `src/domains/*-bridge/` → Audit-Log-Eintrag erzeugt?
+- [ ] `src/sidecar/`, `src/mcp/` → Tool-Call-Schema validiert?
+- [ ] `vault-sync/` → Classification respektiert? Redaction-Hook getriggert?
+- [ ] Workspace-Filter in jeder FTS-Query? (Cross-Tenant-Guard)
+- [ ] `skills/` → Sandbox-Lifecycle korrekt?
+- [ ] Provider-Calls → Modell-ID config-driven (nicht hardcoded)?
+
+## 9. Incident-Response
+
+- **Suspected secret leak:** Token im OS-Keyring revoken, neuer Token, Audit-Log auf Zugriff prüfen, Yannik-Notify
+- **Suspected prompt injection:** Quelle (Note/API-Response) klassifizieren, Skill quarantänisieren, Lessons-Eintrag
+- **Suspected MSP-write fail:** Rollback-Token verwenden, Customer notify (bei tatsächlichem Daten-Impact)
+- **Suspected cross-tenant leak:** sofort Workspace-Filter prüfen, betroffene Memory-Notes auf `quarantined`-Status, Yannik-Notify
+
+Jeder Incident: Eintrag in `tasks/incidents/YYYY-MM-DD-<slug>.md`.
+
+## 10. Was hier nicht steht (aber wichtig)
+
+- Penetration-Testing-Plan
+- Backup-Recovery-Drills
+- Onboarding/Offboarding-Checkliste (wenn Claude OS jemals jenseits von Yannik genutzt wird)
+
+Diese werden bei Bedarf in `tasks/adr/` als ADR ergänzt.
