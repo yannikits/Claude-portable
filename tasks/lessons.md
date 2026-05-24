@@ -13,6 +13,21 @@ Format pro Eintrag:
 
 ---
 
+## 2026-05-24 — PowerShell `-LiteralPath` ignoriert Wildcards beim Copy-Item
+
+**Situation:** Beim Konsolidieren eines orphan `Claude-Knowledge/`-Ordners (vom Knowledge-Miner an pre-migration-Pfad geschrieben) zurück in den post-migration-Pfad: `Copy-Item -LiteralPath "$rootCK\*" -Destination $migCK -Recurse -Force`. Das `*` wurde literal interpretiert — `-LiteralPath` schaltet Wildcard-Expansion ab. Copy-Item suchte nach einem Eintrag namens `*` und fand keinen ("Cannot find path … because it does not exist"). Direkt danach lief `Remove-Item -LiteralPath $rootCK -Recurse -Force` **ohne Exit-Code-Check** und löschte den Quell-Ordner trotzdem. Daten-Recovery nur möglich, weil der Miner deterministisch ist — re-mine schrieb den Inhalt an die korrekte Stelle. Bei nicht-reproduzierbarem Inhalt wäre das Datenverlust gewesen.
+
+**Lektion:**
+1. **`-LiteralPath` und Wildcards (`*`/`?`) schließen sich gegenseitig aus.** Bei PowerShell-Mass-Copy/Move mit Wildcards entweder `-Path "$dir\*"` (mit Wildcard-Expansion) verwenden, oder `Get-ChildItem $dir | Copy-Item -Destination $dest -Recurse -Force` pipen. Letzteres ist robuster für Pfade mit Sonderzeichen (Spaces, Umlaute, OneDrive-Pfade mit `-`).
+2. **Niemals Remove-Item auf eine Source-Direction direkt nach einem Copy/Move, ohne den Exit-Code (`$LASTEXITCODE` / `try/catch`) des vorherigen Schritts geprüft zu haben.** Bei jeder potentiell-destructive-after-copy-Sequenz `if ($?) { Remove-Item ... }` oder explizit `try { Copy-Item ... } catch { throw }; Remove-Item ...`.
+
+**Anwendung:**
+- Jede PowerShell-Pipeline der Form "Copy A→B, dann Delete A". Beispiele: Vault-Reorganisation, Backup-Promotion, Migration-Scripts.
+- Besonders gefährlich auf OneDrive-Pfaden, weil die Spaces im Pfad `-LiteralPath` verlockend machen, gleichzeitig aber Wildcards selten gebraucht werden — der Fehler ist dann nicht offensichtlich.
+- Skripte in `scripts/migrate-vault.ps1`, `scripts/augment-*.ps1` etc. sollten dieses Pattern reviewen.
+
+---
+
 ## 2026-05-24 — ADR-Existenz prüfen, bevor neue ADRs geschrieben werden
 
 **Situation:** Beim Spec-Split (CLAUDE.md → ARCHITECTURE/ROADMAP/SECURITY) habe ich 8 ADRs unter `tasks/adr/ADR-001..008` angelegt — ohne vorher zu prüfen, ob das Repo schon ein ADR-Verzeichnis hat. Es hat eins: `docs/architecture/adr/` mit 24 nummerierten ADRs (0001-0024). Drei Folgefehler:
