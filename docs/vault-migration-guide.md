@@ -108,6 +108,22 @@ schema_version: 1
 - **Sie löscht nichts.** Originalstruktur ist im Backup-ZIP.
 - **Sie indexiert nichts.** FTS5-Index (ADR-0025) kommt erst in einer separaten Phase.
 
+## Skip-Liste (was niemals migriert wird)
+
+Das Skript skipt am Vault-Root fünf Kategorien:
+
+| Kategorie | Einträge |
+|---|---|
+| Obsidian/git-Metadaten | `.obsidian`, `.git`, `.gitignore`, `.gitattributes` |
+| Migration-Marker | `.claude-os-root`, `Claude-OS` (das neue Ziel) |
+| Tool-Runtime-State | `.claude`, `.claudian` |
+| AgentDB / ruvector | `agentdb.rvf*`, `ruvector.db*` |
+| Editor / OS junk | `*.swp`, `.DS_Store`, `Thumbs.db` |
+
+**Stray-Files** (0 Byte, ohne Extension) am Vault-Root werden ebenfalls geskipt — das sind in der Regel PowerShell-Redirection-Unfälle (`> nul`, kaputte Encodings). Sie tauchen im Dry-Run-Output als `STRAY` auf, sodass du sie manuell prüfen und ggf. löschen kannst.
+
+Falls dein Tool-Setup noch andere Runtime-State-Files am Vault-Root produziert (z. B. eine zukünftige `.foo-cache/`-Direction), diese in `scripts/migrate-vault.ps1` `$SkipExact` oder `$SkipPatterns` ergänzen.
+
 ## Verifikation nach der Migration
 
 ```powershell

@@ -16,7 +16,15 @@
     └── .claude-os/
 
   Skips the following at the vault root (never moved):
-    .obsidian, .git, .gitignore, .claude-os-root, Claude-OS (the target)
+    - Obsidian / git metadata: .obsidian, .git, .gitignore, .gitattributes
+    - Migration markers: .claude-os-root, Claude-OS (the target)
+    - Claude Code / claude-mem state: .claude, .claudian
+    - AgentDB / ruvector runtime: agentdb.rvf*, ruvector.db*
+    - Editor / OS junk: *.swp, .DS_Store, Thumbs.db
+
+  Stray 0-byte files with no extension at the root are reported and
+  skipped (typical PowerShell-redirection accidents like `> nul`).
+  Review them manually and delete after the dry-run if confirmed-junk.
 
 .PARAMETER VaultPath
   Path to the vault root. Default: $env:CLAUDE_OS_ROOT/vault
@@ -99,36 +107,103 @@ if (Test-Path $ClaudeOsDir) {
   }
 }
 
-# Items at vault root that must NEVER be moved
-$SkipNames = @(
+# Items at vault root that must NEVER be moved.
+#
+# These fall into three buckets:
+#  - Obsidian/git metadata that lives at the vault root by convention
+#  - Migration target (Claude-OS/) and marker file
+#  - Per-tool runtime state (Claude Code, AgentDB, ruvector, OS junk)
+#    that happens to land in the vault on a typical developer machine
+$SkipExact = @(
+  # Obsidian / git
   '.obsidian',
   '.git',
   '.gitignore',
+  '.gitattributes',
+
+  # Migration markers
   '.claude-os-root',
-  'Claude-OS'
+  'Claude-OS',
+
+  # Claude Code per-project config (ADR-0011 etc.)
+  '.claude',
+  '.claudian',
+
+  # OS junk
+  '.DS_Store',
+  'Thumbs.db'
 )
 
+# Wildcard patterns for runtime-state files that match by prefix
+$SkipPatterns = @(
+  'agentdb.rvf*',     # AgentDB sqlite + lockfile
+  'ruvector.db*',     # ruvector store + sidecar files
+  '*.swp'             # editor swap
+)
+
+function Test-ShouldSkip {
+  param([string]$Name)
+  if ($SkipExact -contains $Name) { return $true }
+  foreach ($pat in $SkipPatterns) {
+    if ($Name -like $pat) { return $true }
+  }
+  return $false
+}
+
+# Stray-file heuristic: 0-byte files at the vault root with no extension are
+# almost always PowerShell-redirection accidents (`command > nul` typos,
+# encoded-Unicode garbage). Skip and warn rather than spread them into the
+# personal workspace.
+function Test-IsStray {
+  param([System.IO.FileSystemInfo]$Item)
+  if ($Item.PSIsContainer) { return $false }
+  if ($Item.Length -ne 0) { return $false }
+  if ($Item.Extension) { return $false }
+  return $true
+}
+
 # Enumerate top-level items
-$RootItems = Get-ChildItem -Path $VaultPath -Force | Where-Object { $SkipNames -notcontains $_.Name }
+$AllRoot = Get-ChildItem -Path $VaultPath -Force
+$ToMove = @()
+$Skipped = @()
+$Strays = @()
+foreach ($item in $AllRoot) {
+  if (Test-ShouldSkip $item.Name) {
+    $Skipped += $item
+  } elseif (Test-IsStray $item) {
+    $Strays += $item
+  } else {
+    $ToMove += $item
+  }
+}
 
 Write-Host "Top-level items to move into Claude-OS/workspaces/personal/:" -ForegroundColor Cyan
-foreach ($item in $RootItems) {
+foreach ($item in $ToMove) {
   $kind = if ($item.PSIsContainer) { 'DIR ' } else { 'FILE' }
   Write-Host "  $kind  $($item.Name)"
 }
 Write-Host ''
 Write-Host "Items skipped (preserved at vault root):" -ForegroundColor DarkGray
-foreach ($name in $SkipNames) {
-  $p = Join-Path $VaultPath $name
-  if (Test-Path $p) {
-    Write-Host "  SKIP  $name"
-  }
+foreach ($item in $Skipped) {
+  $kind = if ($item.PSIsContainer) { 'DIR ' } else { 'FILE' }
+  Write-Host "  SKIP  $kind  $($item.Name)"
 }
 Write-Host ''
-
-if ($RootItems.Count -eq 0) {
-  Write-Host "Vault is empty (besides skipped entries). Will only create the new directory skeleton." -ForegroundColor Yellow
+if ($Strays.Count -gt 0) {
+  Write-Host "Stray 0-byte / no-extension files (skipped — likely PowerShell artifacts):" -ForegroundColor Yellow
+  foreach ($item in $Strays) {
+    Write-Host "  STRAY  $($item.Name)"
+  }
+  Write-Host "  → review and delete manually if confirmed-junk." -ForegroundColor Yellow
+  Write-Host ''
 }
+
+if ($ToMove.Count -eq 0) {
+  Write-Host "Vault has no movable items (only skipped + stray). Will only create the new directory skeleton." -ForegroundColor Yellow
+}
+
+# Back-compat: the rest of the script uses $RootItems
+$RootItems = $ToMove
 
 # ----------------------------------------------------------------------------
 # Backup plan
