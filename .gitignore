@@ -3,6 +3,9 @@ bin/node/
 
 # Secrets
 .key
+.env
+.env.local
+.env.*.local
 
 # Vault-Inhalt (eigenes Git-Repo)
 vault/*
