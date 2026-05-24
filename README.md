@@ -282,6 +282,6 @@ Test-Tracker: [`tasks/todo.md`](tasks/todo.md), Lessons aus Korrekturen: [`tasks
 
 ## Lizenz
 
-MIT — siehe [`LICENSE`](LICENSE). Begründung und Attribution-Notizen für Hermes / OpenClaw / Tauri / MCP-SDK / NAPI-RS Keyring / TypeBox sind dort dokumentiert; die License-Entscheidung selbst steht in [ADR-0029](docs/architecture/adr/0029-license-mit-public-core.md).
+MIT — siehe [`LICENSE`](LICENSE). Attribution-Notizen für Hermes / OpenClaw / Claude Code / Tauri / MCP-SDK / NAPI-RS Keyring / TypeBox stehen in [`NOTICE`](NOTICE). License-Entscheidung dokumentiert in [ADR-0029](docs/architecture/adr/0029-license-mit-public-core.md).
 
 Für private abgeleitete Repos (`claude-os-msp`, `house-watch` per [ADR-0030](docs/architecture/adr/0030-repo-strategy-hybrid.md)) gilt proprietär ("All rights reserved").
