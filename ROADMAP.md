@@ -42,23 +42,23 @@ Phasen sind sequenziell. Phase überspringen nur via ADR in `tasks/adr/`. Defini
 | Phase | Inhalt | Status | DoD |
 |---|---|---|---|
 | **0 — Bootstrap** | Repo, CI, Lint, Test, Tauri-Bundle | weitgehend done | `npm run build` grün, Biome+Vitest sauber, CI grün auf Windows |
-| **1 — Provider-Layer** | `ProviderTransport`-Interface, Anthropic-Impl (siehe ADR-001) | offen | Contract-Test grün, Tool-Call-Semantik dokumentiert, Modell-ID config-driven |
-| **2 — Memory MVP** | Vault-Sync (Multi-Workspace), Linear-Scan-Retrieval, Note-Write mit Frontmatter | teilweise | MVP-Workflow oben durchläuft End-to-End in Vitest + manuellem GUI-Test |
-| **3 — Memory FTS5** | SQLite-Index, watchdog-Trigger, Workspace-scoped Top-K-Ranking (ADR-002) | offen | Cross-Session-Recall über 3 Sessions; Index-Failure degradiert sauber |
+| **1 — Claude-Bridge stabilisieren** | Subprocess-Spawn-Lifecycle, Timeout-Eskalation, Heartbeat-Logging (ADR-0003 + ADR-0021 Implementation) | offen / teilweise | Stream-Pass-Through funktioniert robust, 120s-Hangs durch Wrapper-Timeout abgefangen, node-pty-Pfad geprüft |
+| **2 — Memory MVP** | Vault-Sync (Multi-Workspace, ADR-0031), Linear-Scan-Retrieval, Note-Write mit Frontmatter | teilweise | MVP-Workflow durchläuft End-to-End in Vitest + manuellem GUI-Test |
+| **3 — Memory FTS5** | SQLite-Index, watchdog-Trigger, Workspace-scoped Top-K-Ranking (ADR-0025) | offen | Cross-Session-Recall über 3 Sessions; Index-Failure degradiert sauber |
 | **4 — Skill-Engine** | Skill-Loader, Description-Matching, Workspace-Path-Resolution | offen | 3 User-Skills funktional eingebunden, malicious SKILL.md sicher abgewiesen |
-| **5 — Self-Improvement** | Lessons-Auto-Promotion zu Skill-Drafts, Sandbox, Review-Gate (ADR-003) | offen | Auto-Vorschlag entsteht, läuft erst nach Yannik-Approval scharf |
-| **6 — MSP-Bridges (Read-Only)** | TANSS/Ninja/Veeam — nur lesend (ADR-004, separates Private-Repo) | offen | Audit-Log pro API-Call, Schema-validiert, kein Write-Pfad |
-| **7 — MSP-Bridges (Write)** | Approval-Gate, Write-Operations | offen | Approval-Token-Flow, Rollback-Pfad, Tenant-Isolation-Test grün |
-| **8 — GUI Polish** | Tauri-Companion, Tray, Multi-Workspace-Switcher, Auto-Update (ADR-005) | offen | macOS + Windows-Build verteilbar, Auto-Update funktioniert |
+| **5 — Self-Improvement** | Lessons-Auto-Promotion zu Skill-Drafts, Sandbox, Review-Gate (ADR-0026) | offen | Auto-Vorschlag entsteht, läuft erst nach Yannik-Approval scharf |
+| **6 — MSP-Bridges (Read-Only)** | TANSS/Ninja/Veeam (ADR-0027, separates Private-Repo per ADR-0030) | offen | Audit-Log pro API-Call, Schema-validiert, kein Write-Pfad |
+| **7 — MSP-Bridges (Write)** | Approval-Gate, Write-Operations (ADR-0027 §Phase-7) | offen | Approval-Token-Flow, Rollback-Pfad, Tenant-Isolation-Test grün |
+| **8 — GUI Polish** | Tauri-Companion, Tray, Multi-Workspace-Switcher, Auto-Update (ADR-0028 für Win/Mac, ADR-0018 für Linux) | offen | macOS + Windows-Build verteilbar, Auto-Update funktioniert |
 | **9 — Side-Skills (House-Watch etc.)** | Immobilien-Crawler (separates Private-Repo, konsumiert Public-Core) | offen | dedizierter Workspace, isoliert von MSP-Daten |
 
 ## Reihenfolge-Regeln
 
-- Phase 1 (Provider) **vor** Phase 2 (Memory MVP) — sonst kein Provider-Call möglich
+- Phase 1 (Claude-Bridge) **vor** Phase 2 (Memory MVP) — sonst kein AI-Call möglich
 - Phase 3 (FTS5) **kann parallel** zu Phase 4 (Skills) laufen
-- Phase 6 (MSP-Read) **erst nach** `SECURITY.md` finalisiert und ADR-004 entschieden
+- Phase 6 (MSP-Read) **erst nach** SECURITY.md finalisiert und ADR-0027 implementiert
 - Phase 7 (MSP-Write) **niemals** ohne explizite, dokumentierte Yannik-Freigabe pro Bridge
-- Phase 5 (Self-Improvement) **niemals** ohne Sandbox + Review (ADR-003)
+- Phase 5 (Self-Improvement) **niemals** ohne Sandbox + Review (ADR-0026)
 
 ## Geschwindigkeits-Heuristik
 
@@ -72,19 +72,19 @@ Phasen sind sequenziell. Phase überspringen nur via ADR in `tasks/adr/`. Defini
 - "Hetzner Cloud Phase 4+" → keine zentrale Cloud-Komponente. Cloud-Plan eigene ADR wenn relevant.
 - "Multi-Channel Telegram/Signal/Slack Phase 4" → verschoben auf Phase 9+ als optionale Skills
 - "macOS + Windows + Linux gleichermaßen" → Windows ist Primary (Yannik-Setup), macOS secondary, Linux best-effort
-- "Identische Outputs bei Provider-Wechsel" → ersetzt durch Contract-Tests
-- "Modell-ID hardgenagelt (claude-opus-4-7)" → ersetzt durch `.env`-Config
+- "Identische Outputs bei Provider-Wechsel" → entfällt: kein Multi-Provider-Setup (ADR-0003 Delegation an claude.exe)
+- "Modell-ID hardgenagelt (claude-opus-4-7)" → entfällt: Modell-Auswahl liegt bei claude.exe selbst
 
 ## Klärungspunkte abgehakt (ehemals Sec. 12 der Original-Spec)
 
 | Frage | Entscheidung | ADR |
 |---|---|---|
-| Repo-Ort | Hybrid: Public-Core + Private-MSP + Private-House | ADR-007 |
-| Lizenz | MIT für Public-Core, proprietär für private Repos | ADR-006 |
-| GUI Phase 7 vs. Tauri | Tauri (bereits etabliert) | im Repo entschieden |
-| Provider-Strategie | Interface designt, Anthropic-Only-Impl | ADR-001 |
-| Vault-Strategie | Multi-Workspace mit `personal/` Default | ADR-008 |
-| House-Watch | Eigenes Private-Repo | ADR-007 |
+| Repo-Ort | Hybrid: Public-Core + Private-MSP + Private-House | ADR-0030 |
+| Lizenz | MIT für Public-Core, proprietär für private Repos | ADR-0029 |
+| GUI-Framework | Tauri 2.x | ADR-0001 |
+| AI-Layer-Strategie | Delegation an claude.exe (kein eigenes Provider-Interface) | ADR-0003 |
+| Vault-Strategie | Multi-Workspace mit `personal/` Default | ADR-0031 |
+| House-Watch | Eigenes Private-Repo | ADR-0030 |
 
 ## Video-Insights (`I Replaced OpenClaw and Hermes...mp4`, 22 Min, 2026-05-24)
 

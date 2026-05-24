@@ -16,11 +16,12 @@ Bei Konflikt mit historischen Spec-Dokumenten gewinnt dieses Dokument. ADR-Entsc
 | Secrets-Storage | NAPI-RS Keyring | siehe `SECURITY.md` §3 |
 | Agent-Protocol | MCP (`@modelcontextprotocol/sdk`) | — |
 | Inter-Process | Tauri Sidecar (Node-Process unter Tauri-Shell) | — |
-| Provider-Abstraktion | Interface designt, nur Anthropic implementiert | ADR-001 |
-| Memory-Index | FTS5 in SQLite + watchdog | ADR-002 |
-| Lizenz | MIT (für Public-Core) | ADR-006 |
-| Repo-Strategie | Hybrid Public-Core + Private MSP-Bridges + Private House-Watch | ADR-007 |
-| Vault-Strategie | Multi-Workspace mit `personal/` als Default | ADR-008 |
+| AI-Interaktion | Delegation an `bin/claude.exe` (kein eigenes Provider-Interface) | ADR-0003 |
+| Anthropic-Auth | State-Check via `claude auth status` + Refresh-Mutex + Multi-Profile via `$ANTHROPIC_CONFIG_DIR` | ADR-0011 |
+| Memory-Index | FTS5 in SQLite + watchdog | ADR-0025 |
+| Lizenz | MIT (für Public-Core) | ADR-0029 |
+| Repo-Strategie | Hybrid Public-Core + Private MSP-Bridges + Private House-Watch | ADR-0030 |
+| Vault-Strategie | Multi-Workspace mit `personal/` als Default | ADR-0031 |
 
 ## 2. Repo-Struktur
 
@@ -82,15 +83,17 @@ MSP-Bridges und House-Watch konsumieren `Claude-portable` als npm-Dependency ode
 
 **Regel:** Domains rufen einander nur über definierte Public-Interfaces an. Keine direkten Datenstruktur-Imports zwischen `domains/*`.
 
-## 4. Provider-Layer
+## 4. AI-Layer (Claude-Bridge)
 
-`ProviderTransport`-Interface in `src/domains/claude-bridge/transport.ts` (Soll).
+**Kein eigenes Provider-Interface.** Die AI-Interaktion läuft per Delegation an `bin/claude.exe` (ADR-0003 Hybrid-CLI). Stream-JSON, Tool-Use, Plan-Mode, Slash-Commands liegen vollständig in Anthropics Hand.
 
-Einzige Implementierung: `AnthropicTransport`. **Modell-ID via `.env`** (`CLAUDE_OS_MODEL`), niemals im Code hardgenagelt.
+- **Modul:** `src/domains/claude-bridge/` — Subprocess-Spawn-Lifecycle, Wrapper-Timeout (180s default, SIGTERM+SIGKILL-Eskalation), Heartbeat-Logging
+- **Interaktive Sessions:** node-pty + xterm.js (ADR-0021)
+- **Auth:** Read-only auf Anthropic-CLI-Credentials, State-Check via `claude auth status`, Refresh-Mutex (ADR-0011)
+- **Multi-Profile:** `$ANTHROPIC_CONFIG_DIR` sandboxt pro-Profil-Spawns (ADR-0011 §4)
+- **Modell-Auswahl:** wird durch `claude.exe` selbst gemanaged, nicht durch claude-os
 
-Provider-Equivalence wird über **Contract-Tests** verifiziert (Schema, Tool-Call-Semantik, Retry-Verhalten), niemals über "identische Outputs".
-
-Trigger für weitere Provider (OpenRouter, lokales Modell): konkrete Kostenobergrenze oder Rate-Limit-Bottleneck erreicht (siehe ADR-001).
+Falls jemals ein zweiter Provider relevant wird (OpenRouter, lokales Modell): eigenes ADR. Kein vorgezogenes Multi-Provider-Interface — YAGNI.
 
 ## 5. Memory-Layer
 
@@ -194,15 +197,30 @@ Von vertraut nach un-vertraut:
   - Project-Config: `<repo>/.claude-os/`
   - Secrets: NAPI-RS Keyring (siehe `SECURITY.md`)
 
-## 11. ADRs (entschieden — Details in `tasks/adr/`)
+## 11. ADRs (Details in `docs/architecture/adr/`)
+
+**Bestehende, relevante ADRs (im Repo seit 2026-05-15..23):**
+
+| ADR | Thema |
+|---|---|
+| [0001](docs/architecture/adr/0001-gui-framework-tauri.md) | GUI-Framework Tauri 2.x |
+| [0003](docs/architecture/adr/0003-hybrid-cli-with-claude-exe-delegation.md) | Hybrid-CLI mit claude.exe-Delegation (AI-Layer) |
+| [0004](docs/architecture/adr/0004-secrets-via-napi-rs-keyring.md) | Secrets via NAPI-RS Keyring |
+| [0006](docs/architecture/adr/0006-tauri-node-sidecar-ipc.md) | Tauri ↔ Node-Sidecar IPC |
+| [0011](docs/architecture/adr/0011-anthropic-cli-auth-integration.md) | Anthropic-CLI Auth-Integration |
+| [0012](docs/architecture/adr/0012-schema-validation-typebox.md) | Schema-Validation mit TypeBox |
+| [0014](docs/architecture/adr/0014-code-quality-biome.md) | Code-Quality-Toolchain Biome |
+| [0018](docs/architecture/adr/0018-appimage-zsync-self-update.md) | AppImage zsync Self-Update (Linux) |
+| [0024](docs/architecture/adr/0024-mcp-trust-prompt-model.md) | MCP-Server Trust-Prompt-Model |
+
+**Neu mit dem Spec-Split (2026-05-24):**
 
 | ADR | Thema | Entscheidung |
 |---|---|---|
-| ADR-001 | Provider-Abstraction | Interface designt, nur Anthropic implementiert, Modell-ID config-driven |
-| ADR-002 | Memory-Indexierung | FTS5 in SQLite + watchdog |
-| ADR-003 | Skill-Auto-Promotion | Lifecycle draft→quarantined→reviewed→active, Sandbox + Yannik-Signatur |
-| ADR-004 | MSP-Bridge Permission | Read-only Phase 6, Write Phase 7 mit Approval-Gate |
-| ADR-005 | Update-Mechanismus | Tauri-Updater + GitHub-Release (Detail vor v1.0) |
-| ADR-006 | Lizenz | MIT für Public-Core, proprietär für MSP-/House-Repos |
-| ADR-007 | Repo-Strategie | Hybrid Public-Core + Private MSP-Bridges + Private House-Watch |
-| ADR-008 | Vault-Strategie | Multi-Workspace mit `personal/` als Default |
+| [0025](docs/architecture/adr/0025-memory-indexing-fts5.md) | Memory-Indexierung | FTS5 in SQLite + watchdog, workspace-Spalte |
+| [0026](docs/architecture/adr/0026-skill-auto-promotion-lifecycle.md) | Skill-Auto-Promotion | Lifecycle draft→quarantined→reviewed→active, Sandbox + Yannik-Signatur |
+| [0027](docs/architecture/adr/0027-msp-bridge-permission-model.md) | MSP-Bridge Permission | Read-only Phase 6, Write Phase 7 mit Approval-Gate |
+| [0028](docs/architecture/adr/0028-tauri-updater-windows-macos.md) | Update-Mechanismus Win/Mac | Tauri-Updater + GitHub-Release-Manifest (Linux bleibt ADR-0018) |
+| [0029](docs/architecture/adr/0029-license-mit-public-core.md) | Lizenz | MIT für Public-Core, proprietär für MSP-/House-Repos |
+| [0030](docs/architecture/adr/0030-repo-strategy-hybrid.md) | Repo-Strategie | Hybrid Public-Core + Private MSP-Bridges + Private House-Watch |
+| [0031](docs/architecture/adr/0031-vault-multi-workspace.md) | Vault-Strategie | Multi-Workspace mit `personal/` als Default |

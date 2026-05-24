@@ -13,6 +13,25 @@ Format pro Eintrag:
 
 ---
 
+## 2026-05-24 — ADR-Existenz prüfen, bevor neue ADRs geschrieben werden
+
+**Situation:** Beim Spec-Split (CLAUDE.md → ARCHITECTURE/ROADMAP/SECURITY) habe ich 8 ADRs unter `tasks/adr/ADR-001..008` angelegt — ohne vorher zu prüfen, ob das Repo schon ein ADR-Verzeichnis hat. Es hat eins: `docs/architecture/adr/` mit 24 nummerierten ADRs (0001-0024). Drei Folgefehler:
+1. Falsche Location (`tasks/adr/` statt `docs/architecture/adr/`)
+2. Konflikt-Nummerierung (`ADR-001` statt `0025` aufwärts)
+3. Inhaltlicher Drift: mein ADR-001 (Provider-Abstraction) hat ein Multi-Provider-Interface vorgeschlagen, während existierender ADR-0003 (Hybrid-CLI mit claude.exe-Delegation) genau das Gegenteil entscheidet — Delegation, keine eigene Provider-Schicht. ARCHITECTURE.md §4 und ROADMAP.md Phase 1 erbten den Fehler.
+
+**Lektion:** Vor JEDER Erstellung einer ADR / einem strukturellen Foundation-Dokument:
+1. `Glob("**/adr/**")` und `Glob("docs/architecture/**")` ausführen
+2. Existierenden README.md im ADR-Ordner lesen
+3. Nummerierung und Konvention übernehmen
+4. Wenn ein geplanter ADR sich mit einem existierenden überschneidet: NICHT neu schreiben, sondern verweisen oder erweitern
+
+Dieser Fehler entstand, weil ich das Three-Brain-Routing zwar für Spec-Drift gegen den Code laufen ließ (Gemini sah TypeScript-vs-Python-Drift), aber nicht für Spec-Drift gegen vorhandene Dokumentation. Codex/Gemini-Audit muss explizit auch `docs/`, `tasks/`, `ADR/` einbeziehen, nicht nur `src/` und `package.json`.
+
+**Anwendung:** Bei Spec-Arbeit, Architektur-Refactors, ADR-Vorschlägen, jedem Foundation-Doc. Lessons-Verschmelzung in den `three-brain`-Skill: Drift-Check muss `docs/architecture/adr/` einschließen.
+
+---
+
 ## 2026-05-22 — Sensitive data NIE durch Renderer: Tauri-command + spawn_blocking + native dialog
 
 **Situation:** v1.x.+2 wollte das v1.x.+1-Pattern verbessern bei dem der Secret-Wert kurzzeitig im React-state lebte. Mitigations (type=password, clear-on-submit, warn-banner) reduzierten das Risiko, eliminierten es aber nicht — Browser-DevTools-attach konnte den Wert waehrend der Eingabe sehen. Goal: Wert NIE im Renderer-JS-heap.

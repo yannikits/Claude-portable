@@ -73,9 +73,9 @@ Vor jedem Provider-Call läuft Redaction-Hook:
 - Retention: 90 Tage default, konfigurierbar bis 7 Jahre (DSGVO MSP-Kontext)
 - Rotation: monatlich, gzip-Archive
 
-## 5. Self-Improving Skills (kritisch — ADR-003)
+## 5. Self-Improving Skills (kritisch — ADR-0026)
 
-Erlaubt erst nach ADR-003-Implementation. Bis dahin: nicht aktivieren.
+Erlaubt erst nach ADR-0026-Implementation. Bis dahin: nicht aktivieren.
 
 ### 5.1 Lifecycle
 ```
