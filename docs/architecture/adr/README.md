@@ -30,6 +30,13 @@ Dokumentiert die fundamentalen Architektur-Entscheidungen für die Evolution von
 | [0022](0022-gui-auth-and-secrets-mutation.md) | GUI Anthropic-Login + Profile-Switch + Secrets-Edit (v1.x.+1) | Akzeptiert | 2026-05-22 |
 | [0023](0023-profile-crud-and-native-password.md) | GUI Profile-Create/Delete + Native Password-Input (v1.x.+2) | Akzeptiert | 2026-05-22 |
 | [0024](0024-mcp-trust-prompt-model.md) | MCP-Server Trust-Prompt-Model (M3) | Akzeptiert | 2026-05-23 |
+| [0025](0025-memory-indexing-fts5.md) | Memory-Indexierung via FTS5 in SQLite | Akzeptiert (Konzept) | 2026-05-24 |
+| [0026](0026-skill-auto-promotion-lifecycle.md) | Skill-Auto-Promotion Lifecycle (draft → quarantined → reviewed → active) | Akzeptiert (Konzept) | 2026-05-24 |
+| [0027](0027-msp-bridge-permission-model.md) | MSP-Bridge Permission-Modell (Read-Only Phase 6, Write Phase 7 mit Approval-Gate) | Akzeptiert | 2026-05-24 |
+| [0028](0028-tauri-updater-windows-macos.md) | Tauri-Updater für Windows + macOS Self-Update (ergänzt ADR-0018 Linux) | Akzeptiert (Konzept) | 2026-05-24 |
+| [0029](0029-license-mit-public-core.md) | Lizenz: MIT für Public-Core, proprietär für Private-Repos | Akzeptiert | 2026-05-24 |
+| [0030](0030-repo-strategy-hybrid.md) | Repo-Strategie: Hybrid Public-Core + Private MSP/House | Akzeptiert | 2026-05-24 |
+| [0031](0031-vault-multi-workspace.md) | Vault-Strategie: Multi-Workspace mit `personal/` als Default | Akzeptiert | 2026-05-24 |
 
 ## Format
 
