@@ -5,6 +5,13 @@ on:
     branches: [main, "feature/**"]
   pull_request:
     branches: [main]
+  schedule:
+    # Sonntag 03:00 UTC — long-running regression-gate (180s claude-bridge
+    # heartbeat/lifecycle guard, sonst nur lokal via RUN_SLOW_TESTS=1 fix-
+    # bar). Wenn der Job rot wird ist es fast immer ein Wrapper-Timeout-
+    # Regression — Memory 569/577/578.
+    - cron: "0 3 * * 0"
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -92,6 +99,28 @@ jobs:
       - name: cargo clippy
         working-directory: gui/src-tauri
         run: cargo clippy -- -D warnings
+
+  cli-slow:
+    # Long-running tests (z.B. claude-bridge 180s lifecycle guard) laufen
+    # nur auf schedule oder manuellem workflow_dispatch — npm test bleibt
+    # auf push/PR schnell. Single-OS (ubuntu) reicht: der Test prueft pure
+    # Node-process-Mechanik, kein OS-spezifisches Verhalten.
+    name: cli slow tests (nightly)
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-22.04
+    env:
+      RUN_SLOW_TESTS: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+      - name: install
+        run: npm ci
+      - name: vitest (slow)
+        run: npx vitest run tests/domains/claude-bridge/long-running.test.ts
+        timeout-minutes: 5
 
   gui-typecheck:
     name: gui typecheck + test
