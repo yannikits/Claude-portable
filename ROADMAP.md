@@ -42,7 +42,7 @@ Phasen sind sequenziell. Phase überspringen nur via ADR in `tasks/adr/`. Defini
 | Phase | Inhalt | Status | DoD |
 |---|---|---|---|
 | **0 — Bootstrap** | Repo, CI, Lint, Test, Tauri-Bundle | weitgehend done | `npm run build` grün, Biome+Vitest sauber, CI grün auf Windows |
-| **1 — Claude-Bridge stabilisieren** | Subprocess-Spawn-Lifecycle, Timeout-Eskalation, Heartbeat-Logging (ADR-0003 + ADR-0021 Implementation) | offen / teilweise | Stream-Pass-Through funktioniert robust, 120s-Hangs durch Wrapper-Timeout abgefangen, node-pty-Pfad geprüft |
+| **1 — Claude-Bridge stabilisieren** | Subprocess-Spawn-Lifecycle, Heartbeat-Logging, Secrets-Leak-Prevention, PTY-Pfad-Audit (ADR-0003 + ADR-0021 Implementation) | done (2026-05-24, Audit-Trail in `tasks/todo.md` §Phase 1 Stabilisierung) | Stream-Pass-Through via `stdio:'inherit'` — by-design kein Buffer-Hang, **kein** Wrapper-Timeout (Memory 569/577/578); 180s-Long-Running-Regression-Test in nightly CI; node-pty Sideload-Pattern auditiert (ADR-0021) |
 | **2 — Memory MVP** | Vault-Sync (Multi-Workspace, ADR-0031), Linear-Scan-Retrieval, Note-Write mit Frontmatter | teilweise | MVP-Workflow durchläuft End-to-End in Vitest + manuellem GUI-Test |
 | **3 — Memory FTS5** | SQLite-Index, watchdog-Trigger, Workspace-scoped Top-K-Ranking (ADR-0025) | offen | Cross-Session-Recall über 3 Sessions; Index-Failure degradiert sauber |
 | **4 — Skill-Engine** | Skill-Loader, Description-Matching, Workspace-Path-Resolution | offen | 3 User-Skills funktional eingebunden, malicious SKILL.md sicher abgewiesen |

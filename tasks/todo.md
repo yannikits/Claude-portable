@@ -884,3 +884,51 @@ git log main..HEAD        8 commits (plan + 7 C-fixes)
 1. **PR-Tagging**: alle 8 commits auf `feature/code-review-2026-05-21` zusammen mergen — sind logisch eine Code-Review-Pass; Trennung in 8 PRs schmaelert Reviewability (ein Reviewer muss eh die ganze Linie verstehen). Falls Einzel-PRs erwuenscht: cherry-pick je C-Item auf eigenen Branch.
 2. **Codex-Re-Review** vor merge (laeuft jetzt cleaner, da git-diff verfuegbar): `git diff main..feature/code-review-2026-05-21 | codex exec --skip-git-repo-check "Adversarial review of the full C-block. Challenge each fix. Find regressions or bypass paths."`
 3. **Major-Block-Start**: nach C-merge starten mit M1-M11 (Security) parallel zu M18-M24 (Architektur). M3 + M8 separat designen.
+
+---
+
+## Phase 1 (ROADMAP) — Claude-Bridge stabilisiert (2026-05-24)
+
+**Quelle:** `ROADMAP.md` §Phasen-Tabelle nach Gemini-Audit vom 2026-05-24.
+**Branch:** `chore/lesson-powershell-literalpath-pitfall` (Doku-only + 1 CI-step).
+
+**Anlass:** ROADMAP-Phase-1 stand auf "offen / teilweise", obwohl die Bridge schon in Phase 3b/3c (Commits `4f26d80` + `0f766f5`) substantiell gebaut wurde. Audit-First-Lesson: erst Code prüfen, bevor re-implementiert wird.
+
+### Audit-Befund (was bereits stand)
+
+| Anforderung | Code-Location | Status |
+|---|---|---|
+| Stream-Pass-Through robust | `src/domains/claude-bridge/spawn.ts:64` (`stdio:'inherit'`) | done |
+| SIGINT-Propagation + 5s-Grace → SIGKILL | `spawn.ts:87-107` (double-Ctrl-C eskaliert sofort) | done |
+| SIGTERM-Forward | `spawn.ts:109-112` | done |
+| Heartbeat 10s pino-Log `{pid, elapsedMs}` | `heartbeat.ts` + `spawn.ts:70-72` | done |
+| Binary-Resolution (override / `<root>/bin/` / `$PATH`) | `resolve-binary.ts` | done |
+| Hijack-Warning bei $PATH-fallback (M2) | `resolve-binary.ts:75-88` | done |
+| Secrets-Leak-Prevention (M13: `CLAUDE_OS_SECRETS_KEY`-Strip) | `spawn.ts:54-61` | done |
+| Long-Running-Regression-Test (180s) | `tests/domains/claude-bridge/long-running.test.ts` | done (gated) |
+| node-pty Sideload-Loader (ADR-0021, Lesson 2026-05-21) | `src/sidecar/pty-binding-loader.ts` | done |
+| node-pty PtyChatSessions (M1+m13+useConptyDll) | `src/sidecar/pty-chat-sessions.ts` | done |
+
+### Korrigierter DoD (gegen ROADMAP-Drift)
+
+ROADMAP sagte ursprünglich _"120s-Hangs durch Wrapper-Timeout abgefangen"_ — das **widerspricht** Memory 569/577/578 und ADR-0003. Die richtige Lösung ist `stdio:'inherit'` (by-design kein Buffer-Hang, **kein** aktiver Wrapper-Timeout der interactive claude killt). DoD-Zeile in `ROADMAP.md` entsprechend umformuliert.
+
+### Sub-Phasen
+
+- [x] **1a — ROADMAP DoD-Drift korrigieren.** `ROADMAP.md` Phase-1-Zeile: Status `offen / teilweise` → `done (2026-05-24, Audit-Trail in tasks/todo.md §Phase 1 Stabilisierung)`. DoD-Text korrigiert: by-design kein Buffer-Hang statt Wrapper-Timeout.
+- [x] **1b — Long-Running-Test in CI sichtbar.** Neuer Job `cli-slow` in `.github/workflows/ci.yml`, gated auf `schedule` (Sonntag 03:00 UTC) + `workflow_dispatch`. Setzt `RUN_SLOW_TESTS=1` und läuft nur die 180s-`long-running.test.ts` (kein voller suite-rerun). Single-OS (ubuntu-22.04), 5min timeout-Budget. Macht Heartbeat-/Lifecycle-Regression sichtbar ohne den normalen push/PR-Run zu verlangsamen.
+- [x] **1c — node-pty-Pfad-Audit.** `pty-binding-loader.ts` implementiert das Sideload-Pattern aus Lesson 2026-05-21 (env-override → `dirname(execPath)/node-pty/` → dev-fallback `node_modules/node-pty`). `pty-chat-sessions.ts` trägt M1 (shell-metachar-refused bei `.cmd`/`.bat`), m13 (`CLAUDE_OS_SECRETS_KEY`-Strip), `useConptyDll:true` (vermeidet pkg-fork-issue), 2s-SIGTERM→SIGKILL kill-grace. Build-Sideload via `scripts/build-sidecar.{ps1,sh}`. CI-Coverage: `tests/sidecar/pty-chat-sessions.test.ts` läuft Linux+Windows ungated; macOS skipped via `RUN_PTY_TESTS=0` (dokumentiertes spawn-helper-chmod-Issue, kein blocker). **Keine Lücken gefunden.**
+- [x] **1d — todo.md Audit-Trail-Sektion** — diese Sektion.
+
+### Verifikation
+
+- `ROADMAP.md` Phase 1-Zeile zeigt `done`.
+- `.github/workflows/ci.yml` `cli-slow` Job rendert in `gh workflow list` nach push.
+- Long-Running-Test lokal: `RUN_SLOW_TESTS=1 npx vitest run tests/domains/claude-bridge/long-running.test.ts` — 1 pass, ≥180s.
+- Audit-Trail (diese Sektion) als cross-session memory für künftige Sessions.
+
+### Was bewusst nicht gemacht
+
+- **Kein Wrapper-Timeout eingeführt** — verstößt gegen Memory 569/577/578. Heartbeat-Logging ist die korrekte Eskalations-Form (User sieht 30s-Stille im pino-Log, kann manuell Ctrl-C drücken).
+- **Kein Smoke-Test gegen reale `claude.exe`** — wäre nice-to-have aber zu OS-/Account-spezifisch für CI. Die long-running-Test deckt die Wrapper-Mechanik ab; binary-resolution hat eigene Unit-Tests.
+- **Kein macOS spawn-helper-chmod-Fix** — bekanntes node-pty-Issue, gehört in eigene PT-Tail-Iteration mit `sidecar:build`-Step der `chmod +x` auf `spawn-helper` setzt.
