@@ -636,6 +636,286 @@ code {
   cursor: not-allowed;
 }
 
+/* ---------- Phase 2f — Memory MVP GUI ---------- */
+
+.page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+
+.workspace-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 13px;
+  color: var(--text);
+}
+
+.workspace-indicator label {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.workspace-indicator select {
+  background: var(--bg);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 2px 6px;
+  font-size: 13px;
+}
+
+.workspace-indicator__kind {
+  color: var(--muted);
+  font-size: 11px;
+  text-transform: uppercase;
+}
+
+.workspace-indicator--error {
+  color: var(--danger, #ef6f6c);
+  border-color: var(--danger, #ef6f6c);
+}
+
+.memory-page__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.memory-search {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.memory-search input[type="search"] {
+  flex: 1;
+  padding: 8px 12px;
+  background: var(--panel);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.memory-search button {
+  padding: 8px 14px;
+  background: var(--accent, #6d8bff);
+  color: white;
+  border: 0;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.memory-search button[type="button"] {
+  background: var(--panel);
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+
+.memory-search button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.memory-options {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  margin-bottom: 16px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.memory-options input[type="number"] {
+  background: var(--panel);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 2px 6px;
+}
+
+.memory-hits {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.memory-hit {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 12px;
+  margin-bottom: 12px;
+}
+
+.memory-hit__head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 6px;
+  font-size: 12px;
+}
+
+.memory-hit__score {
+  background: var(--accent, #6d8bff);
+  color: white;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-family: monospace;
+  font-size: 11px;
+}
+
+.memory-hit__path {
+  color: var(--text);
+  font-size: 12px;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.memory-hit__class {
+  color: var(--muted);
+  font-size: 11px;
+  text-transform: uppercase;
+}
+
+.memory-hit__terms {
+  color: var(--muted);
+  font-size: 11px;
+  margin-bottom: 6px;
+}
+
+.memory-hit__preview {
+  background: var(--bg);
+  color: var(--text);
+  padding: 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  white-space: pre-wrap;
+  margin: 0;
+  max-height: 180px;
+  overflow-y: auto;
+}
+
+/* ---------- Modal (SaveAsNoteModal) ---------- */
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 20px;
+  width: 100%;
+  max-width: 640px;
+  max-height: 90vh;
+  overflow-y: auto;
+  color: var(--text);
+}
+
+.modal h2 {
+  margin: 0 0 12px;
+}
+
+.modal form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.modal label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.modal input[type="text"],
+.modal textarea,
+.modal select {
+  background: var(--bg);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 6px 8px;
+  font-size: 13px;
+  font-family: inherit;
+}
+
+.modal textarea {
+  font-family: monospace;
+  resize: vertical;
+}
+
+.modal .form-row {
+  display: flex;
+  gap: 12px;
+}
+
+.modal .form-row label {
+  flex: 1;
+}
+
+.modal .form-checkbox {
+  flex-direction: row;
+  align-items: center;
+  color: var(--text);
+}
+
+.modal .form-error {
+  color: var(--danger, #ef6f6c);
+  font-size: 12px;
+}
+
+.modal .form-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  margin-top: 8px;
+}
+
+.modal .form-actions button {
+  padding: 8px 14px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 13px;
+  border: 1px solid var(--border);
+  background: var(--panel);
+  color: var(--text);
+}
+
+.modal .form-actions button[type="submit"] {
+  background: var(--accent, #6d8bff);
+  color: white;
+  border-color: transparent;
+}
+
+.modal .form-actions button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .secret-mode-toggle {
   display: flex;
   gap: 16px;

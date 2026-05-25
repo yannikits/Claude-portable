@@ -88,6 +88,8 @@ function Status({ error, loading }: { error: string | null; loading: boolean }) 
   return null;
 }
 
+import { WorkspaceIndicator } from '../components/workspace-indicator';
+
 export function Dashboard() {
   const pingResult = useRpc(() => ping());
   const catalog = useRpc(() => listCatalog());
@@ -122,7 +124,10 @@ export function Dashboard() {
 
   return (
     <section className="page">
-      <h1>Dashboard</h1>
+      <header className="page-header">
+        <h1>Dashboard</h1>
+        <WorkspaceIndicator />
+      </header>
       <div className="cards">
         <div className="card">
           <h3>Sidecar</h3>

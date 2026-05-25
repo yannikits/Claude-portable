@@ -592,3 +592,137 @@ export async function onSchedulerEvent(
 ): Promise<UnlistenFn> {
   return listen<SchedulerEventPayload>(SCHEDULE_EVENT, (e) => handler(e.payload));
 }
+
+// ---------- workspace.* / notes.* / retrieval.* (Phase 2f — Memory MVP GUI) ----------
+
+export const WORKSPACE_SWITCHED_EVENT = 'workspace://switched';
+
+export type WorkspaceKind = 'personal' | 'msp-internal' | 'msp-customers' | 'unsorted';
+
+export interface WorkspaceEntry {
+  id: string;
+  kind: WorkspaceKind;
+  path: string | null;
+}
+
+export interface WorkspaceCurrent {
+  active: string;
+  kind: WorkspaceKind;
+  switchedAt: string;
+  path: string | null;
+  vaultPath: string;
+}
+
+export interface WorkspaceList {
+  active: string;
+  vaultPath: string;
+  workspaces: WorkspaceEntry[];
+}
+
+export interface WorkspaceUseResult {
+  from: string;
+  to: string;
+  switchedAt: string;
+}
+
+export interface WorkspaceSwitchedPayload {
+  from: string;
+  to: string;
+}
+
+export async function getWorkspaceCurrent(): Promise<WorkspaceCurrent> {
+  return rpcCall<WorkspaceCurrent>('workspace.current');
+}
+
+export async function getWorkspaceList(): Promise<WorkspaceList> {
+  return rpcCall<WorkspaceList>('workspace.list');
+}
+
+export async function switchWorkspace(id: string): Promise<WorkspaceUseResult> {
+  return rpcCall<WorkspaceUseResult>('workspace.use', { id });
+}
+
+export async function onWorkspaceSwitched(
+  handler: (p: WorkspaceSwitchedPayload) => void,
+): Promise<UnlistenFn> {
+  return listen<WorkspaceSwitchedPayload>(WORKSPACE_SWITCHED_EVENT, (e) => handler(e.payload));
+}
+
+export type NoteClassification =
+  | 'personal'
+  | 'operational'
+  | 'customer-confidential'
+  | 'secret'
+  | 'ephemeral';
+
+export type NoteType = 'session' | 'skill-memory' | 'person' | 'project';
+
+export interface NoteFrontmatter {
+  workspace: string;
+  classification: NoteClassification;
+  schema_version: number;
+  tenant?: string;
+  created?: string;
+  updated?: string;
+  tags?: string[];
+  type?: NoteType;
+  [key: string]: unknown;
+}
+
+export interface NotesSaveInput {
+  filename: string;
+  body: string;
+  frontmatter: Partial<NoteFrontmatter> & { classification: NoteClassification };
+  workspace?: string;
+  overwrite?: boolean;
+}
+
+export interface NotesSaveResult {
+  path: string;
+  created: boolean;
+  workspace: string;
+}
+
+export interface NoteListItem {
+  path: string;
+  workspace: string;
+  frontmatter: NoteFrontmatter;
+  preview: string;
+}
+
+export async function saveNote(input: NotesSaveInput): Promise<NotesSaveResult> {
+  return rpcCall<NotesSaveResult>('notes.save', input);
+}
+
+export async function listNotesByWorkspace(
+  opts: { workspace?: string; recursive?: boolean; limit?: number } = {},
+): Promise<NoteListItem[]> {
+  return rpcCall<NoteListItem[]>('notes.list', opts);
+}
+
+export interface RetrievalHitDto {
+  path: string;
+  score: number;
+  matchedTerms: string[];
+  preview: string;
+  frontmatter: NoteFrontmatter;
+}
+
+export interface RetrievalSearchResult {
+  query: string;
+  tokens: string[];
+  hits: RetrievalHitDto[];
+  totalScanned: number;
+  durationMs: number;
+  workspace: string;
+}
+
+export async function searchVault(opts: {
+  text: string;
+  workspace?: string;
+  topK?: number;
+  includeEphemeral?: boolean;
+  recursive?: boolean;
+}): Promise<RetrievalSearchResult> {
+  return rpcCall<RetrievalSearchResult>('retrieval.search', opts);
+}

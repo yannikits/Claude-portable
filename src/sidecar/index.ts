@@ -145,6 +145,7 @@ registerMethods(dispatcher, {
   chatSessions,
   ...(ptyChatSessions !== null ? { ptyChatSessions } : {}),
   mcpWatcher: mcpWatcherHandle,
+  emit: emitNotification,
 });
 
 await runRpcServer({ dispatcher });

@@ -23,9 +23,11 @@ import {
   SettingsPage,
   VaultPage,
 } from './pages';
+import { MemoryPage } from './pages/memory';
 
 const NAV = [
   { to: '/', label: 'Dashboard' },
+  { to: '/memory', label: 'Memory' },
   { to: '/chat', label: 'Chat' },
   { to: '/catalog', label: 'Catalog' },
   { to: '/vault', label: 'Vault' },
@@ -195,6 +197,7 @@ export function App() {
           <Routes>
             <Route path="/" element={<Layout />}>
               <Route index element={<Dashboard />} />
+              <Route path="memory" element={<MemoryPage />} />
               <Route path="chat" element={<ChatPage />} />
               <Route path="catalog" element={<CatalogPage />} />
               <Route path="vault" element={<VaultPage />} />
