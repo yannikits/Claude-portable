@@ -23,11 +23,14 @@ import { registerCatalogMethods } from './methods/catalog.js';
 import { registerChatMethods } from './methods/chat.js';
 import { registerInboxMethods } from './methods/inbox.js';
 import { registerMcpMethods } from './methods/mcp.js';
+import { registerNotesMethods } from './methods/notes.js';
 import { registerPtyMethods } from './methods/pty.js';
+import { registerRetrievalMethods } from './methods/retrieval.js';
 import { registerScheduleMethods } from './methods/schedule.js';
 import { registerSecretsMethods } from './methods/secrets.js';
 import { registerSettingsMethods } from './methods/settings.js';
 import { registerVaultMethods } from './methods/vault.js';
+import { registerWorkspaceMethods } from './methods/workspace.js';
 import { createMtimeCache } from './mtime-cache.js';
 import type { PtyChatSessions } from './pty-chat-sessions.js';
 import type { RpcDispatcher } from './rpc.js';
@@ -41,6 +44,12 @@ interface MethodOpts {
   readonly ptyChatSessions?: PtyChatSessions;
   /** Optional MCP-Watcher handle (v1.7) — mcp.clients.status only registered when provided. */
   readonly mcpWatcher?: WatcherHandle;
+  /**
+   * Notification emitter — written to stdout as a JSON-RPC notification
+   * (no `id`). Workspace switches emit `workspace://switched`. When
+   * omitted (e.g. tests), notifications are dropped silently.
+   */
+  readonly emit?: (method: string, params: unknown) => void;
 }
 
 export function registerMethods(dispatcher: RpcDispatcher, opts: MethodOpts = {}): void {
@@ -95,4 +104,12 @@ export function registerMethods(dispatcher: RpcDispatcher, opts: MethodOpts = {}
   registerScheduleMethods(dispatcher, ctx);
   if (opts.mcpWatcher !== undefined) registerMcpMethods(dispatcher, opts.mcpWatcher);
   registerAgentMethods(dispatcher, ctx);
+
+  // Phase 2f (Memory MVP GUI surface). These live on top of the Phase
+  // 2a–2c domains and have no side-effects when the vault is not yet
+  // configured — RPCs throw a WorkspaceError that the GUI renders as a
+  // setup hint instead of crashing the supervisor.
+  registerWorkspaceMethods(dispatcher, opts.emit ?? (() => {}));
+  registerNotesMethods(dispatcher);
+  registerRetrievalMethods(dispatcher);
 }
