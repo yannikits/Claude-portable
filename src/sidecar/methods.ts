@@ -16,6 +16,7 @@ import type { WatcherHandle } from '../domains/mcp-clients/index.js';
 import type { readSchedules } from '../domains/scheduler/index.js';
 import type { loadVaultConfig } from '../domains/vault-sync/index.js';
 import type { ChatSessions } from './chat-sessions.js';
+import type { MemoryIndexService } from './memory-index-service.js';
 import { type MethodsContext, rootPath } from './methods/_shared.js';
 import { registerAgentMethods } from './methods/agent.js';
 import { registerAuthMethods } from './methods/auth.js';
@@ -23,6 +24,7 @@ import { registerCatalogMethods } from './methods/catalog.js';
 import { registerChatMethods } from './methods/chat.js';
 import { registerInboxMethods } from './methods/inbox.js';
 import { registerMcpMethods } from './methods/mcp.js';
+import { registerMemoryMethods } from './methods/memory.js';
 import { registerPtyMethods } from './methods/pty.js';
 import { registerScheduleMethods } from './methods/schedule.js';
 import { registerSecretsMethods } from './methods/secrets.js';
@@ -41,6 +43,8 @@ interface MethodOpts {
   readonly ptyChatSessions?: PtyChatSessions;
   /** Optional MCP-Watcher handle (v1.7) — mcp.clients.status only registered when provided. */
   readonly mcpWatcher?: WatcherHandle;
+  /** Optional MemoryIndexService (Phase 3f) — memory.* RPCs only when provided. */
+  readonly memoryIndex?: MemoryIndexService;
 }
 
 export function registerMethods(dispatcher: RpcDispatcher, opts: MethodOpts = {}): void {
@@ -95,4 +99,5 @@ export function registerMethods(dispatcher: RpcDispatcher, opts: MethodOpts = {}
   registerScheduleMethods(dispatcher, ctx);
   if (opts.mcpWatcher !== undefined) registerMcpMethods(dispatcher, opts.mcpWatcher);
   registerAgentMethods(dispatcher, ctx);
+  if (opts.memoryIndex !== undefined) registerMemoryMethods(dispatcher, opts.memoryIndex);
 }
