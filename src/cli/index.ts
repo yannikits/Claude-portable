@@ -77,6 +77,7 @@ const SUBCOMMAND_LOADERS: Record<string, Loader> = {
   ask: async (p) => (await import('./commands/ask.js')).registerAskCommand(p),
   'save-note': async (p) => (await import('./commands/save-note.js')).registerSaveNoteCommand(p),
   skills: async (p) => (await import('./commands/skills.js')).registerSkillsCommand(p),
+  serve: async (p) => (await import('./commands/serve.js')).registerServeCommand(p),
 };
 
 async function loadAll(p: Command): Promise<void> {
