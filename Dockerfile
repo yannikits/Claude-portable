@@ -17,15 +17,33 @@
 #     --name claude-os claude-os:local
 
 # ---------- Stage 1: backend builder ----------
-FROM node:22-alpine AS backend-builder
+# Why debian-slim (not alpine):
+#  - node-pty has no prebuilt binary for musl libc (alpine) AND none for
+#    glibc-linux-x64 in version 1.1.0, so npm always rebuilds it from
+#    source. node-gyp needs python3 + build-essential.
+#  - Building on alpine would produce a musl-linked .node binary that
+#    cannot be copied to the glibc-based runtime stage.
+# Both reasons → backend-builder runs on debian-slim too, native modules
+# get built ONCE here against glibc, runtime reuses them directly.
+FROM node:22-slim AS backend-builder
 WORKDIR /app
-# Install build-deps for native modules (proper-lockfile, sql.js may need them)
-RUN apk add --no-cache python3 make g++ git
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends \
+      build-essential \
+      python3 \
+      git \
+      ca-certificates \
+ && rm -rf /var/lib/apt/lists/*
 COPY package.json package-lock.json ./
 COPY tsconfig.json biome.json ./
-RUN npm ci --include=dev
+RUN npm ci --include=dev --no-audit --no-fund
 COPY src/ ./src/
 RUN npm run build
+# Prune devDeps in place so the resulting node_modules tree is production-
+# clean while keeping the native binaries we just built (e.g. node-pty).
+# Runtime stage will copy this directory as-is — no second `npm install`.
+RUN npm prune --omit=dev --no-audit --no-fund \
+ && npm cache clean --force
 
 # ---------- Stage 2: frontend builder ----------
 FROM node:22-alpine AS frontend-builder
@@ -41,11 +59,8 @@ COPY gui/src/ ./src/
 RUN npx vite build
 
 # ---------- Stage 3: runtime ----------
-# We use node:22-slim (Debian Bookworm) instead of alpine because node-pty
-# ships prebuilt binaries only for glibc linux-x64 — alpine uses musl and
-# would force a node-gyp compile that needs python3 + build-essential,
-# bloating the runtime image. slim adds ~30 MB over alpine but avoids
-# the entire native-build toolchain.
+# debian-slim matches backend-builder so the prebuilt native modules
+# (node-pty .node binaries) load without a re-build at startup.
 FROM node:22-slim AS runtime
 RUN apt-get update \
  && apt-get install -y --no-install-recommends \
@@ -63,13 +78,10 @@ RUN npm install -g @anthropic-ai/claude-code@latest
 
 WORKDIR /app
 
-# Production-only dependencies. We need the same node_modules layout the
-# compiled dist/ expects, but no devDeps (Biome, Vitest, etc.).
+# Compiled backend + production node_modules (already pruned in builder).
+# No `npm install` at runtime — no compile chain, no python needed.
 COPY package.json package-lock.json ./
-RUN npm ci --omit=dev --no-audit --no-fund \
- && npm cache clean --force
-
-# Compiled backend + built frontend
+COPY --from=backend-builder /app/node_modules ./node_modules
 COPY --from=backend-builder /app/dist ./dist
 COPY --from=frontend-builder /app/gui/dist ./gui/dist
 COPY docker/entrypoint.sh /app/entrypoint.sh
