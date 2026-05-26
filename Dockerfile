@@ -41,13 +41,20 @@ COPY gui/src/ ./src/
 RUN npx vite build
 
 # ---------- Stage 3: runtime ----------
-FROM node:22-alpine AS runtime
-RUN apk add --no-cache \
+# We use node:22-slim (Debian Bookworm) instead of alpine because node-pty
+# ships prebuilt binaries only for glibc linux-x64 — alpine uses musl and
+# would force a node-gyp compile that needs python3 + build-essential,
+# bloating the runtime image. slim adds ~30 MB over alpine but avoids
+# the entire native-build toolchain.
+FROM node:22-slim AS runtime
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends \
       tini \
       git \
       ca-certificates \
       wget \
-      curl
+      curl \
+ && rm -rf /var/lib/apt/lists/*
 
 # Install official Anthropic Claude Code CLI globally — this is the
 # Linux equivalent of the bin/claude.exe used in the Windows/macOS
@@ -82,4 +89,5 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
   CMD wget -qO- "http://127.0.0.1:${PORT}/healthz" >/dev/null || exit 1
 
 # Tini is PID 1 to reap zombies + forward signals to node properly.
-ENTRYPOINT ["/sbin/tini", "--", "/app/entrypoint.sh"]
+# Debian path: /usr/bin/tini (alpine had /sbin/tini).
+ENTRYPOINT ["/usr/bin/tini", "--", "/app/entrypoint.sh"]
