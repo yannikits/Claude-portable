@@ -13,12 +13,23 @@ export {
   openIndex,
   saveIndex,
 } from './database.js';
+export {
+  getIndexedMtime,
+  type IndexerLog,
+  indexNote,
+  type RebuildOpts,
+  type RebuildStats,
+  rebuildAll,
+  removeNote,
+  walkVaultNotes,
+} from './indexer.js';
 export { ensureIndexDir, resolveIndexDbPath } from './paths.js';
 export {
   READ_SCHEMA_VERSION_SQL,
   SCHEMA_SQL,
   STAMP_VERSION_SQL,
 } from './schema.js';
+export { searchIndex } from './search.js';
 export {
   IndexCorruptError,
   type IndexedDocument,
@@ -26,3 +37,9 @@ export {
   MEMORY_INDEX_SCHEMA_VERSION,
   MemoryIndexError,
 } from './types.js';
+export {
+  type MemoryWatcherHandle,
+  type MemoryWatcherOpts,
+  type MemoryWatcherStats,
+  startMemoryIndexWatcher,
+} from './watcher.js';
