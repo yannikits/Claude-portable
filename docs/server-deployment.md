@@ -321,6 +321,41 @@ Cloudflare erreicht deinen Origin nicht. Reihenfolge zum Eingrenzen:
 3. **Firewall in der VM** blockt :3000 (`ufw status`, ggf. `ufw allow from <reverse-proxy-IP> to any port 3000`).
 4. **Reverse-Proxy hat falsche Forward-IP**: muss die LAN-IP der claude-os-VM sein, NICHT die Docker-Container-IP (`172.x.x.x`).
 
+### WebSocket-PTY funktioniert nicht im Browser (`ws errored before frame could be sent`)
+
+Phase Web-3 nutzt einen WebSocket unter `/api/pty/ws`. nginx proxy manager
+forwarded WS-Upgrades **nur am Top-Level der Proxy Host Location**, nicht
+automatisch an Sub-Paths. Symptom: `/chat` zeigt "Spawn" reagiert nicht,
+DevTools-Network zeigt failed WebSocket-Connection.
+
+Fix:
+1. NPM → Hosts → Proxy Hosts → claude-os-Eintrag → Edit
+2. Details-Tab: **"Websockets Support" ON** (das ist der Schalter der die
+   nginx `proxy_set_header Upgrade $http_upgrade` etc. global aktiviert)
+3. Custom Locations Tab → **Add location** mit:
+   - Location: `/api/pty/ws`
+   - Scheme: `http`, Forward: `<VM-IP>:3000`
+   - **Custom Nginx Configuration LEER LASSEN** — eigene `proxy_set_header`-
+     Direktiven kollidieren mit den NPM-internen und brechen die config
+     (Cloudflare 525, nginx -t fail).
+4. Save
+
+Verify auf der NPM-Box:
+```bash
+TOKEN=$(docker exec claude-os printenv CLAUDE_OS_AUTH_TOKEN)
+curl --http1.1 -ik -N \
+  --resolve <hostname>:443:127.0.0.1 \
+  -H "Connection: Upgrade" \
+  -H "Upgrade: websocket" \
+  -H "Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==" \
+  -H "Sec-WebSocket-Version: 13" \
+  "https://<hostname>/api/pty/ws?token=$TOKEN"
+```
+
+Erwartet: `HTTP/1.1 101 Switching Protocols`.
+
+Cloudflare WebSocket-Support ist standardmäßig an (Network → WebSockets).
+
 ### "SSL handshake failed" (Cloudflare 525)
 
 Cloudflare verbindet sich zum Origin, aber kein TLS-Handshake. Meistens:
