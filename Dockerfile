@@ -90,7 +90,10 @@ RUN chmod +x /app/entrypoint.sh
 # Default env. CLAUDE_OS_AUTH_TOKEN must be supplied by the caller.
 ENV NODE_ENV=production
 ENV PORT=3000
-ENV CLAUDE_OS_SECRETS_BACKEND=file
+# Headless container has no OS keyring (no D-Bus / Secret Service);
+# force the encrypted-file backend. Master passphrase comes from
+# $CLAUDE_OS_SECRETS_PASSPHRASE supplied by the operator.
+ENV CLAUDE_OS_SECRETS_BACKEND=encrypted-file
 ENV CLAUDE_OS_STATIC_DIR=/app/gui/dist
 ENV CLAUDE_OS_LOG_LEVEL=info
 

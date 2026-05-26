@@ -41,6 +41,7 @@ interface BackgroundServices {
   readonly chatSessions: ChatSessions;
   readonly ptyChatSessions: PtyChatSessions | null;
   readonly watchers: InboxOutboxWatchers | null;
+  readonly mcpWatcher: ReturnType<typeof startMcpWatcher> | null;
   readonly schedulerStop: () => Promise<void>;
   readonly mcpWatcherStop: () => Promise<void>;
 }
@@ -88,6 +89,7 @@ async function startBackgroundServices(
   // deployments resolveRoot() may legitimately fail (no marker file in
   // the container). Degrade gracefully — MCP-clients UI shows empty
   // and the server keeps running.
+  let mcpWatcher: ReturnType<typeof startMcpWatcher> | null = null;
   let mcpWatcherStop: () => Promise<void> = async () => {
     /* no-op when watcher disabled */
   };
@@ -96,13 +98,13 @@ async function startBackgroundServices(
     const mcpTrustStore = new McpTrustStore({
       filePath: mcpTrustPathFor(resolveMachinePaths().dataDir),
     });
-    const mcpWatcherHandle = startMcpWatcher({
+    mcpWatcher = startMcpWatcher({
       emit: (event) => emit('mcp-client://event', event),
       projectCwd,
       probeTimeoutMs,
       isTrusted: (serverKey) => mcpTrustStore.isAcknowledged(serverKey),
     });
-    mcpWatcherStop = () => mcpWatcherHandle.stop();
+    mcpWatcherStop = () => mcpWatcher?.stop() ?? Promise.resolve();
     logger.logger.info({ probeTimeoutMs }, 'server: mcp watcher started');
   } catch (err) {
     logger.logger.warn(
@@ -115,6 +117,7 @@ async function startBackgroundServices(
     chatSessions,
     ptyChatSessions,
     watchers,
+    mcpWatcher,
     schedulerStop: () => schedulerHandle.stop(),
     mcpWatcherStop,
   };
@@ -161,6 +164,7 @@ export async function startServer(config: ServerConfig): Promise<ServerHandle> {
   registerMethods(dispatcher, {
     chatSessions: services.chatSessions,
     ...(services.ptyChatSessions !== null ? { ptyChatSessions: services.ptyChatSessions } : {}),
+    ...(services.mcpWatcher !== null ? { mcpWatcher: services.mcpWatcher } : {}),
     emit,
   });
 
