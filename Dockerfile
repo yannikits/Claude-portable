@@ -32,8 +32,11 @@ FROM node:22-alpine AS frontend-builder
 WORKDIR /app/gui
 COPY gui/package.json gui/package-lock.json ./
 RUN npm ci
-COPY gui/tsconfig.json gui/tsconfig.app.json gui/tsconfig.node.json gui/vite.config.ts ./
-COPY gui/index.html ./
+# Build inputs only — tsbuildinfo, vitest.config, README are devtime artifacts
+# and not needed for `vite build`. We skip `tsc -b` (gui/package.json's full
+# build script) because runtime only needs the bundled JS; type-checking
+# runs in CI / pre-commit, not in the image build.
+COPY gui/tsconfig.json gui/vite.config.ts gui/index.html ./
 COPY gui/src/ ./src/
 RUN npx vite build
 
