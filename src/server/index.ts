@@ -83,23 +83,40 @@ async function startBackgroundServices(
   const probeTimeoutFromEnv = Number.parseInt(process.env.CLAUDE_OS_MCP_PROBE_TIMEOUT_MS ?? '', 10);
   const probeTimeoutMs =
     Number.isFinite(probeTimeoutFromEnv) && probeTimeoutFromEnv > 0 ? probeTimeoutFromEnv : 15_000;
-  const mcpTrustStore = new McpTrustStore({
-    filePath: mcpTrustPathFor(resolveMachinePaths().dataDir),
-  });
-  const mcpWatcherHandle = startMcpWatcher({
-    emit: (event) => emit('mcp-client://event', event),
-    projectCwd: resolveRoot({}).path,
-    probeTimeoutMs,
-    isTrusted: (serverKey) => mcpTrustStore.isAcknowledged(serverKey),
-  });
-  logger.logger.info({ probeTimeoutMs }, 'server: mcp watcher started');
+
+  // MCP-watcher needs a project root for discovery. In headless server
+  // deployments resolveRoot() may legitimately fail (no marker file in
+  // the container). Degrade gracefully — MCP-clients UI shows empty
+  // and the server keeps running.
+  let mcpWatcherStop: () => Promise<void> = async () => {
+    /* no-op when watcher disabled */
+  };
+  try {
+    const projectCwd = resolveRoot({}).path;
+    const mcpTrustStore = new McpTrustStore({
+      filePath: mcpTrustPathFor(resolveMachinePaths().dataDir),
+    });
+    const mcpWatcherHandle = startMcpWatcher({
+      emit: (event) => emit('mcp-client://event', event),
+      projectCwd,
+      probeTimeoutMs,
+      isTrusted: (serverKey) => mcpTrustStore.isAcknowledged(serverKey),
+    });
+    mcpWatcherStop = () => mcpWatcherHandle.stop();
+    logger.logger.info({ probeTimeoutMs }, 'server: mcp watcher started');
+  } catch (err) {
+    logger.logger.warn(
+      { err: err instanceof Error ? err.message : String(err) },
+      'server: mcp watcher disabled (no claude-os root — set $CLAUDE_OS_ROOT or create .claude-os-root marker)',
+    );
+  }
 
   return {
     chatSessions,
     ptyChatSessions,
     watchers,
     schedulerStop: () => schedulerHandle.stop(),
-    mcpWatcherStop: () => mcpWatcherHandle.stop(),
+    mcpWatcherStop,
   };
 }
 
