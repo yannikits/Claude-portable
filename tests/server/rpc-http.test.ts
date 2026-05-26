@@ -165,6 +165,16 @@ describe('rpc-http routes', () => {
     expect(res.statusCode).toBe(404);
   });
 
+  it('WS-path /api/pty/ws accepts query-string token (browsers cannot attach Authorization to WebSocket)', async () => {
+    const res = await appHandle.app.inject({
+      method: 'GET',
+      url: `/api/pty/ws?token=${encodeURIComponent(TOKEN)}`,
+    });
+    // Same as above — route not registered here, but preHandler must pass
+    // the query-token check so we see 404 (route missing) rather than 401.
+    expect(res.statusCode).toBe(404);
+  });
+
   it('non-SSE routes refuse query-string token (header-only)', async () => {
     const res = await appHandle.app.inject({
       method: 'POST',

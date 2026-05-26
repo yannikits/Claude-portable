@@ -66,7 +66,7 @@ export function extractBearer(headerValue: string | undefined): string {
  * Mitigation: tokens are session-scoped (sessionStorage) and rotatable
  * via env-restart. Header-auth remains preferred everywhere else.
  */
-const QUERY_TOKEN_ALLOWED_PATHS = new Set<string>(['/api/events']);
+const QUERY_TOKEN_ALLOWED_PATHS = new Set<string>(['/api/events', '/api/pty/ws']);
 
 /**
  * Fastify `preHandler` hook that enforces Bearer-Token auth on a route.
