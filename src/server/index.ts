@@ -12,6 +12,7 @@
  */
 import { randomBytes } from 'node:crypto';
 import fastifyCors from '@fastify/cors';
+import fastifyWebsocket from '@fastify/websocket';
 import Fastify, { type FastifyInstance } from 'fastify';
 
 import { resolveRoot } from '../core/environment/index.js';
@@ -30,6 +31,7 @@ import { createNotificationBus, registerSseRoute } from './events-sse.js';
 import { registerRpcRoutes } from './rpc-http.js';
 import { registerStaticRoutes } from './static.js';
 import type { ServerConfig } from './types.js';
+import { registerPtyWebSocket } from './ws-pty.js';
 
 export interface ServerHandle {
   readonly fastify: FastifyInstance;
@@ -182,6 +184,20 @@ export async function startServer(config: ServerConfig): Promise<ServerHandle> {
 
   registerRpcRoutes(fastify, dispatcher);
   registerSseRoute(fastify, { bus, heartbeatMs: config.sseHeartbeatMs });
+
+  // WebSocket bridge for interactive PTY sessions (Phase Web-3).
+  // Register only when node-pty actually loaded — on a fully-headless
+  // host the plugin would still expose the upgrade endpoint and the
+  // /api/pty/ws handler would tell the client "pty-disabled", which is
+  // fine. We register unconditionally so the route exists.
+  await fastify.register(fastifyWebsocket, {
+    options: { maxPayload: 1024 * 1024 },
+  });
+  await registerPtyWebSocket(fastify, {
+    pty: services.ptyChatSessions,
+    bus,
+    expectedToken: config.authToken,
+  });
 
   if (config.staticDir !== null) {
     await registerStaticRoutes(fastify, config.staticDir);
