@@ -14,7 +14,14 @@
 **Quelle:** User-Request 2026-05-26 — "Soweit voranbringen, dass ich es auf einem Server wie OpenClaw oder Hermes installieren und per Weboberfläche aufrufen kann."
 
 **Plan-Datum:** 2026-05-26
-**Branch-Vorschlag:** `feature/phase-web-server-deployment` (off main)
+**Branch:** `feature/phase-web-server-deployment` (off main)
+**Status (2026-05-26):** Web-1 + Web-2 + Web-4 + Web-6 **shipped**. Web-3 (PTY-WS) und Web-5 (Tenant-Wiring) folgen als Inkrement. MVP-Pfad damit komplett — Yannik kann den Server deployen.
+
+## Shipped Commits
+
+- `c1940ba` Web-1 (backend HTTP-adapter + Fastify + auth + SSE)
+- `b730031` Web-2 (frontend transport abstraction + login + AuthGate)
+- `341216f` Web-4 + Web-6 (Dockerfile + compose + entrypoint + docs/server-deployment.md)
 
 ---
 
@@ -58,16 +65,16 @@ Docker-Container "claude-os"
 
 **Ziel:** Bestehende RPC-Methoden über HTTP statt stdio erreichbar machen.
 
-- [ ] `src/server/types.ts` — typed config (port, host, authToken, corsOrigin, dataDir)
-- [ ] `src/server/auth.ts` — Bearer-Token-Middleware, konstant-zeitlicher Vergleich via `crypto.timingSafeEqual`, ungesetztes Token = Service-Refuse-Boot (nicht "offen")
-- [ ] `src/server/rpc-http.ts` — `POST /api/rpc` Handler, delegiert an `RpcDispatcher`, mappt RPC-Errors auf HTTP-Status (400 invalid-params, 404 method-not-found, 500 internal)
-- [ ] `src/server/events-sse.ts` — `GET /api/events` SSE-Stream, replaces `emitNotification` für connected Clients (in-memory subscriber-set, heartbeat alle 30s)
-- [ ] `src/server/static.ts` — Static-File-Serve mit SPA-Fallback (Vite-Build aus `gui/dist/`), korrekte MIME + immutable-Cache für hashed assets
-- [ ] `src/server/index.ts` — `startServer(config)` Composer, Express oder Fastify (Vorschlag: **Fastify** — kleiner, async-native, schneller; `pino` ist schon im Repo)
-- [ ] `src/cli/commands/serve.ts` — Commander-Subcommand `claude-os serve [--port 3000] [--host 0.0.0.0]`, liest Auth-Token aus `$CLAUDE_OS_AUTH_TOKEN` (Pflicht)
-- [ ] Wire-up in `src/cli/index.ts`
-- [ ] Vitest: server-side roundtrip-Test (start → POST rpc → result; SSE event-flow; auth-reject ohne/mit falschem Token)
-- [ ] Smoke-Test: `claude-os serve` lokal starten, `curl -H "Authorization: Bearer …" -d '{"method":"ping"}' /api/rpc` → `{pong: true}`
+- [x] `src/server/types.ts` — typed config (port, host, authToken, corsOrigin, dataDir)
+- [x] `src/server/auth.ts` — Bearer-Token-Middleware, konstant-zeitlicher Vergleich via `crypto.timingSafeEqual`, ungesetztes Token = Service-Refuse-Boot (nicht "offen")
+- [x] `src/server/rpc-http.ts` — `POST /api/rpc` Handler, delegiert an `RpcDispatcher`, mappt RPC-Errors auf HTTP-Status (400 invalid-params, 404 method-not-found, 500 internal)
+- [x] `src/server/events-sse.ts` — `GET /api/events` SSE-Stream, replaces `emitNotification` für connected Clients (in-memory subscriber-set, heartbeat alle 30s)
+- [x] `src/server/static.ts` — Static-File-Serve mit SPA-Fallback (Vite-Build aus `gui/dist/`), korrekte MIME + immutable-Cache für hashed assets
+- [x] `src/server/index.ts` — `startServer(config)` Composer, Express oder Fastify (Vorschlag: **Fastify** — kleiner, async-native, schneller; `pino` ist schon im Repo)
+- [x] `src/cli/commands/serve.ts` — Commander-Subcommand `claude-os serve [--port 3000] [--host 0.0.0.0]`, liest Auth-Token aus `$CLAUDE_OS_AUTH_TOKEN` (Pflicht)
+- [x] Wire-up in `src/cli/index.ts`
+- [x] Vitest: server-side roundtrip-Test (start → POST rpc → result; SSE event-flow; auth-reject ohne/mit falschem Token)
+- [x] Smoke-Test: `claude-os serve` lokal starten, `curl -H "Authorization: Bearer …" -d '{"method":"ping"}' /api/rpc` → `{pong: true}`
 
 **DoD Web-1:** `curl` gegen alle bestehenden `read-only` RPCs (ping, catalog.list, vault.status, agent.list, workspace.list, notes.list, retrieval.search, auth.status) funktioniert; falsches/fehlendes Token → 401; SSE liefert mindestens Heartbeats.
 
@@ -77,15 +84,15 @@ Docker-Container "claude-os"
 
 **Ziel:** Bestehender React-Code läuft unverändert sowohl in Tauri als auch im Browser.
 
-- [ ] `gui/src/lib/rpc-transport.ts` — Interface `RpcTransport { call(method, params); subscribe(eventName, handler) }`
-- [ ] `gui/src/lib/rpc-tauri.ts` — bestehende `invoke()` / `listen()`-Logik, eingepackt
-- [ ] `gui/src/lib/rpc-http.ts` — `fetch` gegen `/api/rpc`, `EventSource` gegen `/api/events`, Auth-Token aus `sessionStorage` (Login-Page erfasst, in-memory)
-- [ ] `gui/src/lib/rpc.ts` — entscheidet zur Runtime: `window.__TAURI_INTERNALS__` → Tauri, sonst → HTTP. Alle bestehenden `rpcCall`/`onX`-Helper bleiben byte-identisch
-- [ ] `gui/src/pages/login.tsx` — minimal: Token-Input, `POST /api/auth/verify`, bei OK → sessionStorage + redirect, bei FAIL → Error
-- [ ] `src/server/auth.ts` — neuer Endpunkt `POST /api/auth/verify` (gleiche Token-Check, returnt `{ok: true}`)
-- [ ] `gui/src/App.tsx` — `AuthGate`-Wrapper: kein Token → `<LoginPage/>`, sonst Router wie bisher (Tauri umgeht das via Flag)
-- [ ] `gui/vite.config.ts` — Build-Variante: `TAURI_BUILD=1` lässt aktuelle Bundle, ungesetzt produziert "web mode" (gleicher Output, beide Transports compiled-in)
-- [ ] Vitest gui-side: Transport-Detection-Logik
+- [x] `gui/src/lib/rpc-transport.ts` — Interface `RpcTransport { call(method, params); subscribe(eventName, handler) }`
+- [x] `gui/src/lib/rpc-tauri.ts` — bestehende `invoke()` / `listen()`-Logik, eingepackt
+- [x] `gui/src/lib/rpc-http.ts` — `fetch` gegen `/api/rpc`, `EventSource` gegen `/api/events`, Auth-Token aus `sessionStorage` (Login-Page erfasst, in-memory)
+- [x] `gui/src/lib/rpc.ts` — entscheidet zur Runtime: `window.__TAURI_INTERNALS__` → Tauri, sonst → HTTP. Alle bestehenden `rpcCall`/`onX`-Helper bleiben byte-identisch
+- [x] `gui/src/pages/login.tsx` — minimal: Token-Input, `POST /api/auth/verify`, bei OK → sessionStorage + redirect, bei FAIL → Error
+- [x] `src/server/auth.ts` — neuer Endpunkt `POST /api/auth/verify` (gleiche Token-Check, returnt `{ok: true}`)
+- [x] `gui/src/App.tsx` — `AuthGate`-Wrapper: kein Token → `<LoginPage/>`, sonst Router wie bisher (Tauri umgeht das via Flag)
+- [x] `gui/vite.config.ts` — Build-Variante: `TAURI_BUILD=1` lässt aktuelle Bundle, ungesetzt produziert "web mode" (gleicher Output, beide Transports compiled-in)
+- [x] Vitest gui-side: Transport-Detection-Logik
 
 **Out-of-scope hier (Phase Web-3 / -4):**
 - Drag-Drop in Web (Browser-File-API statt Tauri-DragDrop) — Stub-Komponente "im Web noch nicht unterstützt"
@@ -113,15 +120,15 @@ Docker-Container "claude-os"
 
 **Ziel:** Yannik baut auf seinem Server `docker compose up -d` und es läuft.
 
-- [ ] `Dockerfile` — multi-stage:
+- [x] `Dockerfile` — multi-stage:
   - Stage 1: `node:22-alpine` mit `npm ci && npm run build`
   - Stage 2: gui-build (`npm ci && npm run build` in `gui/`, ohne Tauri-Bits)
   - Stage 3: Runtime `node:22-alpine` mit nur `dist/`, `gui/dist/`, `node_modules` (prod-only), Linux-`claude`-CLI als Layer
-- [ ] `docker/install-claude-cli.sh` — Download offizielles Linux-claude-Binary (Hash-pinned), exit 1 bei Mismatch
-- [ ] `docker-compose.example.yml` — single-service, port 3000, Volumes für Vault + Config + Anthropic-Auth-Dir
-- [ ] `.dockerignore` — minimal, `node_modules`, `dist`, `tests`, `tasks`, `gui/src-tauri/target`
-- [ ] `docker/entrypoint.sh` — pre-flight (env-check, vault-mount-check, doctor-run), dann `claude-os serve`
-- [ ] CI: `.github/workflows/docker.yml` baut `linux/amd64` + `linux/arm64` Image und pushed ghcr.io tag bei Release
+- [x] `docker/install-claude-cli.sh` — Download offizielles Linux-claude-Binary (Hash-pinned), exit 1 bei Mismatch
+- [x] `docker-compose.example.yml` — single-service, port 3000, Volumes für Vault + Config + Anthropic-Auth-Dir
+- [x] `.dockerignore` — minimal, `node_modules`, `dist`, `tests`, `tasks`, `gui/src-tauri/target`
+- [x] `docker/entrypoint.sh` — pre-flight (env-check, vault-mount-check, doctor-run), dann `claude-os serve`
+- [x] CI: `.github/workflows/docker.yml` baut `linux/amd64` + `linux/arm64` Image und pushed ghcr.io tag bei Release
 
 **DoD Web-4:** `docker compose up -d` auf einem leeren Linux-Host bringt einen erreichbaren Service hoch (lokal getestet via `localhost:3000`).
 
@@ -132,7 +139,7 @@ Docker-Container "claude-os"
 **Ziel:** Claude-CLI-Login im Container, Workspace-Persistenz, Tenant-Resolver bereit für Multi-User.
 
 - [ ] `docs/server-deployment.md` — Setup-Schritt: `docker exec -it claude-os claude auth login` → DeviceCode-Flow im Browser → Auth-File persistiert in Volume
-- [ ] `src/server/auth.ts` — Token-Validation triggert TenantContext-Resolver mit Single-User-Default; Tenant-ID ist Token-Hash (so steht der Multi-User-Switch später bei: Token-Tabelle statt Single-Token)
+- [x] `src/server/auth.ts` — Token-Validation triggert TenantContext-Resolver mit Single-User-Default; Tenant-ID ist Token-Hash (so steht der Multi-User-Switch später bei: Token-Tabelle statt Single-Token)
 - [ ] `src/domains/tenant/` Wrapper-Methode `resolveTenantFromToken(token): TenantContext` — als public-Interface dokumentieren
 - [ ] Doctor-Check `serverEnvOk`: prüft `CLAUDE_OS_AUTH_TOKEN` gesetzt, `CLAUDE_OS_SECRETS_BACKEND=file`, `CLAUDE_OS_VAULT_PATH` erreichbar; runs in entrypoint.sh
 
@@ -144,7 +151,7 @@ Docker-Container "claude-os"
 
 **Ziel:** Yannik (oder ein anderer Self-Host-Nutzer) kommt in 30 Minuten zum laufenden System.
 
-- [ ] `docs/server-deployment.md` mit Sektionen:
+- [x] `docs/server-deployment.md` mit Sektionen:
   - **Voraussetzungen** (Linux-Host, Docker, optional nginx proxy manager) — Proxmox-Hinweis: VM mit Debian 12 + Docker bevorzugt, LXC als Alt
   - **VM/LXC-Setup auf Proxmox** (kurz: Template, CPU/RAM-Empfehlung, Storage)
   - **1.** `docker-compose.yml` anpassen (Volumes, Token generieren via `openssl rand -hex 32`)
@@ -157,9 +164,9 @@ Docker-Container "claude-os"
   - **6.** Backup-Strategie: **Proxmox-Snapshot der VM** (regelmäßig) + zusätzlich **rsync-Pull des Vault-Volumes** auf separates Storage (defense-in-depth: Snapshot kann auch korrupten Zustand einfrieren)
   - **7.** Troubleshooting (logs, doctor, common errors)
   - **8.** Optionaler Hardening-Pfad: Cloudflare Access als zweite Auth-Schicht (nur wenn man später Family/Team-Zugriff zulassen will)
-- [ ] Update `README.md`: neuer Abschnitt "Server-Deployment" mit Link
-- [ ] `ROADMAP.md`: "Phase Web" als geshippte Phase markieren
-- [ ] ADR-0032 finalisieren (siehe `docs/architecture/adr/0032-server-deployment-headless-http.md`)
+- [x] Update `README.md`: neuer Abschnitt "Server-Deployment" mit Link
+- [x] `ROADMAP.md`: "Phase Web" als geshippte Phase markieren
+- [x] ADR-0032 finalisieren (siehe `docs/architecture/adr/0032-server-deployment-headless-http.md`)
 
 **DoD Web-6:** Doku ist abgeschlossen, ein Outside-Tester (oder Yannik selbst from-scratch) kann ohne Rückfragen deployen.
 
