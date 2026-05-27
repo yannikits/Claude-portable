@@ -1266,3 +1266,109 @@ claude-os ask "when is the migration?"
 - **Multi-turn / conversation-state** → Phase 6 (PTY-chat)
 - **stdin-pipe-Mode für längere prompts** → v1.x bei Bedarf
 - **Clipboard-source für save-note** → v1.x bei Reibung
+
+---
+
+## Phase Web-7 — Multi-User Login + User-Registration (geplant 2026-05-28)
+
+**Spec:** `tasks/phase-web-7-multi-user.md` (Plan-Datum 2026-05-27).
+**Branch (vorgeschlagen):** `feature/phase-web-7-multi-user` off `main`.
+**Aufwandsschätzung:** 17-25 h gesamt, in 6 Sub-Phasen (7-1 … 7-6).
+**Ziel:** Server-Variante bekommt echten Multi-User-Flow (Email + Passwort, Session-Cookies, optional Self-Registration, persistente User-Tabelle). Stage 1 (`CLAUDE_OS_AUTH_TOKEN`-Liste per ADR-0033) bleibt für Service-Tokens parallel.
+
+### Audit-Status 2026-05-28 (vor Implementierung)
+
+Code-Audit gegen Spec (per `feedback_audit_first_todo.md` — verify-before-implement):
+
+**Vorhanden, wiederverwendet:**
+- `src/server/{auth,index,rpc-http,events-sse,ws-pty,static,types}.ts` (Stage 1 token-auth-pipeline)
+- `src/domains/tenant/{types,resolve,resolve-token,guard,index}.ts` (token→tenant resolution)
+- `gui/src/pages/login.tsx` (Token-only — wird erweitert um Email-Tab)
+- `gui/src/components/AuthGate.tsx`
+- `sql.js@^1.14.1` Dep + Pattern aus `memory-index/` + `agent-runs/`
+- `fastify@^5.8.5` + `@fastify/cors`/`multipart`/`static`/`websocket`
+- ADR-0033 (Stage 1 multi-token) als Vorlage für ADR-0036
+
+**Fehlt komplett, wird neu gebaut:**
+- `src/server/users-repo.ts` + `src/server/sessions.ts`
+- `src/cli/commands/users.ts`
+- `gui/src/pages/register.tsx`
+- Password-Hashing via `node:crypto.scrypt` (kein neues Dep)
+- `@fastify/cookie` als neues Dep
+- `users.sqlite` Schema + Migration-Pragma
+- ADR-0036 (User-Model + Hashing + Sessions + CSRF)
+
+**Erweiterung nötig (existiert, muss touched werden):**
+- `src/server/auth.ts` — cookie-first → bearer-fallback chain
+- `src/server/index.ts` — neue Endpoints `/api/auth/{login,logout,refresh,me}` + optional `/register`
+- `src/domains/tenant/resolve-token.ts` — neue `resolveTenantFromUser(userId)`
+- `gui/src/pages/login.tsx` — Tabs Email/Token
+- `gui/src/components/AuthGate.tsx` — `/login` + `/register` als public
+
+### Klärungspunkte (Entscheidungen aus Spec-Empfehlungen übernommen)
+
+| # | Frage | Entscheidung | Begründung |
+|---|---|---|---|
+| 1 | bcrypt vs scrypt | **`node:crypto.scrypt`** | Built-in, kein native-build, passt zu sql.js-no-native-deps-Pattern. Format `scrypt$N=16384$r=8$p=1$<salt-b64>$<hash-b64>` algorithm-tagged für Future-Migration. |
+| 2 | Session-Storage | **default in-memory LRU + opt-in persist via `$CLAUDE_OS_SESSION_PERSIST=1`** | Container-Restart-Logout ist akzeptables Default. |
+| 3 | Self-Registration | **default OFF**, opt-in via `$CLAUDE_OS_ALLOW_REGISTRATION=1` | Multi-User-Web läuft typisch hinter Cloudflare-Access/VPN; Admin-CLI ist Standard-Provisioning. |
+| 4 | 2FA / TOTP | **v2** | Significant complexity; Token + Cloudflare-Access deckt aktuelles Hardening. |
+| 5 | OAuth (GitHub/Google) | **Phase Web-8** | 4-6h eigenständig — lieber sauber separat. |
+| 6 | Schema-Migration | **versioned-pragma** mit `schema_version` + `src/server/migrations/` | Explizit + nachvollziehbar; entspricht memory-index-Pattern. |
+
+### Sub-Phasen + DoD
+
+- [x] **Phase Web-7-1 — UserRepository + scrypt-Hashing** (abgeschlossen 2026-05-28, Branch `feature/phase-web-7-multi-user`)
+  - **Architektur-Pivot von Spec:** statt `src/server/users.ts` ist alles in `src/domains/users/` gelandet (parallel zu `domains/tenant/`). Begründung: User-Repository wird auch von CLI (Web-7-5 `users create`) und Sidecar gebraucht; `src/server/auth.ts` dokumentiert explizit "Domain → transport, never the other way round". Transport-Layer importiert von domain.
+  - 5 Source-Files: `src/domains/users/{types,paths,password-hash,repo,index}.ts`. Schema-Version-Pragma v1 in `meta`-Tabelle. Auto-Save (tempfile+rename, mode `0o600` POSIX) nach jeder Mutation.
+  - scrypt-Format: `scrypt$N=16384$r=8$p=1$<salt-b64>$<hash-b64>` (algorithm-tagged für künftige KDF-Migration). 32-byte Salt, `timingSafeEqual` für verify, `MIN_PASSWORD_LEN=12`.
+  - **User-Enumeration-Defense:** `verifyPassword` führt bei unbekanntem User trotzdem einen scrypt-Verify gegen einen lazy-generierten `FAKE_PASSWORD_PLACEHOLDER`-Hash aus → konstante Login-Latenz unabhängig von Email-Existenz.
+  - **Email-Normalization:** lowercase + trim vor INSERT/SELECT. UNIQUE-constraint case-insensitive durchgesetzt.
+  - **DoD erfüllt:** `tests/domains/users/{password-hash,repo}.test.ts` — 46 Tests (45 pass + 1 POSIX-only-skip auf Windows). tsc clean, biome ci clean. Chat-sessions-Flake (Lesson-Kandidat: parallel-test child-process race) ist pre-existing und nicht von Web-7-1 verursacht.
+- [ ] **Phase Web-7-2 — Sessions + cookie-first auth + login/logout/refresh/me RPCs** (4-6 h, M) — blockiert durch 7-1
+  - `src/server/sessions.ts`: in-memory LRU (default 1000), 256-bit CSPRNG session-ids, 30-day sliding TTL; opt-in persist via env-flag → sessions-Tabelle in users.sqlite.
+  - `src/server/auth.ts` erweitern: cookie-first → bearer-fallback (ADR-0033) → 401. Cookie `claude_os_session` (HTTP-only, SameSite=Strict, Secure; dev-bypass via `$CLAUDE_OS_INSECURE_COOKIES=1`).
+  - CSRF: Double-submit-cookie-token für state-changing RPCs; Bearer-only skippt CSRF.
+  - `@fastify/cookie` als Dep.
+  - Endpoints: `POST /api/auth/{login,logout,refresh}` + `GET /api/auth/me`.
+  - Rate-Limit: per-IP-token-bucket, 5 failed-logins / 15min → 429+Retry-After (in-memory; persistent in Web-8).
+  - Audit-Log: `kind: 'auth.login.success'|'auth.login.failed'|'auth.logout'` mit `{emailHash, ipHash, userAgent}`.
+  - **DoD:** curl-Login-Roundtrip funktional, Browser-Session überlebt Reload, CSRF-Failed → 403. 12+ Server-Roundtrip-Tests.
+- [ ] **Phase Web-7-3 — tenant-from-user resolution + doctor check** (2-3 h, S) — blockiert durch 7-2
+  - `src/domains/tenant/resolve-token.ts` erweitern: `resolveTenantFromUser(userId): ServerTenantContext`. User-tenantId = `tenantIdOverride` ?? `'user-' + sha256(userId).slice(0,12)`.
+  - auth-hook setzt `req.user` UND `req.tenant`; existing-only-tenant-Code unverändert.
+  - Coexistence: token-users behalten token-derived tenantId.
+  - Doctor: `checkUserStore` (sqlite öffnen + schema-version aktuell).
+  - **DoD:** Server authentifiziert gleichzeitig Token-User UND Email-User; beide stable tenantIds.
+- [ ] **Phase Web-7-4 — Login + Registration GUI + Profile-Drawer** (4-6 h, M) — blockiert durch 7-3
+  - `gui/src/pages/login.tsx` erweitern: Tabs "Email + Passwort" vs "API-Token" (default Email), Client-Validation, Redirect via `?from=`.
+  - `gui/src/pages/register.tsx` (NEU, conditional `$CLAUDE_OS_ALLOW_REGISTRATION=1`): Email + Password + Confirm; server-rate-limit 3/IP/h; Audit-Log `kind: 'auth.register'`.
+  - `gui/src/components/AuthGate.tsx`: `/login` + `/register` als public.
+  - Profile-Drawer (Sidebar-Header): email + logout + change-password-modal (analog SecretAddModal — siehe ADR-0022/0023).
+  - **DoD:** End-to-end Browser-Flow register → login → use → logout → re-login. +8 GUI-Tests.
+- [ ] **Phase Web-7-5 — Admin-CLI `users` subcommand** (2-3 h, S) — blockiert durch 7-3 (parallel zu 7-4)
+  - `src/cli/commands/users.ts`: `create/list/disable/enable/reset-password/sessions list/sessions revoke`.
+  - Wire in `src/cli/index.ts` SUBCOMMAND_LOADERS.
+  - **DoD:** Admin kann ohne Browser alle User-Ops durchführen; CI/CD-seedbar.
+- [ ] **Phase Web-7-6 — ADR-0036 + Doku + CHANGELOG** (2-3 h, S) — blockiert durch 7-4 + 7-5
+  - ADR-0036 (oder ADR-0033 §"Stage 2"-Erweiterung): User-Model + Password-Hashing + Session-Strategy + CSRF-Approach.
+  - `docs/server-deployment.md`: neue Sektion "Multi-User mit Email-Login (Stage 2)", Migrations-Guide Stage 1 → Stage 2, Self-Registration Trade-offs (Trusted-Network).
+  - `README.md`: Server-Deployment-Sektion verlinkt Multi-User-Setup.
+  - CHANGELOG: `feat(server): Phase Web-7 — Multi-User Login + Registration (Stage 2 per ADR-0033)`.
+
+### Pflicht-Sicherheits-Gates (gilt parallel zu allen Sub-Phasen)
+
+- `users.sqlite` strikt `chmod 0o600` (POSIX) — Windows-Limitation dokumentiert.
+- KEIN Plain-Text-Password-Logging. `passwordHash`/`password` zur Redaction-Pfad-Liste in `src/core/logging/redact-paths.ts` ergänzen (Pflicht-Code-Review-Gate, ADR-0013 §3).
+- `verifyPassword` MUSS `timingSafeEqual` nutzen — Regression-Test gegen Timing-Differential.
+- `users-repo.ts` schema-version pragma vor jedem Write check — Migration-Skips refused.
+
+### Verification-Before-Done (CLAUDE.md §5)
+
+Pro Sub-Phase: `npx tsc --noEmit` exit 0, `npx biome ci .` 0 errors, `npx vitest run` grün. Gesamt-DoD per ADR-0036 + curl-roundtrip + Browser-E2E + admin-CLI-Smoke.
+
+### Risiko / Out-of-Scope
+
+- **Out-of-Scope dieser Phase:** OAuth (Web-8), 2FA/TOTP/WebAuthn (v2), Password-Reset via Email/SMTP (Web-8), Per-User-Quotas (Web-8), RBAC (single role "user" reicht), Per-User-Vault-FS-Isolation (Web-9), Mobile-OAuth (v2).
+- **Risiko:** scrypt-Parameter `N=16384` ist OWASP-2023-Baseline; bei zu hoher Login-Latenz auf low-spec-Homelab evaluieren, ggf. parametrisierbar machen in Web-7-1-tail.
+- **Stop-on-Failure (CLAUDE.md §7):** Bei zwei gleichen Fehlern in Folge auf einer Sub-Phase → Plan-Mode-Reset, ggf. `three-brain`-Routing für Codex-Adversarial-Review.
