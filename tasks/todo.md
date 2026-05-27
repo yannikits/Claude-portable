@@ -488,6 +488,38 @@ Die Checkboxen unten in den M/m/n-Sections bleiben aus historischen Gruenden auf
 
 ---
 
+## Audit-Summary 2026-05-27 — Tracker-Realignment
+
+Seit dem 2026-05-23-Audit sind ~30 weitere PRs gemerged. todo.md hat das nicht mehr eingefangen — neuer Tracking-Schwerpunkt ist **`ROADMAP.md` (Status-Audit 2026-05-25 + Distribution-Pivot 2026-05-27)** als autoritative Phasen-Status-Quelle plus die jeweiligen ADRs.
+
+**Geshipt seit 2026-05-23 (PR-Nummern aus `git log`):**
+
+- **Phase 2 Memory-MVP** (#135 workspace, #136 notes, #140 retrieval, #141 docs, #142 CLI ask/save-note, #143 GUI memory-page) — ADR-0031
+- **Phase 3 Memory-FTS** (#144 sql.js scaffold, #145 indexer, #146/147 watcher+search+dispatcher+sidecar) — ADR-0025
+- **Phase 4 Skill-Engine** (#148) — loader + matcher + CLI
+- **Phase 5 Self-Improvement Foundation** (#149) — lessons-reader + draft-generator
+- **Phase 5b Sandbox** (#177 Gate 1 fork-based, #181 net-guard fetch-allowlist) — ADR-0034
+- **Phase 5 Signing-Foundation** (#178 Gate 2 Ed25519, #180 signing CLI + doctor-check) — ADR-0035
+- **Phase 5 Audit-Log v1** (#176) — schema + retention + discovery
+- **Phase 6 MSP Public-Core** (#150) — AuditLogger + TenantContext-Guards
+- **Phase 7 Approval-Token Public-Core** (#156, #179 stacked on Gate 2) — Ed25519 Public-Core
+- **Phase 8 Tauri-Updater Scaffold** (#157) — ADR-0028 (deprio Distribution-Pivot, scaffold bleibt)
+- **Phase Web** (#159, #160, #165, #166, #168) — komplett shipped, siehe `tasks/phase-server-web.md`
+- **MSP Quick-Capture-Track**: #169 Hotkey-n + audit, #170 MSP-B cross-workspace search, #174 MSP-D sidebar workspace-switcher, #175 MSP-C live-suggestions
+
+**Echt noch offen (per ROADMAP.md + ADRs):**
+
+- **Phase 5 Completion**: Gate 3+ — Skill-Review-GUI (Yannik-Ed25519-Approval-Flow), Promotion-Pipeline-Wiring (lessons → draft → review → sign → install), full E2E
+- **Phase 7 MSP-Bridges Write**: Approval-Token-Flow für mutating ops, Rollback-Pfad, Tenant-Isolation-Test
+- **Phase Web-7 Multi-User** (Stage 2 in `tasks/phase-server-web.md`): Login-UI, User-Registrierung, Token-Management-Endpoint
+- **Phase 9 Side-Skills**: House-Watch separates Private-Repo
+- **m12** (v2-material): PBKDF2 → scrypt/Argon2
+- **Phase 8a/8b** (deprioritisiert per Pivot 2026-05-27): macOS/Windows Codesigning
+
+**Tracker-Regel ab 2026-05-27:** Für Phase 5+ Arbeit ist **ROADMAP.md + ADR-XXXX** die kanonische Status-Quelle. todo.md bleibt für v1.x-Audit-Trail historisch erhalten, neue Phasen-Tracking landet in ROADMAP-Tabelle + Phase-Spec-Dateien (z.B. `tasks/phase-server-web.md`-Pattern).
+
+---
+
 ## Top-Risiken
 
 | Prio | Risiko | Mitigation |
