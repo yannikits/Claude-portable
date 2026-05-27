@@ -10,6 +10,7 @@ export {
   checkMountReachable,
   checkNodeVersion,
   checkServerEnv,
+  checkSigningKeypair,
   checkWindowsLongPaths,
   checkWritePermission,
 } from './checks.js';

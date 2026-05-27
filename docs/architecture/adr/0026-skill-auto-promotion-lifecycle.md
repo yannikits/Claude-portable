@@ -45,11 +45,11 @@ Quarantined-Skills laufen in eigenem Worker-Thread oder separatem Sidecar-Proces
 ### Implementation Gated
 
 Phase darf erst starten, wenn:
-- Sandbox-Process-Isolation prototyped und in Vitest verifiziert — **offen**
-- Yannik-Signatur-Flow im Tauri-GUI implementiert (analog ADR-0023 Native-Password-Pattern) — **offen**
+- Sandbox-Process-Isolation prototyped und in Vitest verifiziert — **Foundation erledigt 2026-05-27** (ADR-0034 via `child_process.fork`); fs/net-Patching in Phase-5b
+- Yannik-Signatur-Flow im Tauri-GUI implementiert (analog ADR-0023 Native-Password-Pattern) — **Public-Core-Foundation erledigt 2026-05-27** (ADR-0035: Ed25519-Keypair + sign/verify + key-store); **GUI-Modal weiterhin offen** (Folge-PR)
 - Audit-Log-Format finalisiert (siehe SECURITY.md §4) — **erledigt 2026-05-27** (Phase-5-completion-PR; v1-Schema, schema_version-Feld, retention-Policy, file-mode 0o600, UTC-day-Rotation)
 
-Discovery + concrete next-steps für die beiden verbleibenden Gates siehe `three-brain-out/2026-05-27-phase-5-completion/plan.md`.
+Discovery + next-steps für die GUI-Modal-Folge siehe `three-brain-out/2026-05-27-phase-5-completion/plan.md`.
 
 ## Konsequenzen
 

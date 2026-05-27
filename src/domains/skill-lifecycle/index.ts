@@ -37,6 +37,24 @@ export {
   type SandboxRunTimeout,
 } from './sandbox/index.js';
 export {
+  canonicalizeJson,
+  type Ed25519KeyPair,
+  fromBase64Url,
+  generateEd25519Keypair,
+  importPrivateKey,
+  importPublicKey,
+  type LoadOrCreateResult,
+  loadOrCreateSigningKeypair,
+  readPublicKey,
+  rotateSigningKeypair,
+  SIGNING_KEY_NAMES,
+  type SignedEnvelope,
+  SigningError,
+  signPayload,
+  toBase64Url,
+  verifyEnvelope,
+} from './signing/index.js';
+export {
   type DraftSkill,
   type LessonEntry,
   LessonParseError,
