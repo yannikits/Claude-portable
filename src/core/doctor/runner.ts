@@ -11,6 +11,7 @@ import {
   checkMountReachable,
   checkNodeVersion,
   checkServerEnv,
+  checkSigningKeypair,
   checkWindowsLongPaths,
   checkWritePermission,
 } from './checks.js';
@@ -54,6 +55,7 @@ export async function runDoctor(
       checkWritePermission(root.path),
       checkWindowsLongPaths(),
       checkServerEnv(),
+      checkSigningKeypair(),
     ]);
     return summarize(checks, Date.now() - startedAt);
   }
@@ -72,6 +74,7 @@ export async function runDoctor(
     checkGitAvailable(),
     checkWindowsLongPaths(),
     checkServerEnv(),
+    checkSigningKeypair(),
   ]);
   return summarize([rootResolutionFail, ...independent], Date.now() - startedAt);
 }

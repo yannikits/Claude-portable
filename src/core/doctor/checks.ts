@@ -230,6 +230,79 @@ export async function checkServerEnv(env: NodeJS.ProcessEnv = process.env): Prom
   });
 }
 
+/**
+ * Server-mode signing-keypair pre-flight (ADR-0035).
+ *
+ * Returns `warn` if no keypair is initialized — that's the lazy
+ * happy-path for Tauri-desktop where Yannik hasn't yet run
+ * `claude-os signing init`. The signing-keypair is required ONLY
+ * when actually promoting a skill or signing an MSP-write-approval-
+ * token; not having it shouldn't fail the boot.
+ *
+ * Returns `ok` once both `claude-os-signing-private-key` +
+ * `claude-os-signing-public-key` are present in the SecretStore.
+ *
+ * Skipped (returns `ok`) outside server-mode (no `CLAUDE_OS_AUTH_TOKEN`)
+ * — Tauri-desktop has its own init-flow via the GUI.
+ */
+export async function checkSigningKeypair(
+  env: NodeJS.ProcessEnv = process.env,
+  factory?: () => Promise<{
+    readonly hasPublic: boolean;
+    readonly hasPrivate: boolean;
+    readonly backend: string;
+  }>,
+): Promise<CheckResult> {
+  return timed('signing-keypair', async () => {
+    if (env.CLAUDE_OS_AUTH_TOKEN === undefined || env.CLAUDE_OS_AUTH_TOKEN.length === 0) {
+      return {
+        name: 'signing-keypair',
+        severity: 'ok',
+        message: 'not in server mode (skipped — initialize via GUI or `claude-os signing init`)',
+      };
+    }
+    let info: { hasPublic: boolean; hasPrivate: boolean; backend: string };
+    if (factory !== undefined) {
+      info = await factory();
+    } else {
+      // Lazy-load to avoid pulling secrets+skill-lifecycle when this
+      // check isn't relevant (e.g. Tauri-desktop default doctor-run).
+      const { createSecretStore } = await import('../../domains/secrets/index.js');
+      const { SIGNING_KEY_NAMES } = await import('../../domains/skill-lifecycle/index.js');
+      const store = createSecretStore();
+      const [priv, pub] = await Promise.all([
+        store.get(SIGNING_KEY_NAMES.PRIVATE),
+        store.get(SIGNING_KEY_NAMES.PUBLIC),
+      ]);
+      info = { hasPrivate: priv !== null, hasPublic: pub !== null, backend: store.backend };
+    }
+    if (info.hasPrivate && info.hasPublic) {
+      return {
+        name: 'signing-keypair',
+        severity: 'ok',
+        message: `keypair present (backend=${info.backend})`,
+      };
+    }
+    if (!info.hasPrivate && !info.hasPublic) {
+      return {
+        name: 'signing-keypair',
+        severity: 'warn',
+        message: 'signing keypair not initialized',
+        hint: 'Run: claude-os signing init (needed for skill-promote + MSP-write approval-tokens)',
+      };
+    }
+    // Half-state — one key but not the other. `loadOrCreateSigningKeypair`
+    // would regenerate but only on its next call; surface it as a fail
+    // so doctor highlights the inconsistency.
+    return {
+      name: 'signing-keypair',
+      severity: 'fail',
+      message: 'signing keypair half-state (one of private/public missing — corruption)',
+      hint: 'Run: claude-os signing rotate --confirm  (regenerates fresh keypair)',
+    };
+  });
+}
+
 export async function checkWritePermission(rootPath: string): Promise<CheckResult> {
   return timed('write-permission', () => {
     try {
