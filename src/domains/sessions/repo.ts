@@ -18,12 +18,24 @@
 
 import { looksLikeSessionId, newSessionId } from './id.js';
 import { LruStore } from './lru-store.js';
-import { DEFAULT_LRU_CAPACITY, DEFAULT_SESSION_TTL_MS, type Session } from './types.js';
+import {
+  DEFAULT_LRU_CAPACITY,
+  DEFAULT_SESSION_TTL_MS,
+  type Session,
+  type SessionPersistAdapter,
+} from './types.js';
 
 export interface SessionRepoOpts {
   readonly ttlMs?: number;
   readonly capacity?: number;
   readonly now?: () => number;
+  /**
+   * Optional persistent backend. When provided, every issue / TTL-slide
+   * / revoke is mirrored to the adapter and the LRU is preloaded with
+   * non-expired entries on construction. Use SqlSessionPersistAdapter
+   * for the default sql.js backend (Web-7-persist).
+   */
+  readonly persist?: SessionPersistAdapter;
 }
 
 export interface IssueSessionInput {
@@ -36,11 +48,21 @@ export class SessionRepository {
   private readonly store: LruStore<string, Session>;
   private readonly ttlMs: number;
   private readonly now: () => number;
+  private readonly persist: SessionPersistAdapter | null;
 
   constructor(opts: SessionRepoOpts = {}) {
     this.ttlMs = opts.ttlMs ?? DEFAULT_SESSION_TTL_MS;
     this.now = opts.now ?? Date.now;
     this.store = new LruStore({ capacity: opts.capacity ?? DEFAULT_LRU_CAPACITY });
+    this.persist = opts.persist ?? null;
+
+    // Restore non-expired sessions from the persistent backend.
+    if (this.persist !== null) {
+      const ts = this.now();
+      for (const s of this.persist.loadAll()) {
+        if (s.expiresAt > ts) this.store.set(s.id, s);
+      }
+    }
   }
 
   /** Mint a fresh session for `userId`. */
@@ -57,6 +79,7 @@ export class SessionRepository {
       ip: input.ip ?? null,
     };
     this.store.set(id, session);
+    this.persist?.save(session);
     return session;
   }
 
@@ -81,6 +104,7 @@ export class SessionRepository {
       expiresAt: ts + this.ttlMs,
     };
     this.store.set(id, refreshed);
+    this.persist?.save(refreshed);
     return refreshed;
   }
 
@@ -100,7 +124,9 @@ export class SessionRepository {
   }
 
   revoke(id: string): boolean {
-    return this.store.delete(id);
+    const ok = this.store.delete(id);
+    if (ok) this.persist?.delete(id);
+    return ok;
   }
 
   /** Revoke every session belonging to a user. Used by user-disable / admin-revoke. */
@@ -111,6 +137,7 @@ export class SessionRepository {
         if (this.store.delete(s.id)) removed++;
       }
     }
+    if (removed > 0) this.persist?.deleteAllForUser(userId);
     return removed;
   }
 
@@ -128,6 +155,7 @@ export class SessionRepository {
         if (this.store.delete(s.id)) removed++;
       }
     }
+    if (this.persist !== null) this.persist.purgeExpired(ts);
     return removed;
   }
 
