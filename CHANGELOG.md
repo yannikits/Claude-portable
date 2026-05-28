@@ -4,6 +4,12 @@ Alle relevanten Aenderungen an `claude-os` werden hier dokumentiert. Format orie
 
 ## [Unreleased]
 
+## [1.7.1] — 2026-05-28
+
+### Fixed
+
+- **Docker-Image-Build (PR #200):** `gui/src/components/SkillDiffView.tsx` importierte `diff` aus dem **root** `package.json` (npm-hoisting macht das lokal transparent), aber die Dockerfile-`frontend-builder`-Stage läuft nur `npm ci` innerhalb `gui/`. Jeder `docker-image.yml`-Lauf seit #196 (Phase 5c GUI) ist deshalb beim `npx vite build` mit `Rolldown failed to resolve import "diff"` gescheitert — v1.7.0-Image war **nicht** auf GHCR verfügbar. Fix: `"diff": "^9.0.0"` in `gui/package.json` `dependencies` ergänzt + Lockfile-Update. Lokaler vite-Build verifiziert.
+
 ## [1.7.0] — 2026-05-28
 
 ### MSP-E — Note-to-Skill GUI (Phase 2 GUI)
