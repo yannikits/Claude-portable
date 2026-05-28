@@ -21,6 +21,25 @@ export {
   quarantinedDir,
 } from './paths.js';
 export {
+  approveReview,
+  buildAndSignApproval,
+  computeDiffHash,
+  deprecateSkill,
+  disableSkill,
+  PromoteError,
+  type PromoteErrorCode,
+  type PromoteOpts,
+  type PromoteResult,
+  promoteDraftToQuarantined,
+  proposeReview,
+  type ReviewApprovalPayload,
+  type ReviewProposal,
+  reactivateSkill,
+  runQuarantinedSandbox,
+  type SandboxRunSummary,
+  setFrontmatterState,
+} from './promote.js';
+export {
   assertSkillScriptUnderRoot,
   assertValidSandboxRoot,
   assertValidSkillId,
