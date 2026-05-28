@@ -26,6 +26,7 @@ import { registerInboxMethods } from './methods/inbox.js';
 import { registerMcpMethods } from './methods/mcp.js';
 import { registerMemoryMethods } from './methods/memory.js';
 import { registerNotesMethods } from './methods/notes.js';
+import { registerNotesToSkillMethods } from './methods/notes-to-skill.js';
 import { registerPtyMethods } from './methods/pty.js';
 import { registerRetrievalMethods } from './methods/retrieval.js';
 import { registerScheduleMethods } from './methods/schedule.js';
@@ -122,6 +123,11 @@ export function registerMethods(dispatcher: RpcDispatcher, opts: MethodOpts = {}
   // degrade gracefully when no vault is configured (return empty
   // entries[]). Mutating RPCs surface PromoteError as a typed envelope.
   registerSkillLifecycleMethods(dispatcher, ctx);
+
+  // MSP-E-2 — notes.proposeAsSkill / notes.createSkillDraftFromNote.
+  // Funnels into the Phase-5c draft-bucket so the standard
+  // promote-pipeline handles the rest.
+  registerNotesToSkillMethods(dispatcher, ctx);
 
   // Phase 3f (Memory FTS). Memory.* RPCs only registered when the sidecar
   // has actually booted a MemoryIndexService (vault-configured + db open).
