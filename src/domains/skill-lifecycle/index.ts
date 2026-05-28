@@ -9,6 +9,9 @@
 export {
   type DraftGeneratorOpts,
   lessonToDraftSkill,
+  type NoteDraftOpts,
+  noteToDraftSkill,
+  redactCustomerIdentifiers,
 } from './draft-generator.js';
 export {
   parseLessonsContent,
