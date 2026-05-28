@@ -14,6 +14,7 @@
  * "Top-K-Retrieval" + §6 "Recall" are all covered here.
  */
 import { useCallback, useState } from 'react';
+import { NoteToSkillModal } from '../components/note-to-skill-modal';
 import { SaveAsNoteModal } from '../components/save-as-note-modal';
 import { WorkspaceIndicator } from '../components/workspace-indicator';
 import {
@@ -46,6 +47,8 @@ export function MemoryPage() {
   const [scopeMode, setScopeMode] = useState<'off' | 'scoped' | 'cross-customer'>('off');
   const [search, setSearch] = useState<SearchState>(INITIAL_SEARCH);
   const [modalBody, setModalBody] = useState<string | null>(null);
+  const [skillifyNotePath, setSkillifyNotePath] = useState<string | null>(null);
+  const [skillifyToast, setSkillifyToast] = useState<{ name: string; path: string } | null>(null);
 
   const handleSubmit = useCallback(
     async (e: React.FormEvent) => {
@@ -202,6 +205,14 @@ export function MemoryPage() {
                     <span className="memory-hit__class">
                       [{String(hit.frontmatter.classification ?? 'unknown')}]
                     </span>
+                    <button
+                      type="button"
+                      className="memory-hit__skillify"
+                      onClick={() => setSkillifyNotePath(hit.path)}
+                      aria-label={`Note ${hit.path} als Skill speichern`}
+                    >
+                      → Skill
+                    </button>
                   </div>
                   {hit.matchedTerms.length > 0 && (
                     <div className="memory-hit__terms">Matched: {hit.matchedTerms.join(', ')}</div>
@@ -227,6 +238,32 @@ export function MemoryPage() {
             void path;
           }}
         />
+      )}
+
+      {skillifyNotePath !== null && (
+        <NoteToSkillModal
+          notePath={skillifyNotePath}
+          onClose={() => setSkillifyNotePath(null)}
+          onCreated={(created) => {
+            setSkillifyNotePath(null);
+            setSkillifyToast({ name: created.name, path: created.path });
+          }}
+        />
+      )}
+
+      {skillifyToast !== null && (
+        <div className="banner banner-success memory-page__skillify-toast" role="status">
+          Draft <code>{skillifyToast.name}</code> erzeugt → <a href="/skill-review">Skill-Review</a>{' '}
+          öffnen für nächste Schritte (Quarantäne / Sandbox / Signatur).
+          <button
+            type="button"
+            className="memory-page__skillify-toast-close"
+            onClick={() => setSkillifyToast(null)}
+            aria-label="Toast schließen"
+          >
+            ×
+          </button>
+        </div>
       )}
     </section>
   );
