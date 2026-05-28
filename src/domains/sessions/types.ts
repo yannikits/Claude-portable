@@ -32,6 +32,36 @@ export const DEFAULT_SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 /** In-memory store size cap before LRU eviction kicks in. */
 export const DEFAULT_LRU_CAPACITY = 1000;
 
+/**
+ * Sessions schema-version for the OPTIONAL persistent store
+ * (Web-7-persist). Bumped only on backwards-incompatible shape
+ * changes; readers tolerate higher versions by ignoring unknown
+ * columns rather than rejecting the row.
+ *
+ *   v1 (2026-05-28) — initial schema: sessions(id, user_id,
+ *                     created_at, last_used_at, expires_at,
+ *                     user_agent, ip)
+ */
+export const SESSIONS_SCHEMA_VERSION = 1;
+
+/**
+ * Adapter that the in-memory SessionRepository delegates to when
+ * persistence is requested. Concrete impl in `sql-persist.ts`.
+ * Tests can plug a Map-backed adapter in to verify the wire-up
+ * without touching sql.js.
+ */
+export interface SessionPersistAdapter {
+  loadAll(): readonly Session[];
+  save(session: Session): void;
+  delete(id: string): void;
+  /** Remove every session for a user-id; used by repo.revokeAllForUser. */
+  deleteAllForUser(userId: string): void;
+  /** Bulk-purge expired entries (now-relative). Returns removed count. */
+  purgeExpired(nowMs: number): number;
+  /** Close any backing handles (sql.js DB etc.). */
+  close(): void;
+}
+
 export class SessionError extends Error {
   constructor(message: string) {
     super(message);
