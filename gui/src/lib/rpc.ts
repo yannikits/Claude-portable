@@ -987,3 +987,62 @@ export async function reactivateSkill(
 ): Promise<SkillPromoteResult | SkillPromoteErrorEnvelope> {
   return rpcCall<SkillPromoteResult | SkillPromoteErrorEnvelope>('skill.reactivate', { name });
 }
+
+// ─── MSP-E Note-to-Skill ──────────────────────────────────────────
+
+export interface NoteToSkillOverrides {
+  name?: string;
+  useWhen?: string;
+  preserveCustomerData?: boolean;
+  workspace?: string;
+}
+
+export interface NoteProposalOk {
+  ok: true;
+  proposed: {
+    name: string;
+    workspace: string;
+    classification: string;
+    content: string;
+    targetPath: string;
+    alreadyExists: boolean;
+  };
+}
+
+export interface NoteToSkillError {
+  ok: false;
+  code: 'note-not-found' | 'draft-exists' | 'invalid-name';
+  message: string;
+}
+
+export type NoteProposalResult = NoteProposalOk | NoteToSkillError;
+
+export interface NoteDraftCreatedOk {
+  ok: true;
+  created: {
+    name: string;
+    workspace: string;
+    path: string;
+  };
+}
+export type NoteDraftCreatedResult = NoteDraftCreatedOk | NoteToSkillError;
+
+export async function proposeNoteAsSkill(
+  notePath: string,
+  overrides?: NoteToSkillOverrides,
+): Promise<NoteProposalResult> {
+  return rpcCall<NoteProposalResult>(
+    'notes.proposeAsSkill',
+    overrides !== undefined ? { notePath, overrides } : { notePath },
+  );
+}
+
+export async function createSkillDraftFromNote(opts: {
+  notePath: string;
+  draftSpec?: NoteToSkillOverrides;
+}): Promise<NoteDraftCreatedResult> {
+  return rpcCall<NoteDraftCreatedResult>('notes.createSkillDraftFromNote', {
+    notePath: opts.notePath,
+    ...(opts.draftSpec !== undefined ? { draftSpec: opts.draftSpec } : {}),
+  });
+}
