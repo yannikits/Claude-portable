@@ -4,6 +4,20 @@ Alle relevanten Aenderungen an `claude-os` werden hier dokumentiert. Format orie
 
 ## [Unreleased]
 
+## [1.8.1] — 2026-05-29
+
+### Added
+
+- **MSP-Health-Foundation (Phase 7-A, ADR-0038):** Zwei neue Domains als Grundlage für die per-MSP-System Read-Bridges (TANSS, Veeam, Sophos, Securepoint, M365 in Phase 7-B/C/D).
+  - **Customer-Repository (`src/domains/msp-customers/`):** Read-Through-Repo über `customer.yaml`-Files unter `<vaultRoot>/workspaces/msp-customers/<slug>/`. Strenges Schema (Slug-Regex `[a-z0-9][a-z0-9-]*`, max 64), Forward-Compat-Slot (`extras` für unbekannte Top-Level-Keys), frühe Tippfehler-Ablehnung bei unbekannten Bridge-Kinds. `findByBridgeId()` für Webhook-Reverse-Lookup. mtime-Cache pro Datei. 16 Unit-Tests grün.
+  - **Bridge-Interface (`src/domains/msp-bridges/`):** Typed `ReadBridge<TStatus>`-Contract mit Hard-Regeln (nie werfen, `customer.bridges?.<kind>` ist Konfig-Probe, Tokens pro Call frisch holen, `durationMs` reporten). `BridgeRegistry` (`Map<kind, instance>`, Doppel-Register wirft). `withAuditTrail()`-Decorator schreibt pro `probe()` ein `bridge.read`-Event ins Audit-Log mit `outcome`-Mapping (`ok → ok`, `auth-failed → denied`, alles andere → `error`). `NullBridge` als Referenz-Implementation und Test-Double. 15 Unit-Tests grün.
+  - **Privacy by Design:** Audit-Wrapper schreibt nur `customerSlug` + `bridgeKind` + `resultKind` + `durationMs` — keine Customer-PII, keine API-Bodies (per SECURITY.md §4). Tokens leben weiter im Secrets-Backend (Keyring/env), niemals in `customer.yaml`.
+  - **Docs:** ADR-0038, `docs/customer-yaml-guide.md` (User-Schema), `src/domains/msp-bridges/README.md` (Implementierer-Leitfaden für Phase 7-B/C/D).
+
+### Why this is foundation, not feature
+
+Phase 7-A liefert keine neue UI und keinen User-Flow — sie liefert die zwei Verträge, die alle 7-B/C/D-Bridges nutzen werden. Konkrete Bridges (TANSS-Phase 7-B, Veeam 7-C, Sophos+Securepoint 7-D) sind danach nur noch Klasse `XBridge implements ReadBridge<XStatus>` + ein `registry.register(withAuditTrail(new XBridge(deps), audit))` im Bootstrap. Kein neuer Audit-Code, kein neues Schema, austauschbar/mockbar.
+
 ## [1.8.0] — 2026-05-29
 
 ### Added
