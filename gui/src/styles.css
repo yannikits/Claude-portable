@@ -475,25 +475,55 @@ code {
   margin-top: 0.1rem;
 }
 
+/*
+ * data-table — Operator-Console-Tabelle für Catalog, Vault, MCP-Clients,
+ * Secrets, Agent-Runs, Schedule. Mono-Cells für numerics, hairline-Rows,
+ * Hover-LED-Edge auf jedem TR.
+ */
 .data-table {
   border-collapse: collapse;
   width: 100%;
-  font-size: 0.9rem;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  font-variant-numeric: tabular-nums;
 }
 
 .data-table th,
 .data-table td {
   text-align: left;
-  padding: 0.4rem 0.6rem;
+  padding: 0.5rem 0.75rem;
   border-bottom: 1px solid var(--border);
 }
 
 .data-table th {
-  color: var(--muted);
-  font-weight: 500;
-  font-size: 0.8rem;
+  color: var(--muted-2);
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 0.62rem;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.12em;
+  padding-top: 0.35rem;
+  padding-bottom: 0.35rem;
+  border-bottom-color: var(--border-strong);
+  background: var(--bg-elev-1);
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.data-table tbody tr {
+  transition:
+    background-color 60ms ease,
+    box-shadow 60ms ease;
+}
+.data-table tbody tr:hover {
+  background: var(--bg-elev-1);
+  box-shadow: inset 2px 0 0 0 var(--accent);
+}
+
+.data-table td code,
+.data-table td .ellipsis {
+  font-family: var(--font-mono);
 }
 
 .ellipsis {
@@ -808,14 +838,24 @@ kbd {
 }
 
 /* xterm.js host: filled box matching panel surface; xterm-internal styles
-   (loaded via @xterm/xterm/css/xterm.css) handle the cell-grid + scrollbar. */
+   (loaded via @xterm/xterm/css/xterm.css) handle the cell-grid + scrollbar.
+   Operator-Console-Treatment: pitch-black inset, accent-edge wenn focused,
+   chrome-style header-rule würde sich anbieten — heute simpel halten. */
 .terminal-host {
-  background: #161618;
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  padding: 8px;
+  background: var(--bg-inset);
+  border: 1px solid var(--border-strong);
+  border-radius: 2px;
+  padding: 0.5rem 0.6rem;
   height: calc(100vh - 280px);
   min-height: 240px;
+  position: relative;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.4);
+}
+.terminal-host:focus-within {
+  border-color: var(--accent);
+  box-shadow:
+    0 0 0 1px var(--accent),
+    0 0 18px var(--accent-glow);
 }
 
 .terminal-host .xterm,
@@ -840,17 +880,21 @@ kbd {
 }
 
 .modal-panel {
-  background: var(--bg-panel);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 16px 20px;
+  /* Fix: war `var(--bg-panel)` (undefined token) → fiel auf transparent.
+     Jetzt korrekt auf bg-elev-1 + Operator-Treatment. */
+  background: var(--bg-elev-1);
+  border: 1px solid var(--border-strong);
+  border-radius: 2px;
+  padding: 1rem 1.25rem;
   max-width: 90vw;
   width: 800px;
   max-height: 90vh;
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+  gap: 0.75rem;
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.3),
+    0 18px 48px rgba(0, 0, 0, 0.6);
 }
 
 .modal-header {
@@ -858,12 +902,17 @@ kbd {
   align-items: center;
   justify-content: space-between;
   border-bottom: 1px solid var(--border);
-  padding-bottom: 8px;
+  padding-bottom: 0.6rem;
 }
 
 .modal-header h2 {
   margin: 0;
-  font-size: 16px;
+  font-family: var(--font-display);
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-strong);
 }
 
 .modal-close {
@@ -1874,10 +1923,11 @@ button.danger:disabled {
 
 .profile-drawer {
   position: relative;
-  padding: 10px 12px;
+  padding: 0.55rem 0.75rem;
   border-top: 1px solid var(--border);
   border-bottom: 1px solid var(--border);
-  margin: 8px 0;
+  margin: 0.5rem 0;
+  background: rgba(0, 0, 0, 0.18);
 }
 .profile-drawer__trigger {
   display: flex;
@@ -1888,23 +1938,33 @@ button.danger:disabled {
   border: none;
   color: var(--text);
   cursor: pointer;
-  padding: 4px 0;
-  font-size: 13px;
+  padding: 0.2rem 0;
+  font-family: var(--font-display);
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: none; /* keep email readable */
 }
 .profile-drawer__email {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   max-width: 160px;
+  font-family: var(--font-mono);
 }
 .profile-drawer__chevron {
-  color: var(--muted);
-  font-size: 11px;
-  margin-left: 6px;
+  color: var(--muted-2);
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  margin-left: 0.4rem;
 }
 .profile-drawer__label {
-  font-size: 12px;
-  color: var(--muted);
+  font-family: var(--font-display);
+  font-size: 0.6rem;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted-2);
 }
 .profile-drawer__backdrop {
   position: fixed;
@@ -2086,64 +2146,107 @@ button.danger:disabled {
   gap: 8px;
 }
 
+/*
+ * Skill-Review Diff-View — Operator-Console Terminal-Treatment.
+ * Phosphor-grün für additions, signal-rot für deletions, amber für
+ * hunk-headers. Mono-font everywhere. Schwerwiegende Anpassung weil
+ * das ist die wichtigste sicherheits-relevante Page (Phase 5c).
+ */
 .skill-diff {
-  background: var(--panel);
+  background: var(--bg-elev-1);
   border: 1px solid var(--border);
-  border-radius: 4px;
-  padding: 12px 14px;
+  border-radius: 2px;
+  padding: 0.85rem 1rem;
 }
 .skill-diff__sensitive-banner {
-  background: rgba(255, 60, 60, 0.18);
-  border: 1px solid rgba(255, 60, 60, 0.4);
-  color: #ffb3b3;
-  padding: 8px 12px;
-  border-radius: 4px;
-  margin-bottom: 12px;
-  font-size: 13px;
+  /* Customer-Confidential warning — kein Pastel, hartes signal-red */
+  background: var(--danger-dim);
+  border: 1px solid var(--danger);
+  color: #ffd0d0;
+  padding: 0.55rem 0.85rem 0.55rem 0.7rem;
+  border-radius: 2px;
+  margin-bottom: 0.85rem;
+  font-family: var(--font-display);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  box-shadow: inset 3px 0 0 0 var(--danger);
+  position: relative;
+}
+.skill-diff__sensitive-banner::before {
+  content: "SEC";
+  display: inline-block;
+  margin-right: 0.5rem;
+  color: var(--danger);
+  font-weight: 800;
+  letter-spacing: 0.08em;
 }
 .skill-diff__section {
-  margin-bottom: 16px;
+  margin-bottom: 1.25rem;
 }
 .skill-diff__section h3 {
-  font-size: 12px;
+  font-family: var(--font-display);
+  font-size: 0.62rem;
+  font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
-  color: var(--muted);
-  margin: 0 0 6px 0;
+  letter-spacing: 0.14em;
+  color: var(--muted-2);
+  margin: 0 0 0.5rem 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.skill-diff__section h3::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--border);
 }
 .skill-diff__nochange {
-  color: var(--muted);
+  color: var(--muted-2);
+  font-family: var(--font-mono);
   font-style: italic;
-  font-size: 12px;
+  font-size: 0.78rem;
   margin: 0;
+  padding: 0.4rem 0.6rem;
+  border: 1px dashed var(--border);
+  border-radius: 2px;
+  background: var(--bg-inset);
 }
 .skill-diff__hunks {
   margin: 0;
-  font-family: monospace;
-  font-size: 12px;
-  background: rgba(0, 0, 0, 0.25);
-  border-radius: 3px;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  line-height: 1.45;
+  background: var(--bg-inset);
+  border: 1px solid var(--border);
+  border-radius: 2px;
   overflow-x: auto;
-  padding: 6px 0;
+  padding: 0.35rem 0;
+  font-variant-numeric: tabular-nums;
 }
 .skill-diff__line {
   display: flex;
   align-items: baseline;
-  padding: 1px 8px;
+  padding: 1px 0.75rem;
   white-space: pre;
+  border-left: 2px solid transparent;
 }
 .skill-diff__line--add {
-  background: rgba(80, 200, 120, 0.12);
+  background: rgba(107, 217, 160, 0.08);
   color: #b8ffd0;
+  border-left-color: var(--success);
 }
 .skill-diff__line--del {
-  background: rgba(255, 100, 100, 0.12);
+  background: rgba(255, 87, 87, 0.08);
   color: #ffb8b8;
+  border-left-color: var(--danger);
 }
 .skill-diff__line--hunk {
-  background: rgba(125, 125, 125, 0.15);
-  color: var(--muted);
-  font-style: italic;
+  background: rgba(255, 180, 67, 0.08);
+  color: var(--warn);
+  border-left-color: var(--warn);
+  font-weight: 600;
 }
 .skill-diff__marker {
   display: inline-block;
