@@ -144,13 +144,33 @@ describe('validateCustomerRecord — bridges', () => {
     ).toThrow(/securepoint.deviceId/);
   });
 
-  it('accepts sophos with only one of central/firewall populated', () => {
+  it('accepts sophos with firewallHostname only (centralCustomerId reserved for future)', () => {
     const r = validateCustomerRecord({
       ...MIN,
       bridges: { sophos: { firewallHostname: 'fw.local' } },
     });
     expect(r.bridges?.sophos?.firewallHostname).toBe('fw.local');
     expect(r.bridges?.sophos?.centralCustomerId).toBeUndefined();
+  });
+
+  it('rejects sophos without firewallHostname (required since v1.9.1)', () => {
+    expect(() =>
+      validateCustomerRecord({ ...MIN, bridges: { sophos: { centralCustomerId: 'cust-123' } } }),
+    ).toThrow(/firewallHostname is required/);
+  });
+
+  it('accepts sophos.firewallPort and rejects invalid port', () => {
+    const r = validateCustomerRecord({
+      ...MIN,
+      bridges: { sophos: { firewallHostname: 'fw.local', firewallPort: 4445 } },
+    });
+    expect(r.bridges?.sophos?.firewallPort).toBe(4445);
+    expect(() =>
+      validateCustomerRecord({
+        ...MIN,
+        bridges: { sophos: { firewallHostname: 'fw.local', firewallPort: 0 } },
+      }),
+    ).toThrow(/firewallPort/);
   });
 });
 

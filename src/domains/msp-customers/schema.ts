@@ -211,10 +211,36 @@ function readVeeam(raw: unknown, slug: string): VeeamBridgeIds {
 
 function readSophos(raw: unknown, slug: string): SophosBridgeIds {
   const b = asObject(raw, slug, 'bridges.sophos');
-  const out: { centralCustomerId?: string; firewallHostname?: string } = {};
-  if (typeof b.centralCustomerId === 'string') out.centralCustomerId = b.centralCustomerId;
-  if (typeof b.firewallHostname === 'string') out.firewallHostname = b.firewallHostname;
-  return out;
+  if (typeof b.firewallHostname !== 'string' || b.firewallHostname.trim().length === 0) {
+    throw new CustomerSchemaError(
+      slug,
+      'bridges.sophos.firewallHostname',
+      'bridges.sophos.firewallHostname is required (per-customer firewall; ADR-0042)',
+    );
+  }
+  let firewallPort: number | undefined;
+  if (b.firewallPort !== undefined) {
+    if (
+      typeof b.firewallPort !== 'number' ||
+      !Number.isInteger(b.firewallPort) ||
+      b.firewallPort <= 0 ||
+      b.firewallPort > 65535
+    ) {
+      throw new CustomerSchemaError(
+        slug,
+        'bridges.sophos.firewallPort',
+        'bridges.sophos.firewallPort must be an integer in 1..65535',
+      );
+    }
+    firewallPort = b.firewallPort;
+  }
+  const centralCustomerId =
+    typeof b.centralCustomerId === 'string' ? b.centralCustomerId : undefined;
+  return {
+    firewallHostname: b.firewallHostname,
+    ...(firewallPort !== undefined ? { firewallPort } : {}),
+    ...(centralCustomerId !== undefined ? { centralCustomerId } : {}),
+  };
 }
 
 function readSecurepoint(raw: unknown, slug: string): SecurepointBridgeIds {
