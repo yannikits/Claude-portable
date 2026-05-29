@@ -11,10 +11,18 @@
  * @module @cli/commands/serve
  */
 import { existsSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { join, resolve } from 'node:path';
 import type { Command } from 'commander';
 import { AuditLogger } from '../../core/audit/index.js';
+import { resolveRoot } from '../../core/environment/index.js';
 import { resolveMachinePaths } from '../../core/paths/index.js';
+import { AggregateCache, MspHealthAggregator } from '../../domains/msp-aggregate/index.js';
+import { BridgeRegistry, withAuditTrail } from '../../domains/msp-bridges/index.js';
+import { TanssBridge } from '../../domains/msp-bridges/tanss/index.js';
+import { VeeamBridge } from '../../domains/msp-bridges/veeam/index.js';
+import type { VeeamCredentials } from '../../domains/msp-bridges/veeam/types.js';
+import { CustomerRepository } from '../../domains/msp-customers/index.js';
+import { createSecretStore, type SecretStore } from '../../domains/secrets/index.js';
 import {
   type SessionPersistAdapter,
   SessionRepository,
@@ -121,6 +129,93 @@ async function maybeMultiUserConfig(dataDir: string): Promise<MultiUserBundle | 
   };
 }
 
+/**
+ * Build the MSP-Health aggregator + register all configured bridges.
+ *
+ * Bridge-registration is env- and vault-driven (no admin click-through):
+ *   - TANSS:  registered iff $CLAUDE_OS_TANSS_SERVER_URL is set
+ *   - Veeam:  registered iff ANY customer has bridges.veeam in their yaml
+ *
+ * When the resulting registry is empty AND the vault has no customers,
+ * we still return an aggregator — the dashboard renders an empty-state
+ * with the "0 customers" message.
+ *
+ * Returns `undefined` only when the vault path is unresolvable (no Tauri-root)
+ * — in that case the routes don't register at all.
+ */
+async function maybeMspHealthAggregator(
+  audit: AuditLogger,
+): Promise<MspHealthAggregator | undefined> {
+  let vaultRoot: string;
+  try {
+    const root = resolveRoot();
+    vaultRoot = join(root.path, 'vault');
+  } catch {
+    return undefined;
+  }
+
+  const registry = new BridgeRegistry();
+  const secrets: SecretStore = createSecretStore();
+  let bridgeCount = 0;
+
+  // TANSS — env-driven server URL + single apiToken
+  const tanssUrl = process.env.CLAUDE_OS_TANSS_SERVER_URL;
+  if (tanssUrl !== undefined && tanssUrl.length > 0) {
+    const tanss = new TanssBridge({
+      serverUrl: tanssUrl,
+      getApiToken: () => secrets.get('tanss/apiToken'),
+    });
+    registry.register(withAuditTrail(tanss, audit));
+    bridgeCount += 1;
+  }
+
+  // Veeam — register iff any customer has bridges.veeam
+  const repo = new CustomerRepository({ vaultRoot, autoCreate: false });
+  type CustomerRecord = ReturnType<typeof repo.list>[number];
+  let customers: readonly CustomerRecord[] = [];
+  try {
+    customers = repo.list();
+  } catch {
+    customers = [];
+  }
+  if (customers.some((c) => c.bridges?.veeam !== undefined)) {
+    if (process.env.CLAUDE_OS_VEEAM_INSECURE_TLS === '1') {
+      // Process-wide TLS relax for the server lifetime — matches the CLI
+      // probe behaviour, documented in docs/veeam-bridge-guide.md.
+      process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+    }
+    const apiVersion = process.env.CLAUDE_OS_VEEAM_API_VERSION;
+    const veeam = new VeeamBridge({
+      getCredentialsForHost: async (host): Promise<VeeamCredentials | null> => {
+        const [u, p] = await Promise.all([
+          secrets.get(`veeam/${host}/username`),
+          secrets.get(`veeam/${host}/password`),
+        ]);
+        return u !== null && p !== null ? { username: u, password: p } : null;
+      },
+      ...(apiVersion !== undefined ? { apiVersion } : {}),
+      insecureTls: process.env.CLAUDE_OS_VEEAM_INSECURE_TLS === '1',
+    });
+    registry.register(withAuditTrail(veeam, audit));
+    bridgeCount += 1;
+  }
+
+  const ttlSec = Number.parseInt(process.env.CLAUDE_OS_MSP_HEALTH_TTL_SEC ?? '60', 10);
+  const cache = new AggregateCache({
+    ttlSec: Number.isFinite(ttlSec) && ttlSec > 0 ? ttlSec : 60,
+  });
+
+  console.error(
+    `claude-os serve: MSP-Health enabled (bridges=${bridgeCount}, customers=${customers.length}, cache-ttl=${ttlSec}s)`,
+  );
+
+  return new MspHealthAggregator({
+    registry,
+    listCustomers: async () => repo.list(),
+    cache,
+  });
+}
+
 export function registerServeCommand(program: Command): void {
   program
     .command('serve')
@@ -152,6 +247,15 @@ export function registerServeCommand(program: Command): void {
       const machinePaths = resolveMachinePaths();
       const multiUser = await maybeMultiUserConfig(machinePaths.dataDir);
 
+      // MSP-Health aggregator — only useful when multi-user is on (admin-gated routes).
+      const mspHealth =
+        multiUser !== undefined &&
+        multiUser.config.adminEmails !== undefined &&
+        multiUser.config.adminEmails.length > 0 &&
+        multiUser.config.audit !== undefined
+          ? await maybeMspHealthAggregator(multiUser.config.audit)
+          : undefined;
+
       const config: ServerConfig = {
         host: opts.host ?? DEFAULT_SERVER_CONFIG.host,
         port: parsePortOrDefault(opts.port, DEFAULT_SERVER_CONFIG.port),
@@ -161,6 +265,7 @@ export function registerServeCommand(program: Command): void {
         sseHeartbeatMs: DEFAULT_SERVER_CONFIG.sseHeartbeatMs,
         trustProxy: DEFAULT_SERVER_CONFIG.trustProxy,
         ...(multiUser !== undefined ? { multiUser: multiUser.config } : {}),
+        ...(mspHealth !== undefined ? { mspHealth } : {}),
       };
 
       if (multiUser !== undefined) {
