@@ -31,6 +31,7 @@ import { makeAuthHook, parseTokenList } from './auth.js';
 import { makeCookieAuthHook } from './cookie-auth.js';
 import { createNotificationBus, registerSseRoute } from './events-sse.js';
 import { registerAdminRoutes } from './routes-admin.js';
+import { registerAuditRoutes } from './routes-audit.js';
 import { registerAuthRoutes } from './routes-auth.js';
 import { registerInboxUpload, registerRpcRoutes } from './rpc-http.js';
 import { registerStaticRoutes } from './static.js';
@@ -225,9 +226,10 @@ export async function startServer(config: ServerConfig): Promise<ServerHandle> {
         ...(config.multiUser.audit !== undefined ? { audit: config.multiUser.audit } : {}),
         adminEmails: config.multiUser.adminEmails,
       });
+      registerAuditRoutes(fastify, { adminEmails: config.multiUser.adminEmails });
       log.info(
         { adminCount: config.multiUser.adminEmails.length },
-        'server: admin HTTP API enabled (Web-7-7)',
+        'server: admin HTTP API + audit-trail enabled (Web-7-7 + audit-dashboard)',
       );
     }
   } else {
