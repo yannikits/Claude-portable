@@ -437,6 +437,38 @@ docker compose start claude-os
 
 Weitere Admin-Subcommands: `users disable <id-or-email>`, `users enable …`, `users reset-password … [--password <p> | --random]`, `users sessions list [--user …]`, `users sessions revoke <id>`.
 
+### Schritt 1.5 — Admin-Email-Allowlist setzen (für Web-UI Admin-Pages)
+
+Damit du im Browser die Admin-Pages (**MSP Health**, **Audit-Log**, **/api/admin/users**) zu sehen bekommst, muss deine Login-Email in `CLAUDE_OS_ADMIN_EMAILS` stehen — sonst zeigt das Frontend `isAdmin: false` und versteckt die Nav-Entries.
+
+Trage in `.env` neben dem Server-Host folgende Zeile ein (kommagetrennt bei mehreren Admins, exakt die Email aus `users create`):
+
+```env
+CLAUDE_OS_ADMIN_EMAILS=alice@example.com
+# Mehrere: CLAUDE_OS_ADMIN_EMAILS=alice@example.com,bob@example.com
+```
+
+Container neu erstellen (Env-Änderungen brauchen Recreate, nicht nur Restart):
+
+```bash
+docker compose up -d --force-recreate
+```
+
+**Verify** im Browser an `/api/auth/me` — muss `"isAdmin": true` returnen. Falls noch `false`:
+
+```bash
+# Sieht der Container die env-Variable?
+docker compose exec claude-os env | grep CLAUDE_OS_ADMIN_EMAILS
+# Erwartet: CLAUDE_OS_ADMIN_EMAILS=alice@example.com  (nicht leer!)
+```
+
+Häufige Stolperfallen:
+- `.env`-Zeile mit `=` aber ohne Wert (`CLAUDE_OS_ADMIN_EMAILS=`) → Container bekommt leere Variable → niemand ist Admin
+- `docker compose up -d` ohne `--force-recreate` → derselbe Container wird reused, env wird nicht neu eingelesen
+- Browser-Session ist alt → nach Recreate **Logout + Login** im Browser, dann erscheinen die Admin-Nav-Entries
+
+Match ist case-insensitive + getrimmt. Email muss **exakt** mit der aus `users create` matchen.
+
 ### Schritt 2 — Browser-Login
 
 Öffne `https://<deine-domain>/login`. Tab **"Email + Passwort"** ist Default. Bei Submit:

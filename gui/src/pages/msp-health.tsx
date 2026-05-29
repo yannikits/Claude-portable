@@ -13,6 +13,7 @@
  * @module gui/pages/msp-health
  */
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { compareRowsBySeverityDesc, rowHasIssue } from '../lib/cell-severity';
 import {
   type AggregateSnapshot,
   type BridgeCellResult,
@@ -210,6 +211,8 @@ export function MspHealthPage() {
   const [autoRefreshSec, setAutoRefreshSec] = useState<number | null>(null);
   const [pageSize, setPageSize] = useState<number>(50);
   const [page, setPage] = useState<number>(0);
+  const [issuesOnly, setIssuesOnly] = useState(false);
+  const [sortBySeverity, setSortBySeverity] = useState(false);
 
   const load = useCallback(async (force: boolean): Promise<void> => {
     setLoading(true);
@@ -236,13 +239,20 @@ export function MspHealthPage() {
     ? [...snap.registeredBridges]
     : [];
 
-  // Pagination math.
-  const rows = snap?.rows ?? [];
-  const totalPages = Math.max(1, Math.ceil(rows.length / pageSize));
+  // Filter + sort (client-side, before pagination).
+  const allRows = snap?.rows ?? [];
+  const processedRows = useMemo(() => {
+    let out: CustomerHealthRow[] = issuesOnly ? allRows.filter(rowHasIssue) : [...allRows];
+    if (sortBySeverity) out = out.sort(compareRowsBySeverityDesc);
+    return out;
+  }, [allRows, issuesOnly, sortBySeverity]);
+
+  // Pagination math (on the processed rows).
+  const totalPages = Math.max(1, Math.ceil(processedRows.length / pageSize));
   const safePage = Math.min(page, totalPages - 1);
   const pageRows = useMemo(
-    () => rows.slice(safePage * pageSize, safePage * pageSize + pageSize),
-    [rows, safePage, pageSize],
+    () => processedRows.slice(safePage * pageSize, safePage * pageSize + pageSize),
+    [processedRows, safePage, pageSize],
   );
 
   return (
@@ -274,6 +284,25 @@ export function MspHealthPage() {
               </button>
             ))}
           </div>
+          <button
+            type="button"
+            className={`msp-health-segment${issuesOnly ? ' active' : ''}`}
+            onClick={() => {
+              setIssuesOnly((v) => !v);
+              setPage(0);
+            }}
+            title="Hide rows where every cell is OK"
+          >
+            issues only
+          </button>
+          <button
+            type="button"
+            className={`msp-health-segment${sortBySeverity ? ' active' : ''}`}
+            onClick={() => setSortBySeverity((v) => !v)}
+            title="Sort worst-first (error → warn → ok → empty)"
+          >
+            ↧ severity
+          </button>
           <button type="button" onClick={() => void load(true)} disabled={loading}>
             {loading ? '…' : '↻ Refresh'}
           </button>
@@ -337,7 +366,9 @@ export function MspHealthPage() {
               </button>
             ))}
             <span className="msp-health-pagination-info">
-              page {safePage + 1} / {totalPages} ({rows.length} total)
+              page {safePage + 1} / {totalPages} ({processedRows.length}
+              {issuesOnly && allRows.length !== processedRows.length ? ` of ${allRows.length}` : ''}{' '}
+              total)
             </span>
             <button
               type="button"
