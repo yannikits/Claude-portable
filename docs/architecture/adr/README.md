@@ -42,6 +42,8 @@ Dokumentiert die fundamentalen Architektur-Entscheidungen für die Evolution von
 | [0034](0034-skill-sandbox-process-isolation.md) | Skill-Sandbox via `child_process.fork` | Akzeptiert | 2026-05-27 |
 | [0035](0035-signing-ed25519-foundation.md) | Yannik-Ed25519-Signatur-Flow (Foundation) | Akzeptiert | 2026-05-27 |
 | [0036](0036-multi-user-stage-2-email-password.md) | Server Multi-User Stage 2 (Email/Passwort + Session-Cookies) | Akzeptiert | 2026-05-28 |
+| [0037](0037-audit-trail-dashboard.md) | Audit-Trail-Dashboard (Read-only Web-UI über JSONL-Audit) | shipped | 2026-05-29 |
+| [0038](0038-msp-health-foundation.md) | MSP-Health-Foundation (Customer-Repo + Bridge-Interface) | shipped | 2026-05-29 |
 
 ## Format
 
