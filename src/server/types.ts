@@ -88,6 +88,13 @@ export interface ServerConfig {
    * tokens. Unset (default) → behaviour identical to ADR-0032 single-user.
    */
   readonly multiUser?: MultiUserConfig;
+  /**
+   * Optional MSP-Health aggregator (Phase 7-E, ADR-0041). When set AND
+   * multiUser.adminEmails is non-empty, the `/api/msp-health/*` routes
+   * are registered. Unset → no MSP-Health dashboard.
+   */
+  // biome-ignore lint/suspicious/noExplicitAny: Avoid pulling msp-aggregate types into the server type-graph; only typed at the wiring site (serve.ts) and routes layer.
+  readonly mspHealth?: any;
 }
 
 export const DEFAULT_SERVER_CONFIG: Omit<ServerConfig, 'authToken' | 'staticDir'> = {

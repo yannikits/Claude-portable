@@ -33,6 +33,7 @@ import { createNotificationBus, registerSseRoute } from './events-sse.js';
 import { registerAdminRoutes } from './routes-admin.js';
 import { registerAuditRoutes } from './routes-audit.js';
 import { registerAuthRoutes } from './routes-auth.js';
+import { registerMspHealthRoutes } from './routes-msp-health.js';
 import { registerInboxUpload, registerRpcRoutes } from './rpc-http.js';
 import { registerStaticRoutes } from './static.js';
 import type { ServerConfig } from './types.js';
@@ -230,8 +231,17 @@ export async function startServer(config: ServerConfig): Promise<ServerHandle> {
         adminEmails: config.multiUser.adminEmails,
       });
       registerAuditRoutes(fastify, { adminEmails: config.multiUser.adminEmails });
+      if (config.mspHealth !== undefined) {
+        registerMspHealthRoutes(fastify, {
+          adminEmails: config.multiUser.adminEmails,
+          aggregator: config.mspHealth,
+        });
+      }
       log.info(
-        { adminCount: config.multiUser.adminEmails.length },
+        {
+          adminCount: config.multiUser.adminEmails.length,
+          mspHealth: config.mspHealth !== undefined,
+        },
         'server: admin HTTP API + audit-trail enabled (Web-7-7 + audit-dashboard)',
       );
     }
