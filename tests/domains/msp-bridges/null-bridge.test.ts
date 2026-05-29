@@ -29,13 +29,17 @@ describe('NullBridge', () => {
 
   it('returns misconfigured when a DIFFERENT bridge kind is configured', async () => {
     const b = new NullBridge('tanss');
-    const probe = await b.probe(customer({ bridges: { veeam: { jobNames: ['daily'] } } }));
+    const probe = await b.probe(
+      customer({ bridges: { veeam: { serverHostname: 'vbr.example.com', jobNames: ['daily'] } } }),
+    );
     expect(probe.result.kind).toBe('misconfigured');
   });
 
   it('reports a non-negative durationMs and an ISO probedAt', async () => {
     const b = new NullBridge('veeam');
-    const probe = await b.probe(customer({ bridges: { veeam: { jobNames: ['daily'] } } }));
+    const probe = await b.probe(
+      customer({ bridges: { veeam: { serverHostname: 'vbr.example.com', jobNames: ['daily'] } } }),
+    );
     expect(probe.durationMs).toBeGreaterThanOrEqual(0);
     expect(() => new Date(probe.probedAt).toISOString()).not.toThrow();
   });

@@ -89,15 +89,47 @@ describe('validateCustomerRecord — bridges', () => {
   it('validates veeam.jobNames as string array, drops non-strings', () => {
     const r = validateCustomerRecord({
       ...MIN,
-      bridges: { veeam: { jobNames: ['a', 'b', 42, 'c'] } },
+      bridges: { veeam: { serverHostname: 'vbr.example.com', jobNames: ['a', 'b', 42, 'c'] } },
     });
     expect(r.bridges?.veeam?.jobNames).toEqual(['a', 'b', 'c']);
   });
 
   it('rejects veeam.jobNames not being an array', () => {
     expect(() =>
-      validateCustomerRecord({ ...MIN, bridges: { veeam: { jobNames: 'single' } } }),
+      validateCustomerRecord({
+        ...MIN,
+        bridges: { veeam: { serverHostname: 'vbr.example.com', jobNames: 'single' } },
+      }),
     ).toThrow(/jobNames must be an array/);
+  });
+
+  it('rejects veeam without serverHostname (per-customer VBR required since v1.8.3)', () => {
+    expect(() =>
+      validateCustomerRecord({ ...MIN, bridges: { veeam: { jobNames: ['a'] } } }),
+    ).toThrow(/serverHostname is required/);
+  });
+
+  it('accepts veeam with serverHostname only (no jobNames = all jobs)', () => {
+    const r = validateCustomerRecord({
+      ...MIN,
+      bridges: { veeam: { serverHostname: 'vbr.example.com' } },
+    });
+    expect(r.bridges?.veeam?.serverHostname).toBe('vbr.example.com');
+    expect(r.bridges?.veeam?.jobNames).toBeUndefined();
+  });
+
+  it('accepts veeam.serverPort and rejects invalid port', () => {
+    const r = validateCustomerRecord({
+      ...MIN,
+      bridges: { veeam: { serverHostname: 'vbr.example.com', serverPort: 9420 } },
+    });
+    expect(r.bridges?.veeam?.serverPort).toBe(9420);
+    expect(() =>
+      validateCustomerRecord({
+        ...MIN,
+        bridges: { veeam: { serverHostname: 'vbr.example.com', serverPort: 0 } },
+      }),
+    ).toThrow(/serverPort/);
   });
 
   it('validates m365.tenantId non-empty', () => {

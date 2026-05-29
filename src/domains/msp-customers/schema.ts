@@ -168,17 +168,44 @@ function readTanss(raw: unknown, slug: string): TanssBridgeIds {
 
 function readVeeam(raw: unknown, slug: string): VeeamBridgeIds {
   const b = asObject(raw, slug, 'bridges.veeam');
-  if (!Array.isArray(b.jobNames)) {
+  if (typeof b.serverHostname !== 'string' || b.serverHostname.trim().length === 0) {
     throw new CustomerSchemaError(
       slug,
-      'bridges.veeam.jobNames',
-      'bridges.veeam.jobNames must be an array of strings',
+      'bridges.veeam.serverHostname',
+      'bridges.veeam.serverHostname is required (per-customer VBR; ADR-0040)',
     );
   }
-  const jobNames = b.jobNames.filter((n): n is string => typeof n === 'string');
+  let serverPort: number | undefined;
+  if (b.serverPort !== undefined) {
+    if (
+      typeof b.serverPort !== 'number' ||
+      !Number.isInteger(b.serverPort) ||
+      b.serverPort <= 0 ||
+      b.serverPort > 65535
+    ) {
+      throw new CustomerSchemaError(
+        slug,
+        'bridges.veeam.serverPort',
+        'bridges.veeam.serverPort must be an integer in 1..65535',
+      );
+    }
+    serverPort = b.serverPort;
+  }
+  let jobNames: readonly string[] | undefined;
+  if (b.jobNames !== undefined) {
+    if (!Array.isArray(b.jobNames)) {
+      throw new CustomerSchemaError(
+        slug,
+        'bridges.veeam.jobNames',
+        'bridges.veeam.jobNames must be an array of strings (or omitted to match all jobs)',
+      );
+    }
+    jobNames = b.jobNames.filter((n): n is string => typeof n === 'string');
+  }
   return {
-    jobNames,
-    ...(typeof b.serverHostname === 'string' ? { serverHostname: b.serverHostname } : {}),
+    serverHostname: b.serverHostname,
+    ...(serverPort !== undefined ? { serverPort } : {}),
+    ...(jobNames !== undefined ? { jobNames } : {}),
   };
 }
 

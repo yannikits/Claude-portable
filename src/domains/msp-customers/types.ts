@@ -27,10 +27,21 @@ export interface TanssBridgeIds {
 }
 
 export interface VeeamBridgeIds {
-  /** Hostname / IP of the Veeam Backup Server (B&R) — REST-API endpoint. */
-  readonly serverHostname?: string;
-  /** Job-names matching this customer (multiple allowed — Server + PC backup-jobs). */
-  readonly jobNames: readonly string[];
+  /**
+   * Hostname / IP of the per-customer Veeam Backup & Replication
+   * Server. Required since v1.8.3 (ADR-0040): claude-os assumes
+   * per-customer VBR (each customer has their own backup server,
+   * reached via VPN/MPLS), not a single central VBR.
+   */
+  readonly serverHostname: string;
+  /** Veeam REST-API port. Default 9419. */
+  readonly serverPort?: number;
+  /**
+   * Optional Job-Name filter. When empty/undefined: probe returns
+   * status of ALL jobs on that VBR. When set: only matching jobs are
+   * considered (useful when one VBR hosts multiple customers' jobs).
+   */
+  readonly jobNames?: readonly string[];
 }
 
 export interface SophosBridgeIds {
