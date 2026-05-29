@@ -4,6 +4,41 @@ Alle relevanten Aenderungen an `claude-os` werden hier dokumentiert. Format orie
 
 ## [Unreleased]
 
+## [1.8.3] — 2026-05-29
+
+### Added
+
+- **Veeam Read-Bridge (Phase 7-C, ADR-0040):** Zweite konkrete Read-Bridge — per-customer VBR (Yannik-Entscheidung), nicht zentraler Server.
+  - **Endpoint:** `GET {baseUrl}/api/v1/sessions?typeFilter=Backup&limit=200` mit Bearer-Auth + `x-api-version: 1.1-rev1` (override via `CLAUDE_OS_VEEAM_API_VERSION`).
+  - **Auth:** OAuth2 Password-Grant (`POST /api/oauth2/token`). Credentials kommen pro Probe frisch aus dem Secrets-Backend (Schlüssel `veeam/<host>/username` + `veeam/<host>/password`). Token wird in-memory pro Host mit 60s Margin gecached → mehrere Customer-Probes auf demselben VBR teilen sich einen Login.
+  - **401-Retry:** Read 401 invalidiert den Cache-Eintrag für den Host und macht EINEN Re-Login-Retry. Zweite 401 → `auth-failed`.
+  - **VeeamStatus:** `knownJobs` / `okCount` / `warningCount` / `failedCount` / `runningCount` + `newestSuccessAt` / `oldestUnsuccessfulAt` (Alarm-Age) + `latestRuns` (max 20, newest-first). Plus **`missingJobs`** — die wichtigste Innovation: erkennt Job-Renames im Veeam-UI (jobs aus `customer.yaml` die nicht mehr im VBR-Response sind), die sonst silent als „alles fein" durchgehen würden.
+  - **State-Bucketing** robust gegen Veeam-Version-Drift: `result` ODER `state`, beides case-insensitive, `result` kann String ODER `{result:"..."}` sein, `jobName` fällt auf `name` zurück.
+  - **TLS-Default:** Veeam liefert per Default self-signed Cert. Bridge respektiert `CLAUDE_OS_VEEAM_INSECURE_TLS=1` (oder `--insecure-tls`) für diesen Fall; sonst hartes `unreachable` mit explizitem Hint.
+  - **Error-Mapping:** zusätzlich zum Standard-Pattern: HTTP 400 mit „api-version not supported" Body → `misconfigured` mit Hint auf `CLAUDE_OS_VEEAM_API_VERSION`. TLS-Fehler (`UNABLE_TO_VERIFY_LEAF_SIGNATURE` etc.) → `unreachable` mit `INSECURE_TLS`-Hint.
+
+- **Schema-Update für `bridges.veeam` (BREAKING gegenüber v1.8.1):**
+  - `serverHostname` ist jetzt **Pflicht** (war optional)
+  - `serverPort` neu, optional, default 9419
+  - `jobNames` jetzt **optional** — leer/weggelassen = alle Jobs auf dem VBR
+  
+  Niemand produktiv, kein Migrationspfad nötig. Wer eine alte `customer.yaml` ohne `serverHostname` hat: bekommt eine klare Schema-Fehlermeldung mit Pointer auf ADR-0040.
+
+- **CLI: `claude-os msp probe veeam <slug>`** — Smoke-Test gegen die Veeam-Bridge. Liest `bridges.veeam.*` aus `customer.yaml`, holt Creds aus Secrets-Backend, probt, pretty-print + `--json`. Optionen: `--api-version`, `--insecure-tls`, `--timeout-ms`.
+
+- **Doctor-Check: `veeam-config`** — enumeriert Customer-Workspaces, sammelt distinct `serverHostname`-Werte, prüft pro Host ob beide Creds im Secrets-Backend liegen. **ok** bei keinem Veeam-Customer ODER alle Hosts haben Creds. **warn** bei N von M Hosts ohne Creds — listet welche im `detail`-Feld. Never fail.
+
+### Docs
+
+- **ADR-0040** — Veeam Read-Bridge (per-customer VBR, OAuth2 Auth, Status-Shape, State-Bucketing, Schema-Breaking)
+- **`docs/veeam-bridge-guide.md`** — User-Setup in drei Schritten, Verification per Doctor + Smoke-Test, ausführliche Troubleshooting-Tabelle, Audit-Trail-Beispiel, Erklärung warum per-customer VBR
+
+### Tests
+
+- 67 neue Tests (23 mapper + 16 classify-error + 6 token-cache + 6 oauthLogin + 12 bridge + 6 audit-integration + 8 doctor-check) — alle grün
+- runner.test.ts aktualisiert (10 → 11, 8 → 9). Schema-Tests aktualisiert für neues Veeam-Schema (4 neue Cases)
+- Gesamt-Suite: **1810 passed / 8 skipped** — keine Regression
+
 ## [1.8.2] — 2026-05-29
 
 ### Added
