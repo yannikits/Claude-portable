@@ -242,6 +242,79 @@ export async function checkServerEnv(env: NodeJS.ProcessEnv = process.env): Prom
 }
 
 /**
+ * TANSS-Bridge config pre-flight (ADR-0038, Phase 7-B).
+ *
+ * Three states:
+ *  - both `CLAUDE_OS_TANSS_SERVER_URL` and the secret `tanss/apiToken`
+ *    set         → `ok`
+ *  - neither set → `ok` (TANSS-Bridge intentionally not configured)
+ *  - one of two  → `warn` (likely a half-finished setup; user wants to know)
+ *
+ * Never `fail` — TANSS is optional. Secret-store lookup uses the same
+ * factory the bridge uses at runtime, so the check sees the same state.
+ *
+ * @param env - injected for tests
+ * @param secretsProbe - injected for tests; defaults to a real createSecretStore().get()
+ */
+export async function checkTanssConfig(
+  env: NodeJS.ProcessEnv = process.env,
+  secretsProbe?: (key: string) => Promise<string | null>,
+): Promise<CheckResult> {
+  return timed('tanss-config', async () => {
+    const url = (env.CLAUDE_OS_TANSS_SERVER_URL ?? '').trim();
+    let token: string | null = null;
+    try {
+      const probe =
+        secretsProbe ??
+        (async (k: string) => {
+          const { createSecretStore } = await import('../../domains/secrets/index.js');
+          return createSecretStore({ env }).get(k);
+        });
+      token = await probe('tanss/apiToken');
+    } catch (err) {
+      return {
+        name: 'tanss-config',
+        severity: 'warn',
+        message: 'secrets-store probe failed — cannot verify tanss/apiToken',
+        detail: err instanceof Error ? err.message : String(err),
+      };
+    }
+
+    const hasUrl = url.length > 0;
+    const hasToken = token !== null && token.length > 0;
+
+    if (!hasUrl && !hasToken) {
+      return {
+        name: 'tanss-config',
+        severity: 'ok',
+        message: 'TANSS bridge not configured (skipped — both URL and apiToken unset)',
+      };
+    }
+    if (hasUrl && hasToken) {
+      return {
+        name: 'tanss-config',
+        severity: 'ok',
+        message: `TANSS bridge configured (server=${url})`,
+      };
+    }
+    if (hasUrl && !hasToken) {
+      return {
+        name: 'tanss-config',
+        severity: 'warn',
+        message: `TANSS server-URL set but no apiToken in secrets-backend`,
+        hint: 'Run: claude-os secrets set tanss/apiToken <key>',
+      };
+    }
+    return {
+      name: 'tanss-config',
+      severity: 'warn',
+      message: 'TANSS apiToken in secrets-backend but $CLAUDE_OS_TANSS_SERVER_URL unset',
+      hint: 'Set CLAUDE_OS_TANSS_SERVER_URL=https://your-tanss.example.com in your env',
+    };
+  });
+}
+
+/**
  * Server-mode signing-keypair pre-flight (ADR-0035).
  *
  * Returns `warn` if no keypair is initialized — that's the lazy

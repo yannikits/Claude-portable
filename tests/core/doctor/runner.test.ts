@@ -16,9 +16,9 @@ describe('runDoctor', () => {
     if (existsSync(tmpRoot)) rmSync(tmpRoot, { recursive: true, force: true });
   });
 
-  it('runs all 9 checks when root resolves', async () => {
+  it('runs all 10 checks when root resolves', async () => {
     const report = await runDoctor({ explicitRoot: tmpRoot });
-    expect(report.checks).toHaveLength(9);
+    expect(report.checks).toHaveLength(10);
     const names = report.checks.map((c) => c.name).sort();
     expect(names).toEqual(
       [
@@ -28,6 +28,7 @@ describe('runDoctor', () => {
         'node-version',
         'server-env',
         'signing-keypair',
+        'tanss-config',
         'user-store',
         'windows-long-paths',
         'write-permission',
@@ -54,8 +55,8 @@ describe('runDoctor', () => {
     const bogus = join(tmpRoot, 'does-not-exist');
     const report = await runDoctor({ explicitRoot: bogus });
     // root-resolution + node-version + git-available + windows-long-paths +
-    // server-env + signing-keypair + user-store = 7
-    expect(report.checks).toHaveLength(7);
+    // server-env + signing-keypair + user-store + tanss-config = 8
+    expect(report.checks).toHaveLength(8);
   });
 
   it('summary counts match check severities', async () => {

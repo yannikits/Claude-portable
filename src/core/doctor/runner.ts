@@ -12,6 +12,7 @@ import {
   checkNodeVersion,
   checkServerEnv,
   checkSigningKeypair,
+  checkTanssConfig,
   checkUserStore,
   checkWindowsLongPaths,
   checkWritePermission,
@@ -58,6 +59,7 @@ export async function runDoctor(
       checkServerEnv(),
       checkSigningKeypair(),
       checkUserStore(),
+      checkTanssConfig(),
     ]);
     return summarize(checks, Date.now() - startedAt);
   }
@@ -78,6 +80,7 @@ export async function runDoctor(
     checkServerEnv(),
     checkSigningKeypair(),
     checkUserStore(),
+    checkTanssConfig(),
   ]);
   return summarize([rootResolutionFail, ...independent], Date.now() - startedAt);
 }
