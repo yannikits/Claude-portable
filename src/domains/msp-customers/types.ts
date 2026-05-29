@@ -45,10 +45,19 @@ export interface VeeamBridgeIds {
 }
 
 export interface SophosBridgeIds {
-  /** Customer id in Sophos Central (cloud-mgmt). */
+  /**
+   * Hostname / IP of the per-customer Sophos XG/XGS Firewall.
+   * Required since v1.9.1 (ADR-0042): claude-os hits the firewall's
+   * XML-API directly at port 4444 (default).
+   */
+  readonly firewallHostname: string;
+  /** Sophos XG/XGS XML-API port. Default 4444. */
+  readonly firewallPort?: number;
+  /**
+   * Customer id in Sophos Central (cloud-mgmt). Reserved for a future
+   * Central-API bridge; not used by the v1.9.1 firewall-bridge.
+   */
   readonly centralCustomerId?: string;
-  /** Hostname of the on-prem XG/XGS firewall when not Central-managed. */
-  readonly firewallHostname?: string;
 }
 
 export interface SecurepointBridgeIds {
