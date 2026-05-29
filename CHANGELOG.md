@@ -4,6 +4,12 @@ Alle relevanten Aenderungen an `claude-os` werden hier dokumentiert. Format orie
 
 ## [Unreleased]
 
+## [1.7.8] — 2026-05-29
+
+### Fixed
+
+- **`/root/.claude.json` (Main-Config) wird beim Boot vom Backup restored.** Die `claude`-CLI nutzt zwei separate Files: `/root/.claude/.credentials.json` (in v1.7.7 via Volume-Mount gefixt) **und** `/root/.claude.json` (Main-Config: MCP-Clients, Project-History, Settings). Letzteres ist im RootFS und ging deshalb bei jedem Container-Restart verloren — User sah `Claude configuration file not found at: /root/.claude.json` + musste sich neu anmelden. Fix in `docker/entrypoint.sh`: bei Boot wird `/root/.claude.json` aus dem neuesten Backup in `/root/.claude/backups/` restored (claude-CLI macht diese Backups automatisch beim Write, und das Backups-Verzeichnis lebt im persistenten Volume).
+
 ## [1.7.7] — 2026-05-29
 
 ### Fixed

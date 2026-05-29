@@ -94,6 +94,25 @@ if ! mountpoint -q /root/.claude 2>/dev/null; then
   echo "             for the required additional volume entry (v1.7.7+)." >&2
 fi
 
+# Restore /root/.claude.json (main config) from latest backup if missing.
+# The claude-CLI hardcodes /root/.claude.json (NOT inside /root/.claude/) for
+# its main config (MCP clients, project history, settings). That path is in
+# the RootFS — lost on container recreation. claude-CLI auto-backups the
+# config to /root/.claude/backups/ on every write, and THAT lives in the
+# persistent volume.
+#
+# So on every boot: if the live config is gone, restore from the newest
+# backup. claude-CLI then sees a valid config and the user doesn't have to
+# re-login or re-add MCP clients.
+if [ ! -f /root/.claude.json ]; then
+  latest_backup="$(ls -t /root/.claude/backups/.claude.json.backup.* 2>/dev/null | head -1)"
+  if [ -n "${latest_backup}" ]; then
+    echo "==> restoring /root/.claude.json from backup: ${latest_backup}"
+    cp "${latest_backup}" /root/.claude.json
+    chmod 600 /root/.claude.json
+  fi
+fi
+
 # Optional: log to stdout so docker logs captures everything
 export CLAUDE_OS_LOG_LEVEL="${CLAUDE_OS_LOG_LEVEL:-info}"
 
