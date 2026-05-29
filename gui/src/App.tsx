@@ -35,19 +35,44 @@ import { MemoryPage } from './pages/memory';
 import { RegisterPage } from './pages/register';
 import { SkillReviewPage } from './pages/skill-review';
 
-const NAV = [
-  { to: '/', label: 'Dashboard' },
-  { to: '/memory', label: 'Memory' },
-  { to: '/chat', label: 'Chat' },
-  { to: '/catalog', label: 'Catalog' },
-  { to: '/vault', label: 'Vault' },
-  { to: '/agent-runs', label: 'Agent Runs' },
-  { to: '/skill-review', label: 'Skill-Review' },
-  { to: '/schedule', label: 'Schedule' },
-  { to: '/mcp-clients', label: 'MCP-Clients' },
-  { to: '/secrets', label: 'Secrets' },
-  { to: '/settings', label: 'Settings' },
-] as const;
+/**
+ * Sidebar nav config. `section` groups related entries under a labeled
+ * rule (operator-console pattern: OVERVIEW / CONTENT / RUNTIME / SYSTEM).
+ * `led` drives the status-LED — for now most stay 'idle'; live wiring
+ * (sidecar/services) can swap to 'up' / 'warn' / 'down' later.
+ */
+type LedState = 'idle' | 'up' | 'warn' | 'down';
+interface NavEntry {
+  readonly to: string;
+  readonly label: string;
+  readonly section: 'overview' | 'content' | 'runtime' | 'system';
+  readonly led: LedState;
+}
+const NAV: readonly NavEntry[] = [
+  { to: '/', label: 'Dashboard', section: 'overview', led: 'up' },
+
+  { to: '/memory', label: 'Memory', section: 'content', led: 'idle' },
+  { to: '/vault', label: 'Vault', section: 'content', led: 'idle' },
+  { to: '/catalog', label: 'Catalog', section: 'content', led: 'idle' },
+
+  { to: '/chat', label: 'Chat', section: 'runtime', led: 'idle' },
+  { to: '/agent-runs', label: 'Agent Runs', section: 'runtime', led: 'idle' },
+  { to: '/skill-review', label: 'Skill-Review', section: 'runtime', led: 'idle' },
+  { to: '/schedule', label: 'Schedule', section: 'runtime', led: 'idle' },
+
+  { to: '/mcp-clients', label: 'MCP-Clients', section: 'system', led: 'idle' },
+  { to: '/secrets', label: 'Secrets', section: 'system', led: 'idle' },
+  { to: '/settings', label: 'Settings', section: 'system', led: 'idle' },
+];
+
+const SECTION_LABELS: Record<NavEntry['section'], string> = {
+  overview: 'OVERVIEW',
+  content: 'CONTENT',
+  runtime: 'RUNTIME',
+  system: 'SYSTEM',
+};
+
+const APP_VERSION = 'v1.7.3';
 
 interface LayoutProps {
   readonly authMode: AuthMode;
@@ -56,24 +81,43 @@ interface LayoutProps {
 
 function Layout({ authMode, onLogout }: LayoutProps) {
   const showProfile = authMode === 'cookie' || authMode === 'token';
+  // Group nav entries by section so we can render labeled rules between groups.
+  const grouped = (() => {
+    const map = new Map<NavEntry['section'], NavEntry[]>();
+    for (const n of NAV) {
+      const arr = map.get(n.section);
+      if (arr === undefined) map.set(n.section, [n]);
+      else arr.push(n);
+    }
+    return [...map.entries()];
+  })();
+
   return (
     <div className="app">
       <aside className="sidebar">
-        <Link to="/" className="brand">
+        <Link to="/" className="brand" data-version={APP_VERSION}>
           claude-os
         </Link>
         <SidebarWorkspaceSwitcher />
         {showProfile && <ProfileDrawer onLogout={onLogout} />}
         <nav>
-          {NAV.map((n) => (
-            <NavLink
-              key={n.to}
-              to={n.to}
-              end={n.to === '/'}
-              className={({ isActive }) => (isActive ? 'nav-item active' : 'nav-item')}
-            >
-              {n.label}
-            </NavLink>
+          {grouped.map(([section, entries]) => (
+            <div key={section}>
+              <div className="sidebar-section-label">{SECTION_LABELS[section]}</div>
+              {entries.map((n) => (
+                <NavLink
+                  key={n.to}
+                  to={n.to}
+                  end={n.to === '/'}
+                  className={({ isActive }) => (isActive ? 'nav-item active' : 'nav-item')}
+                  data-led={n.led}
+                >
+                  <span />
+                  <span>{n.label}</span>
+                  <span className="nav-item-meta" />
+                </NavLink>
+              ))}
+            </div>
           ))}
         </nav>
       </aside>
