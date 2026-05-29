@@ -4,6 +4,23 @@ Alle relevanten Aenderungen an `claude-os` werden hier dokumentiert. Format orie
 
 ## [Unreleased]
 
+## [1.8.0] — 2026-05-29
+
+### Added
+
+- **Audit-Trail-Dashboard (Phase Audit-Trail-Dashboard, ADR-0037):** Read-only Web-UI über die existierenden audit-JSONL-Files. Admin-gated via `CLAUDE_OS_ADMIN_EMAILS`-Allowlist (selbes Pattern wie Web-7-7).
+  - **Backend (Phase A):** Neue Domain `src/domains/audit-query/` mit `queryAudit()`/`auditStats()`/`exportAudit()`. Robust gegen partial-write tail-lines (concurrent-read-safe). Time-Range Filter über UTC-Day-Files mit `enumerateDays()`. CSV-Export RFC-4180-konform mit 50k Hard-Cap. 26 Unit-Tests grün.
+  - **HTTP-Endpoints (Phase A.3):** `GET /api/audit/{list,stats,export}` mit inline `requireAdmin`-Gate. GET statt POST damit Filter-State im URL teilbar (DSGVO-Workflow). 8 Integration-Tests grün.
+  - **Admin-Detection:** `/api/auth/me` returnt jetzt `user.isAdmin: boolean`. `AuthRoutesDeps` um `adminEmails`-Feld erweitert (mirror von `MultiUserConfig.adminEmails`).
+  - **Frontend (Phase B):** `gui/src/pages/audit.tsx` Single-Page-Component mit Stats-Strip (Counts pro Kind), Filter-Bar (Range/Workspace/Tenant/Outcome/Action-substring), Expandable Kinds-Picker (17 Event-Kinds), Data-Table mit Outcome-Tints + Per-Row JSON-Expand, Pagination mit page-size-Selector, CSV/JSONL-Export via Blob-Download.
+  - **Nav-Integration:** `NavEntry` erweitert um `adminOnly?: boolean`. Audit-Nav-Entry in SYSTEM-Section. Layout filtert NAV nach `isAdmin`-Prop. Route `/audit` wird conditional registriert.
+  - **Styles:** ~150 LOC Operator-Console-Treatment für audit-spezifische Klassen (stats-strip, filter-bar, kinds-picker, outcome-tints, pagination).
+  - **Docs:** ADR-0037 + `docs/audit-trail-guide.md` (DE).
+
+### Subtle bug caught during implementation
+
+ISO-8601 String-Lexicographic-Compare: `'2026-05-29T00:00:00.000Z' < '2026-05-29T00:00:00Z'` ist TRUE als String, aber gleicher Zeitpunkt. Fix in `query.ts` + `stats.ts`: alle Time-Vergleiche durch `Date.parse()` → numerische Millis statt String-Compare. Wurde durch ein "expected 10 to be 9" Pagination-Test gefangen.
+
 ## [1.7.8] — 2026-05-29
 
 ### Fixed
