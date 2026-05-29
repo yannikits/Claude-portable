@@ -581,3 +581,21 @@ Gilt analog für jedes Domain-Modell mit readonly-Props. Phase-2f und Phase-3d h
 **Lektion:** Git's 3-Way-Merge resolved Edits in disjunkten Markdown-Sektionen automatisch korrekt, solange (1) jede PR EINE klare Sektion anfasst, (2) keine Reformatierung darüber hinaus passiert (biome lint-staged hilft hier — formatted im Commit-Hook). Workflow-Files (`ci.yml`, `tauri-bundle.yml`, `nightly.yml`) wurden in zwei verschiedenen PRs erweitert; weil jede PR distinkte Blöcke (env-Block in einer, Steps-Block in der anderen) addiert, kein Konflikt. Wenn ZWEI PRs den gleichen Block bearbeiten, manuelle Reihenfolge erzwingen via `addBlockedBy` in Tasks.
 
 **Anwendung:** Bei N>2 parallelen Feature-Tracks: (1) Jeden Track auf eigenem Branch ab gleicher main-Base. (2) `tasks/todo.md` ist OK als shared file solange disjunkte Sektionen. (3) Workflow-Files ebenfalls OK solange disjunkte Steps/env-Blocks. (4) PR-Reihenfolge im Merge: alphabetisch / nach Nummer ist fine, eine sequenzielle Pull-after-merge-Cycle pro Commit reicht. (5) Vorsicht bei `package.json` + `package-lock.json` — die haben semantische Konflikte (verschiedene Dep-Versionen) die Git nicht sehen kann; dort Sequenz vorab abstimmen.
+
+
+## 2026-05-30 — Admin-Email-Allowlist ist unsichtbar wenn nicht gesetzt
+
+**Symptom:** Yannik konnte nach v1.9.3-Upgrade das MSP-Health-Dashboard nicht finden — Sidebar zeigte den Eintrag nicht, /api/auth/me returnte `isAdmin: false` trotz erfolgreichem Login. 30+ min Debug bevor klar war: `CLAUDE_OS_ADMIN_EMAILS` war nie gesetzt.
+
+**Regel:** Bei Multi-User-Setups (ADR-0036) MUSS die `CLAUDE_OS_ADMIN_EMAILS`-Env-Variable VOR dem ersten Browser-Login prominent in der Setup-Doku stehen. Die Stolperfalle ist verdoppelt weil:
+
+1. Server bootet ohne Fehler (allowlist optional → empty allowed)
+2. Routes werden NICHT registriert (statt 403 zurueck) — Frontend sieht nur `isAdmin: false`
+3. `docker compose up -d` ohne `--force-recreate` reuses Container → env-change wirkt nicht
+
+**Fix in docs/server-deployment.md:** Neuer Schritt 1.5 zwischen `users create` und Browser-Login mit Verify-Pfad und 3 haeufigsten Stolperfallen (`.env`-Zeile leer, kein `--force-recreate`, alte Browser-Session).
+
+**Take-Away für Future-Code:**
+- Bei "feature ist im Code aber Operator sieht es nicht" zuerst nach Admin-Gates / Env-vars suchen, bevor man bug-jagt
+- Server-Boot-Log sollte explizit `adminCount=N` loggen damit die env-status sofort sichtbar ist (machen wir schon via `routes-admin`-Block, aber nur wenn `multiUser !== undefined`)
+- Doku-Lückencheck nach jedem Feature mit Admin-Gate: ist es in setup-guide.md oder server-deployment.md erwähnt?
