@@ -4,6 +4,41 @@ Alle relevanten Aenderungen an `claude-os` werden hier dokumentiert. Format orie
 
 ## [Unreleased]
 
+## [1.9.0] — 2026-05-29
+
+### Added
+
+- **MSP-Health Aggregat-Dashboard (Phase 7-E, ADR-0041):** Web-UI über alle konfigurierten Read-Bridges × alle Customer-Workspaces. **Eine** Tabelle, eine Zeile pro Customer, eine Spalte pro Bridge — admin-gated wie das Audit-Trail-Dashboard.
+  - **Backend-Domain `src/domains/msp-aggregate/`:** `runProbes` orchestriert Probes mit parallel-across-bridges + serial-per-bridge Topologie (Token-Cache amortisiert), Per-Probe-Timeout (capped 10s), Whole-Aggregate-Hard-Cap (30s default), unfinished cells → `{kind:'timeout'}`.
+  - **`AggregateCache`:** Single-slot TTL (60s default, `CLAUDE_OS_MSP_HEALTH_TTL_SEC`-override) + Stampede-Protection (10 Admins gleichzeitig → 1 Probe-Run, alle warten auf dasselbe Promise) + loader-throw clear für sauberen retry.
+  - **HTTP-Routes (`src/server/routes-msp-health.ts`):** Drei admin-gated Endpoints:
+    - `GET /api/msp-health/rows` (cache-hit-friendly)
+    - `GET /api/msp-health/config` (peek, no probe trigger)
+    - `POST /api/msp-health/refresh` (cache bust + fresh probe)
+  - **Frontend (`gui/src/pages/msp-health.tsx`):** Operator-Console-styled — Header mit customer-count + bridges + cache-age + Refresh, Table mit color-coded cells (tone-ok/warn/error), Click-Row → expand inline JSON-detail-blocks. Per-Bridge-Cell-Rendering: TANSS „N open / M total · last <date>", Veeam „X ok · Y warn · Z failed · W running [· N missing]" (missingJobs flag = Job-Rename-Detection im Dashboard sichtbar).
+  - **Nav-Entry:** „MSP Health" in OVERVIEW-Section, `adminOnly: true`. Route nur registered wenn `isAdmin === true`. Selbes Pattern wie Audit-Page.
+  - **Bootstrap-Wiring in `serve.ts`:** Aktiv wenn multi-user mode + adminEmails gesetzt. Bridges env-/vault-driven registriert: TANSS iff `CLAUDE_OS_TANSS_SERVER_URL` gesetzt, Veeam iff irgendein Customer `bridges.veeam` hat. Beide werden mit `withAuditTrail` gewrappt — alle Probes landen im Audit-Log.
+
+- **`ServerConfig.mspHealth`** opt-in Field (Phase 7-E). Wenn gesetzt UND `adminEmails` non-empty → `/api/msp-health/*` Routes registered.
+
+### Foundation pays off
+
+`src/domains/msp-aggregate/` hat **null** vendor-spezifischen Code. Phase 7-D (Sophos+Securepoint) wird nur eine Schema-Erweiterung in `msp-customers` + neue Bridges + neue Frontend-Cell-Components brauchen. Aggregator-Backend bleibt unverändert.
+
+### Privacy by Design
+
+Audit-Wrapper (aus Phase 7-A) garantiert pro `bridge.read`-Event nur `customerSlug` / `bridgeKind` / `resultKind` / `durationMs`. Keine API-Bodies, keine Sample-Tickets, keine Job-Namen, keine Credentials im Audit — auch vom Aggregat aus geprobed.
+
+### Docs
+
+- **ADR-0041** — MSP-Health Aggregat-Dashboard (Topologie, Cache, Stampede-Protection, Trade-offs)
+- **`docs/msp-health-dashboard-guide.md`** — User-Setup, Cell-Bedeutung, Drill-Down, Performance, Troubleshooting-Tabelle
+
+### Tests
+
+- **36 neue Tests** (24 backend-aggregator + 12 HTTP-routes inkl. Stampede-Test mit 10 concurrent requests)
+- Gesamt-Suite: **1846 passed / 8 skipped** — keine Regression
+
 ## [1.8.3] — 2026-05-29
 
 ### Added
