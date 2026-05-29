@@ -106,9 +106,12 @@ services:
       # CLAUDE_OS_INSECURE_COOKIES: "1"
 
     volumes:
-      # Vault + config + Anthropic auth all live in the same volume so
-      # a single Proxmox snapshot + rsync backup covers everything.
+      # Vault + config + audit log + sessions live in /data.
       - claude-os-data:/data
+      # claude-CLI hardcoded ~/.claude/ and uses atomic-rename which
+      # destroys symlinks. v1.7.7+ requires this volume so credentials
+      # survive container restarts. See docker/entrypoint.sh for details.
+      - claude-os-claude:/root/.claude
 
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3000/healthz"]
@@ -138,4 +141,8 @@ services:
 
 volumes:
   claude-os-data:
+    driver: local
+  # Persistent /root/.claude — only contains the claude-CLI credentials.
+  # Small (<1 KB). Backed up by rsync on the host like claude-os-data.
+  claude-os-claude:
     driver: local

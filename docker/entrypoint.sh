@@ -47,26 +47,52 @@ export ANTHROPIC_CONFIG_DIR="${ANTHROPIC_DIR}"
 
 # ── claude-CLI credentials persistence ──────────────────────────────
 #
-# The `claude` CLI hardcodes `~/.claude/.credentials.json` and ignores
-# $ANTHROPIC_CONFIG_DIR for the credentials file itself. Symlink the
-# expected path to the persistent volume so:
-#   1. `claude auth login` writes through to the volume (survives restart)
-#   2. The Settings page (which reads $ANTHROPIC_CONFIG_DIR/.credentials.json)
-#      sees the credentials immediately after login
+# The `claude` CLI hardcodes `~/.claude/.credentials.json` and uses
+# atomic-rename (unlink + write) when storing tokens — that destroys
+# any symlink we put in place. v1.7.6 tried the "symlink from
+# /root/.claude into the volume" pattern and lost the credentials at
+# the first re-write.
 #
-# Migrate step: if a previous container wrote .credentials.json into
-# /root/.claude/ (non-symlinked), move it to the volume on first boot.
+# v1.7.7+: `/root/.claude/` MUST be mounted as a persistent volume by
+# docker-compose.yml (see docker-compose.example.yml). The .credentials.json
+# then lives **as a real file** in that volume. We then provide a
+# READ-ONLY convenience symlink at ${ANTHROPIC_CONFIG_DIR}/.credentials.json
+# so the Settings page (which only reads, never writes through it)
+# still finds it under the documented path.
+#
+# Migration step: if a previous container wrote .credentials.json into
+# /data/anthropic/ (v1.7.5 or earlier symlink-based setup), move it to
+# /root/.claude/ on first boot with the new volume mount.
 mkdir -p /root/.claude
-if [ -f /root/.claude/.credentials.json ] && [ ! -L /root/.claude/.credentials.json ]; then
-  if [ ! -e "${ANTHROPIC_DIR}/.credentials.json" ]; then
-    echo "==> migrating existing /root/.claude/.credentials.json → ${ANTHROPIC_DIR}/"
-    mv /root/.claude/.credentials.json "${ANTHROPIC_DIR}/.credentials.json"
+chmod 700 /root/.claude
+
+# Forward-migration from /data/anthropic/.credentials.json (when the user
+# had a previous deployment that wrote there because we tried the inverse
+# symlink direction).
+if [ -f "${ANTHROPIC_DIR}/.credentials.json" ] && [ ! -L "${ANTHROPIC_DIR}/.credentials.json" ]; then
+  if [ ! -e /root/.claude/.credentials.json ]; then
+    echo "==> migrating ${ANTHROPIC_DIR}/.credentials.json → /root/.claude/"
+    mv "${ANTHROPIC_DIR}/.credentials.json" /root/.claude/.credentials.json
+    chmod 600 /root/.claude/.credentials.json
   else
-    # Volume already has credentials — root-side stale copy loses.
-    rm /root/.claude/.credentials.json
+    # New volume already has credentials — drop the stale legacy copy.
+    rm "${ANTHROPIC_DIR}/.credentials.json"
   fi
 fi
-ln -sf "${ANTHROPIC_DIR}/.credentials.json" /root/.claude/.credentials.json
+
+# Read-only convenience symlink so $ANTHROPIC_CONFIG_DIR/.credentials.json
+# resolves to the real file. claude-CLI never touches this path, only the
+# Settings page (read-only). Idempotent: ln -sf overwrites any prior link.
+ln -sf /root/.claude/.credentials.json "${ANTHROPIC_DIR}/.credentials.json"
+
+# Warn if /root/.claude is NOT a mounted volume — the user has an older
+# docker-compose.yml from pre-v1.7.7. Credentials will still work for the
+# current container lifetime but will be lost on --force-recreate.
+if ! mountpoint -q /root/.claude 2>/dev/null; then
+  echo "==> WARNING: /root/.claude is not a mounted volume — credentials will be" >&2
+  echo "             lost on container recreation. See docker-compose.example.yml" >&2
+  echo "             for the required additional volume entry (v1.7.7+)." >&2
+fi
 
 # Optional: log to stdout so docker logs captures everything
 export CLAUDE_OS_LOG_LEVEL="${CLAUDE_OS_LOG_LEVEL:-info}"

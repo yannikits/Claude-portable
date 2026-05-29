@@ -4,6 +4,30 @@ Alle relevanten Aenderungen an `claude-os` werden hier dokumentiert. Format orie
 
 ## [Unreleased]
 
+## [1.7.7] — 2026-05-29
+
+### Fixed
+
+- **Credentials-Persistence richtig diesmal — `/root/.claude` als Volume.** v1.7.6's Symlink-Pattern (`/root/.claude/.credentials.json` → `${ANTHROPIC_CONFIG_DIR}/`) wurde von der `claude`-CLI bei jedem Login zerstört: die CLI nutzt atomic-rename (unlink+write) und überschreibt damit den Symlink mit einer echten Datei. Resultat: Login funktionierte, Credentials landeten aber wieder in `/root/.claude/.credentials.json` (RootFS, nicht persistent), Settings-Page blieb leer.
+
+  **Korrekter Pfad in v1.7.7:** `/root/.claude/` wird als eigenes Docker-Volume gemountet (`claude-os-claude`). Die `.credentials.json` lebt damit **als echte Datei** im Volume. Der Convenience-Symlink geht umgekehrt — `${ANTHROPIC_CONFIG_DIR}/.credentials.json` → `/root/.claude/.credentials.json`. Settings-Page liest nur (kein unlink-Problem), claude-CLI schreibt direkt ins Volume.
+
+  `docker/entrypoint.sh` enthält:
+  - Forward-Migration von v1.7.5-Layout: wenn `${ANTHROPIC_CONFIG_DIR}/.credentials.json` als echte Datei existiert (alte Position), wird sie beim Boot nach `/root/.claude/` verschoben
+  - Idempotenter Read-only-Symlink
+  - WARNING wenn `/root/.claude` kein mountpoint ist (User hat alte compose.yml)
+
+  **Operator-Aktion erforderlich:** `docker-compose.yml` um den neuen Volume-Mount erweitern:
+  ```yaml
+  volumes:
+    - claude-os-data:/data
+    - claude-os-claude:/root/.claude    # NEU
+  volumes:
+    claude-os-data:
+    claude-os-claude:                   # NEU
+  ```
+  oder frisches Example aus dem Repo ziehen.
+
 ## [1.7.6] — 2026-05-29
 
 ### Fixed
