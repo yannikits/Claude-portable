@@ -1,2 +1,4 @@
+export { evaluateRules, type FiredAction } from './evaluator.js';
 export { loadRules, type RuleLoadIssue, type RuleLoadResult } from './rule-loader.js';
-export { type Rule, RuleSchema } from './rule-schema.js';
+export { type Rule, type RuleAction, RuleSchema } from './rule-schema.js';
+export { diffSnapshots, type StateChange } from './state-diff.js';

@@ -61,6 +61,8 @@ export const RuleActionSchema = Type.Union([
   ),
 ]);
 
+export type RuleAction = Static<typeof RuleActionSchema>;
+
 export const RuleSchema = Type.Object(
   {
     id: Type.String({ pattern: '^[a-z0-9][a-z0-9_-]*$' }),

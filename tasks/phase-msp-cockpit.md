@@ -71,14 +71,14 @@ nur Admin kann Regeln scharfschalten + Rollen vergeben. Tests grün, tsc+biome c
 
 Kann parallel zu MC-A starten (keine Write-Abhängigkeit). Das architektonische Herzstück.
 
-- [~] `src/domains/automation/` Domain anlegen (Rules, Evaluator, State-Diff) — Skelett + Schema da (Commit 448aa70), Evaluator/Diff folgen
+- [x] `src/domains/automation/` Domain angelegt: Schema + Loader + State-Diff + Evaluator (Commits 448aa70, e3f0cc0, + dieser)
 - [x] YAML-Rules-Schema (TypeBox): `trigger` (bridge+customers), `condition` (statusIn), `actions` (v1 non-write), `armed` — TDD, 8 Tests grün (2026-05-30)
-- [~] Rules-Loader liest `rules/*.yaml`, parst + validiert, resilient (Issues sammeln statt werfen) — `loadRules(dir)` + 6 Tests grün (2026-05-30). Offen: dünner Workspace→rules-dir-Resolver (Vault-Wiring).
-- [ ] Poll-Diff-Detektor: Scheduler-Tick (vorhandener `src/domains/scheduler/`) probt Bridges,
-      vergleicht gegen letzten Snapshot, emittiert State-Change-Events
-- [ ] Regel-Evaluator: Event → Trigger-Match → Condition-Eval → Action-Dispatch
-- [ ] Nur ungefährliche Aktionen: `notify`, `dashboard-alert`, `audit-log` (kein Write nach außen)
+- [~] Rules-Loader liest `rules/*.yaml`, parst + validiert, resilient (Issues sammeln statt werfen) — `loadRules(dir)` + 6 Tests grün. Offen: dünner Workspace→rules-dir-Resolver (Vault-Wiring).
+- [~] Poll-Diff-Detektor: `diffSnapshots(prev, current)` (reine Funktion, baseline-safe, dynamische Bridge-Iteration) + 5 Tests grün. Offen: Scheduler-Tick-Wiring + Snapshot-State-Holding zwischen Ticks.
+- [~] Regel-Evaluator: `evaluateRules(rules, changes)` (reine Funktion: Trigger/Customer/Status-Match → FiredAction[]) + 6 Tests grün. Offen: Action-Dispatch-Wiring (Emit/SSE) — separater Integrationsschritt.
+- [x] Nur ungefährliche Aktionen: Schema erlaubt v1 ausschließlich `dashboard-alert`, `notify`, `audit-log` (kein Write nach außen)
 - [ ] UI: "Aktive Regeln" + "Letzte Auslösungen"-Ansicht (read-only)
+- [ ] Verdrahtung: Scheduler-Tick → Aggregator-Snapshot → diffSnapshots → evaluateRules → Action-Dispatch (schließt MC-B ab)
 
 **DoD:** Eine YAML-Regel "Sophos offline → dashboard-alert" feuert real bei Zustandswechsel,
 sichtbar im UI, im Audit-Log. Tests decken Trigger/Condition/Dispatch + Failure-Modi ab.
