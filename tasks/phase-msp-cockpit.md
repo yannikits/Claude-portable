@@ -71,9 +71,9 @@ nur Admin kann Regeln scharfschalten + Rollen vergeben. Tests grün, tsc+biome c
 
 Kann parallel zu MC-A starten (keine Write-Abhängigkeit). Das architektonische Herzstück.
 
-- [ ] `src/domains/automation/` Domain anlegen (Rules, Evaluator, State-Diff)
-- [ ] YAML-Rules-Schema (TypeBox): `trigger`, `conditions`, `actions`, `armed: bool`, `tenant`
-- [ ] Rules-Loader liest `rules/*.yaml` pro Workspace aus dem Vault (read strict, validate)
+- [~] `src/domains/automation/` Domain anlegen (Rules, Evaluator, State-Diff) — Skelett + Schema da (Commit 448aa70), Evaluator/Diff folgen
+- [x] YAML-Rules-Schema (TypeBox): `trigger` (bridge+customers), `condition` (statusIn), `actions` (v1 non-write), `armed` — TDD, 8 Tests grün (2026-05-30)
+- [~] Rules-Loader liest `rules/*.yaml`, parst + validiert, resilient (Issues sammeln statt werfen) — `loadRules(dir)` + 6 Tests grün (2026-05-30). Offen: dünner Workspace→rules-dir-Resolver (Vault-Wiring).
 - [ ] Poll-Diff-Detektor: Scheduler-Tick (vorhandener `src/domains/scheduler/`) probt Bridges,
       vergleicht gegen letzten Snapshot, emittiert State-Change-Events
 - [ ] Regel-Evaluator: Event → Trigger-Match → Condition-Eval → Action-Dispatch
