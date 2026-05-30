@@ -21,7 +21,9 @@ import { resolveRoot } from '../core/environment/index.js';
 import { resolveMachinePaths } from '../core/paths/index.js';
 import {
   type ActionSink,
+  createFiredActionLog,
   dispatchFiredAction,
+  type FiredActionLog,
   loadRules,
   startAutomationEngine,
 } from '../domains/automation/index.js';
@@ -42,6 +44,7 @@ import { createNotificationBus, registerSseRoute } from './events-sse.js';
 import { registerAdminRoutes } from './routes-admin.js';
 import { registerAuditRoutes } from './routes-audit.js';
 import { registerAuthRoutes } from './routes-auth.js';
+import { registerAutomationRoutes } from './routes-automation.js';
 import { registerMspHealthRoutes } from './routes-msp-health.js';
 import { registerInboxUpload, registerRpcRoutes } from './rpc-http.js';
 import { registerStaticRoutes } from './static.js';
@@ -68,6 +71,7 @@ interface BackgroundServices {
 interface AutomationWiring {
   readonly aggregator: MspHealthAggregator;
   readonly rulesDir: string;
+  readonly firedLog: FiredActionLog;
 }
 
 async function startBackgroundServices(
@@ -130,7 +134,10 @@ async function startBackgroundServices(
         return rules;
       },
       getSnapshot: () => automation.aggregator.getSnapshot(),
-      emit: (fired) => dispatchFiredAction(fired, sink),
+      emit: (fired) => {
+        automation.firedLog.record(fired);
+        dispatchFiredAction(fired, sink);
+      },
       onError: (err) =>
         logger.logger.warn(
           { err: err instanceof Error ? err.message : String(err) },
@@ -231,6 +238,7 @@ export async function startServer(config: ServerConfig): Promise<ServerHandle> {
       automation = {
         aggregator: config.mspHealth,
         rulesDir: join(vaultRoot, 'Claude-OS', 'automation', 'rules'),
+        firedLog: createFiredActionLog(),
       };
     } catch (err) {
       log.warn(
@@ -308,6 +316,13 @@ export async function startServer(config: ServerConfig): Promise<ServerHandle> {
         registerMspHealthRoutes(fastify, {
           adminEmails: config.multiUser.adminEmails,
           aggregator: config.mspHealth,
+        });
+      }
+      if (automation !== null) {
+        registerAutomationRoutes(fastify, {
+          adminEmails: config.multiUser.adminEmails,
+          rulesDir: automation.rulesDir,
+          firedLog: automation.firedLog,
         });
       }
       log.info(
