@@ -82,7 +82,7 @@ Kann parallel zu MC-A starten (keine Write-Abhängigkeit). Das architektonische 
 - [x] UI: read-only `AutomationPage` (`gui/src/pages/automation.tsx`) — Aktive Regeln + Letzte Auslösungen, admin-gated, Polling via useAutoRefresh; rpc-Helper + Nav/Route in App.tsx. tsc -b + vite-Build grün.
 - [ ] Sidecar/Desktop-Boot der Engine (heute nur Server-Variante) — später
 
-**MC-B abgeschlossen (2026-05-30):** Engine-Kern + Wiring + read-only UI. 41 neue Tests (33 Automation-Domain + 5 Routes + 3 fired-log... ), Backend-Suite 2025 passed. Offen nur Sidecar-Boot + spätere Phasen (MC-C ff.). Hinweis: gui-Vitest-Suite hat pre-existing Rot (30 unrelated Failures) — eigener Cleanup-Task.
+**MC-B abgeschlossen (2026-05-30):** Engine-Kern + Wiring + read-only UI + End-to-End-Integrationstest. Backend-Suite 2026 passed. Der Pipeline-Test (`tests/server/automation-pipeline.test.ts`) komponiert die echten Teile wie der Server (loadRules → Aggregator/Prober → diff → evaluate → dispatch → NotificationBus) und beweist deterministisch, dass eine echte Bridge-Transition ein `automation://alert` feuert. Offen nur Sidecar-Boot + spätere Phasen (MC-C ff.). Hinweis: gui-Vitest-Suite hat pre-existing Rot (30 unrelated Failures) — eigener Cleanup-Task.
 
 **DoD:** Eine YAML-Regel "Sophos offline → dashboard-alert" feuert real bei Zustandswechsel,
 sichtbar im UI, im Audit-Log. Tests decken Trigger/Condition/Dispatch + Failure-Modi ab.
