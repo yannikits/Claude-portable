@@ -79,8 +79,10 @@ Kann parallel zu MC-A starten (keine Write-Abhängigkeit). Das architektonische 
 - [x] Engine-Runner `startAutomationEngine` (Tick-Loop, hält prev-Snapshot, reused Aggregator-Cache via `getSnapshot`, resilient) + 5 Tests; `dispatchFiredAction` routet nach Action-Typ + 3 Tests.
 - [x] Nur ungefährliche Aktionen: Schema erlaubt v1 ausschließlich `dashboard-alert`, `notify`, `audit-log` (kein Write nach außen)
 - [x] Verdrahtung: Server bootet Engine in `startBackgroundServices` (nur wenn Aggregator + Vault da); Sink: `automation://alert`-SSE bzw. Audit-Log. tsc/biome/Suite grün (2017 passed).
-- [ ] UI: "Aktive Regeln" + "Letzte Auslösungen"-Ansicht (read-only) — einziger offener MC-B-Punkt
+- [x] UI: read-only `AutomationPage` (`gui/src/pages/automation.tsx`) — Aktive Regeln + Letzte Auslösungen, admin-gated, Polling via useAutoRefresh; rpc-Helper + Nav/Route in App.tsx. tsc -b + vite-Build grün.
 - [ ] Sidecar/Desktop-Boot der Engine (heute nur Server-Variante) — später
+
+**MC-B abgeschlossen (2026-05-30):** Engine-Kern + Wiring + read-only UI. 41 neue Tests (33 Automation-Domain + 5 Routes + 3 fired-log... ), Backend-Suite 2025 passed. Offen nur Sidecar-Boot + spätere Phasen (MC-C ff.). Hinweis: gui-Vitest-Suite hat pre-existing Rot (30 unrelated Failures) — eigener Cleanup-Task.
 
 **DoD:** Eine YAML-Regel "Sophos offline → dashboard-alert" feuert real bei Zustandswechsel,
 sichtbar im UI, im Audit-Log. Tests decken Trigger/Condition/Dispatch + Failure-Modi ab.
